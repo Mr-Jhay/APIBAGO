@@ -10,6 +10,7 @@ use App\Http\Controllers\tblsemesterController;
 use App\Http\Controllers\tblsectionController;
 use App\Http\Controllers\tblpostionController;
 use App\Http\Controllers\gradelevelController;
+use App\Http\Controllers\tblpositionController;
 
 
 Route::get('/user', function (Request $request) {
@@ -31,10 +32,17 @@ Route::group([
     Route::get('viewstrand', [tblstrandController::class, 'viewstrand']);//view ng lahat ng strand na na add ni admin
     Route::post('addsemester', [tblsemesterController::class, 'addsemester']);//add ng semester sa admin
     Route::get('viewsemester', [tblsemesterController::class, 'viewsemester']);//view ng lahat ng semester na na add ni admin
-    Route::post('addsection', [tblpositionController::class, 'addsection']);//add ng position sa admin
-    Route::get('viewsection', [tblpositionController::class, 'viewsection']);//view ng lahat ng availble position na na add ni admin
+    Route::post('addsection', [tblsectionController::class, 'addsection']);//add ng section sa admin
+    Route::get('viewsection', [tblsectionController::class, 'viewsection']);//view ng lahat ng availble section na na add ni admin
     Route::post('addgradelevel', [gradelevelController::class, 'addgradelevel']);//add view ng lahat ng grade level g11 or 12
     Route::get('viewgradelevel', [gradelevelController::class, 'viewgradelevel']);//view ng lahat ng grade level g11 or 12 na na add ni admin
+    Route::post('addposition', [tblpositionController::class, 'addposition']);//add view ng lahat position
+    Route::get('viewposition', [tblpositionController::class, 'view']);//view ng lahat ng position
+
+    Route::get('userprofile', [UsersController::class, 'userprofile']);
+    Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
+    Route::post('registerstudent', [UsersController::class, 'registerstudent']);
+   
     //TEACHER
 
     //STUDENTS
