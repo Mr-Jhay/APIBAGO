@@ -4,41 +4,71 @@ namespace App\Http\Controllers;
 
 use App\Models\tblyear;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class tblyearController extends Controller
 {
+    // Method to add a new year (already exists)
     public function addyear(Request $request)
     {
-        // Validate the incoming request data
         $request->validate([
             'addyear' => 'required|string|max:255',
         ]);
 
-        // Create a new year record
         $year = tblyear::create([
             'addyear' => $request->input('addyear'),
         ]);
 
-        // Return a JSON response
         return response()->json([
             'message' => 'Year created successfully!',
             'data' => $year,
         ], 201);
     }
 
+    // Method to view all years (already exists)
     public function viewyear()
     {
-        // Retrieve all year records from the database
         $years = tblyear::all();
 
-        // Return a JSON response with the list of years and a 200 (OK) status code
         return response()->json([
             'success' => true,
             'message' => 'Years retrieved successfully',
             'data' => $years
+        ], 200);
+    }
+
+    // Method to update an existing year
+    public function updateyear(Request $request, $id)
+    {
+        $request->validate([
+            'addyear' => 'required|string|max:255',
+        ]);
+
+        // Find the year record
+        $year = tblyear::findOrFail($id);
+
+        // Update the year field
+        $year->update([
+            'addyear' => $request->input('addyear'),
+        ]);
+
+        return response()->json([
+            'message' => 'Year updated successfully!',
+            'data' => $year,
+        ], 200);
+    }
+
+    // Method to delete a year
+    public function deleteyear($id)
+    {
+        // Find the year record
+        $year = tblyear::findOrFail($id);
+
+        // Delete the year
+        $year->delete();
+
+        return response()->json([
+            'message' => 'Year deleted successfully!',
         ], 200);
     }
 }

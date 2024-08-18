@@ -27,6 +27,8 @@ Route::group([
     //ADMIN
     Route::post('addyear', [tblyearController::class, 'addyear']);//pag add ng year
     Route::get('viewyear', [tblyearController::class, 'viewyear']);//view lahat ng na add na year
+    Route::put('updateyear/{id}', [tblyearController::class, 'updateyear']);  // Update an existing year
+    Route::delete('deleteyear/{id}', [tblyearController::class, 'deleteyear']);  // Delete a year
 
     Route::post('addsubject', [tblsubjectController::class, 'addsubject']);//add ng subject sa admin
     Route::get('viewsubject', [tblsubjectController::class, 'viewsubject']);//view ng lahat ng subject na na add ni admin
@@ -38,6 +40,9 @@ Route::group([
 
     Route::post('addsemester', [tblsemesterController::class, 'addsemester']);//add ng semester sa admin
     Route::get('viewsemester', [tblsemesterController::class, 'viewsemester']);//view ng lahat ng semester na na add ni admin
+    Route::put('updatesemester/{id}', [tblsemesterController::class, 'updatesemester']);
+    Route::delete('deletesemester/{id}', [tblsemesterController::class, 'deletesemester']);
+    //Route::put('togglesemesterstatus/{id}', [tblsemesterController::class, 'toggleStatus']);//
 
     Route::post('addsection', [tblsectionController::class, 'addsection']);//add ng section sa admin
     Route::get('viewsection', [tblsectionController::class, 'viewsection']);//view ng lahat ng availble section na na add ni admin
