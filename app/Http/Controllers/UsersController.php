@@ -230,7 +230,12 @@ public function userprofile(Request $request)
 {
     // Retrieve the authenticated user
     $user = auth()->user();
-
+    if (!$user) {
+        return response()->json([
+            'status' => false,
+            'message' => 'User not authenticated',
+        ], 401);
+    }
     // Base user data
     $profileData = [
         'id' => $user->id,
@@ -267,7 +272,11 @@ public function userprofile(Request $request)
     }
 
     // Return the profile data
-    return response()->json($profileData, 200);
+    return response()->json([
+        'status' => true,
+        'message' => 'User Profile Data',
+        'data' => $profileData,
+    ], 200);
 }
 public function logout()
 {
