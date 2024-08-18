@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('tblstrand', function (Blueprint $table) {
             $table->id();
             $table->string('addstrand');
-            $table->timestamps();
+            $table->timestamps();  
         });
     }
 

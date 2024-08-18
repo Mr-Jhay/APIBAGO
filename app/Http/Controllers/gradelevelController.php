@@ -45,4 +45,31 @@ class gradelevelController extends Controller
             'data' => $gradeLevels
         ], 200);
     }
+    public function updategradelevel(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'glevel' => 'required|string|max:255',
+        ]);
+
+        $gradeLevel = GradeLevel::findOrFail($id);
+        $gradeLevel->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Grade level updated successfully!',
+            'data' => $gradeLevel,
+        ], 200);
+    }
+
+    public function deletegradelevel($id)
+    {
+        $gradeLevel = GradeLevel::findOrFail($id);
+        $gradeLevel->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Grade level deleted successfully!',
+        ], 200);
+    }
+
 }
