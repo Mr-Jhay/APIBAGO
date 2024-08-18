@@ -23,6 +23,7 @@ Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::group([
     "middleware" => "auth:sanctum"
 ], function() {
+    Route::post('logout', [UsersController::class, 'logout']);
     //ADMIN
     Route::post('addyear', [tblyearController::class, 'addyear']);//pag add ng year
     Route::get('viewyear', [tblyearController::class, 'viewyear']);//view lahat ng na add na year

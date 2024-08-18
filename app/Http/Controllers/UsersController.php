@@ -269,7 +269,27 @@ public function userprofile(Request $request)
     // Return the profile data
     return response()->json($profileData, 200);
 }
+public function logout()
+{
+    $user = auth()->user();
 
+    if ($user) {
+        // Revoke all tokens
+        $user->tokens()->delete();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Logout successful',
+            'data' => []
+        ], 200);
+    }
+
+    return response()->json([
+        'status' => false,
+        'message' => 'Logout failed: User not authenticated',
+        'data' => []
+    ], 401);
+}
 
 
 }
