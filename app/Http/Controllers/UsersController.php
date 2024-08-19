@@ -222,7 +222,6 @@ public function registerTeacher(Request $request)
 
 public function userprofile(Request $request)
 {
-    // Retrieve the authenticated user
     $user = auth()->user();
     if (!$user) {
         return response()->json([
@@ -230,7 +229,10 @@ public function userprofile(Request $request)
             'message' => 'User not authenticated',
         ], 401);
     }
-    // Base user data
+
+    // Check for query parameter to determine if only user data should be returned
+    $includeUserOnly = $request->query('include', 'false') === 'true';
+
     $profileData = [
         'id' => $user->id,
         'idnumber' => $user->idnumber,
@@ -242,36 +244,36 @@ public function userprofile(Request $request)
         'email' => $user->email,
     ];
 
-    // Load additional data based on usertype if available
-    if ($user->usertype === 'student') {
-        // Load student-specific data
-        $student = tblstudent::where('user_id', $user->id)->first();
-        if ($student) {
-            $profileData['student'] = [
-                'section_id' => $student->section_id,
-                'strand_id' => $student->strand_id,
-                'gradelevel_id' => $student->gradelevel_id,
-                'Mobile_no' => $student->Mobile_no,
-            ];
-        }
-    } elseif ($user->usertype === 'teacher') {
-        // Load teacher-specific data
-        $teacher = tblteacher::where('user_id', $user->id)->with('strands')->first();
-        if ($teacher) {
-            $profileData['teacher'] = [
-                'position_id' => $teacher->position_id,
-                'strands' => $teacher->strands->pluck('id')->toArray(), // List of strand IDs
-            ];
+    if (!$includeUserOnly) {
+        // Load additional data based on usertype if available
+        if ($user->usertype === 'student') {
+            $student = tblstudent::where('user_id', $user->id)->first();
+            if ($student) {
+                $profileData['student'] = [
+                    'section_id' => $student->section_id,
+                    'strand_id' => $student->strand_id,
+                    'gradelevel_id' => $student->gradelevel_id,
+                    'Mobile_no' => $student->Mobile_no,
+                ];
+            }
+        } elseif ($user->usertype === 'teacher') {
+            $teacher = tblteacher::where('user_id', $user->id)->with('strands')->first();
+            if ($teacher) {
+                $profileData['teacher'] = [
+                    'position_id' => $teacher->position_id,
+                    'strands' => $teacher->strands->pluck('id')->toArray(),
+                ];
+            }
         }
     }
 
-    // Return the profile data
     return response()->json([
         'status' => true,
         'message' => 'User Profile Data',
         'data' => $profileData,
     ], 200);
 }
+
 public function logout()
 {
     $user = auth()->user();
