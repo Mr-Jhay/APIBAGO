@@ -17,9 +17,8 @@ class tblstudentResource extends JsonResource
         return [
             'id'=>$this->id,
             'user_id'=>$this->user_id,
-            'section_id'=>$this->section_id,
             'strand_id'=>$this->strand_id,
-            'gradelevel_id'=>$this->gradelevel_id,
+            'section_id'=>$this->section_id,
             'Mobile_no'=>$this->Mobile_no,
             'created_at'=>$this->created_at,
             'updated_at' => $this->updated_at,

@@ -11,10 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('tblsemester', function (Blueprint $table) {
+        Schema::create('tblsection', function (Blueprint $table) {
             $table->id();
-            $table->string('sem');
+            $table->unsignedBigInteger('strand_id');
+            $table->string('section');
             $table->timestamps();
+
+            // Adding index on foreign key for better performance
+            $table->foreign('strand_id')->references('id')->on('tblstrand')->onDelete('cascade');
+           // $table->index('strand_id');
         });
     }
 
@@ -23,6 +28,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('tblsemester');
+        Schema::dropIfExists('tblsection');
     }
 };
+

@@ -15,9 +15,8 @@ class tblstudent extends Model
 
     protected $fillable = [
            'user_id',
-           'section_id',  
            'strand_id',
-           'gradelevel_id',
+           'section_id',  
            'Mobile_no',    
        ];
 }

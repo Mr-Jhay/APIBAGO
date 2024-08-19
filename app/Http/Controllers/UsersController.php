@@ -91,74 +91,68 @@ class UsersController extends Controller
     }
 
     public function registerstudent(Request $request)
-{
-    // Validate the incoming request data
-    $data = $request->validate([
-        'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
-        'fname' => ['required', 'string'],
-        'mname' => ['required', 'string'],
-        'lname' => ['required', 'string'],
-        'sex' => ['required', 'string'],
-        'usertype' => ['required', 'string'],
-        'email' => ['required', 'email', 'unique:users,email'],
-        'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
-        // Validate student-specific data only if usertype is student
-        'section_id' => ['required_if:usertype,student', 'exists:tblsection,id'],
-        'strand_id' => ['required_if:usertype,student', 'exists:tblstrand,id'],
-        'gradelevel_id' => ['required_if:usertype,student', 'exists:gradelevel,id'],
-        'Mobile_no' => ['nullable', 'string', 'max:15'],
-    ]);
-
-    try {
-        // Create the user
-        $user = User::create([
-            'idnumber' => $data['idnumber'],
-            'fname' => $data['fname'],
-            'mname' => $data['mname'],
-            'lname' => $data['lname'],
-            'sex' => $data['sex'],
-            'usertype' => $data['usertype'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+    {
+        // Validate the incoming request data
+        $validated = $request->validate([
+            'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
+            'fname' => ['required', 'string'],
+            'mname' => ['required', 'string'],
+            'lname' => ['required', 'string'],
+            'sex' => ['required', 'string'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+            ],
+            'strand_id' => 'required|exists:tblstrand,id',
+            'section_id' => 'required|exists:tblsection,id',
+            'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no'],
         ]);
-
-        // If the user is a student, create a student record
-        if ($user->usertype === 'student') {
-            $student = new tblstudent();
-            $student->user_id = $user->id;
-            $student->section_id = $data['section_id'];
-            $student->strand_id = $data['strand_id'];
-            $student->gradelevel_id = $data['gradelevel_id'];
-            $student->Mobile_no = $data['Mobile_no'] ?? null;
-            $student->save();
+    
+        try {
+            // Create the user
+            $user = User::create([
+                'idnumber' => $validated['idnumber'],
+                'fname' => $validated['fname'],
+                'mname' => $validated['mname'],
+                'lname' => $validated['lname'],
+                'sex' => $validated['sex'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+            ]);
+    
+            // Create the student record
+            $student = tblstudent::create([
+                'user_id' => $user->id,
+                'strand_id' => $validated['strand_id'],
+                'section_id' => $validated['section_id'],
+                'Mobile_no' => $validated['Mobile_no'] ?? null,
+            ]);
+    
+            // Generate the token
+            $token = $user->createToken('auth_token')->plainTextToken;
+    
+            // Return the user, student record, and token
+            return response()->json([
+                'user' => $user,
+                'student' => $student,
+                'token' => $token,
+            ], 201);
+    
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Registration failed: ' . $e->getMessage());
+    
+            // Return a response with error details
+            return response()->json([
+                'message' => 'Registration failed',
+                'error' => 'An unexpected error occurred. Please try again later.',
+            ], 500);
         }
-
-        // Generate the token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Return the user, token, and student info (if applicable)
-        return response()->json([
-            'user' => $user,
-            'student' => $user->usertype === 'student' ? $student : null,
-            'token' => $token,
-        ], 201);
-
-    } catch (\Exception $e) {
-        // Log the error for debugging
-        \Log::error('Registration failed: ' . $e->getMessage());
-
-        // Return a response with error details
-        return response()->json([
-            'message' => 'Registration failed',
-            'error' => 'An unexpected error occurred. Please try again later.',
-        ], 500);
     }
-}
+    
 
 public function registerTeacher(Request $request)
 {

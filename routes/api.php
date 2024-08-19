@@ -11,6 +11,7 @@ use App\Http\Controllers\tblsectionController;
 use App\Http\Controllers\tblpostionController;
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\tblpositionController;
+use App\Http\Controllers\manage_curiculumController;
 
 
 Route::get('/user', function (Request $request) {
@@ -57,6 +58,9 @@ Route::group([
     Route::post('addposition', [tblpositionController::class, 'addposition']);//add view ng lahat position
     Route::get('viewposition', [tblpositionController::class, 'viewposition']);//view ng lahat ng position
 
+    Route::post('addcuriculum', [manage_curiculumController::class, 'addcuriculum']);//pag add ng available subject
+    Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']);//pag view ng available subject
+   
     Route::get('userprofile', [UsersController::class, 'userprofile']);
     Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
     Route::post('registerstudent', [UsersController::class, 'registerstudent']);

@@ -7,18 +7,24 @@ use Illuminate\Database\Eloquent\Model;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 
-class tblsection extends Model
+class manage_curiculum extends Model
 {
     use HasFactory, Notifiable, HasApiTokens;
-    protected $table = 'tblsection';
+    protected $table = 'manage_curiculum';
 
     protected $fillable = [
-        'strand_id',
-           'section',         
+           'subject_id',  
+           'strand_id',             
+           'semester',            
        ];
 
        public function strand()
        {
            return $this->belongsTo(tblstrand::class, 'strand_id');
        }
+       public function subject()
+       {
+           return $this->belongsTo(tblsubject::class, 'strand_id');
+       }
+
 }
