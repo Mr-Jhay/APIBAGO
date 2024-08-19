@@ -13,6 +13,7 @@ class tblstrand extends Model
     protected $table = 'tblstrand';
 
     protected $fillable = [
-           'addstrand',         
+           'addstrand',
+           'grade_level',         
        ];
 }

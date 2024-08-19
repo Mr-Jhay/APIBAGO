@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\tblsection;
+use App\Models\tblstrand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
@@ -10,43 +11,59 @@ class tblsectionController extends Controller
 {
     public function addsection(Request $request)
     {
+        // Validate the request data
         $validated = $request->validate([
+            'strand_id' => 'required|exists:tblstrand,id',
             'section' => 'required|string|max:255',
         ]);
 
-        $section = tblsection::create($validated);
+        // Create a new section
+        $section = tblsection::create([
+            'strand_id' => $validated['strand_id'],
+            'section' => $validated['section'],
+        ]);
 
+        // Return a response (e.g., the created section or a success message)
         return response()->json([
-            'success' => true,
             'message' => 'Section created successfully!',
-            'data' => $section,
+            'section' => $section,
         ], 201);
     }
 
+   
     public function viewsection()
     {
-        $sections = tblsection::all();
+        // Retrieve all sections with their associated strand
+        $sections = Tblsection::with('strand')->get();
 
+        // Return a response with the list of sections and strand details
         return response()->json([
-            'success' => true,
-            'message' => 'Sections retrieved successfully',
-            'data' => $sections
+            'message' => 'Sections retrieved successfully!',
+            'sections' => $sections,
         ], 200);
     }
 
     public function updatesection(Request $request, $id)
     {
+        // Validate the request data
         $validated = $request->validate([
+            'strand_id' => 'required|exists:tblstrand,id',
             'section' => 'required|string|max:255',
         ]);
 
-        $section = tblsection::findOrFail($id);
-        $section->update($validated);
+        // Find the section by ID
+        $section = Tblsection::findOrFail($id);
 
+        // Update the section's data
+        $section->update([
+            'strand_id' => $validated['strand_id'],
+            'section' => $validated['section'],
+        ]);
+
+        // Return a response (e.g., the updated section or a success message)
         return response()->json([
-            'success' => true,
             'message' => 'Section updated successfully!',
-            'data' => $section,
+            'section' => $section,
         ], 200);
     }
 

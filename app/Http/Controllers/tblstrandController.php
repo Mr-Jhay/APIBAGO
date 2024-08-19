@@ -14,6 +14,7 @@ class tblstrandController extends Controller
     {
         $validated = $request->validate([
             'addstrand' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:255',
         ]);
 
         $strand = tblstrand::create($validated);
@@ -47,6 +48,7 @@ class tblstrandController extends Controller
     {
         $validated = $request->validate([
             'addstrand' => 'required|string|max:255',
+            'grade_level' => 'required|string|max:255',
         ]);
 
         $strand = tblstrand::find($id);

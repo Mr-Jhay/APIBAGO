@@ -16,6 +16,7 @@ class tblsectionResource extends JsonResource
     {
         return [
             'id'=>$this->id,
+            'strand_id'=>$this->strand_id,
             'section'=>$this->section,
             'created_at'=>$this->created_at,
             'updated_at' => $this->updated_at,

@@ -13,8 +13,11 @@ return new class extends Migration
     {
         Schema::create('tblsection', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('strand_id');
             $table->string('section');
             $table->timestamps();
+
+            $table->foreign('strand_id')->references('id')->on('tblstrand')->onDelete('cascade');
         });
     }
 

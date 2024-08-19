@@ -13,6 +13,12 @@ class tblsection extends Model
     protected $table = 'tblsection';
 
     protected $fillable = [
+        'strand_id',
            'section',         
        ];
+
+       public function strand()
+       {
+           return $this->belongsTo(Tblstrand::class, 'strand_id');
+       }
 }

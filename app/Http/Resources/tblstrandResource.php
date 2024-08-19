@@ -17,6 +17,7 @@ class tblstrandResource extends JsonResource
         return [
             'id'=>$this->id,
             'addstrand'=>$this->addstrand,
+            'grade_level'=>$this->grade_level,
             'created_at'=>$this->created_at,
             'updated_at' => $this->updated_at,
             ];
