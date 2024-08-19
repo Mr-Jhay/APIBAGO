@@ -55,7 +55,7 @@ Route::group([
     Route::delete('deletegradelevel/{id}', [gradelevelController::class, 'deletegradeLevel']);
 
     Route::post('addposition', [tblpositionController::class, 'addposition']);//add view ng lahat position
-    Route::get('viewposition', [tblpositionController::class, 'view']);//view ng lahat ng position
+    Route::get('viewposition', [tblpositionController::class, 'viewposition']);//view ng lahat ng position
 
     Route::get('userprofile', [UsersController::class, 'userprofile']);
     Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
