@@ -11,7 +11,7 @@ class tblstudent extends Model
 {
     use HasFactory, Notifiable, HasApiTokens;
 
-    protected $table = 'tblteacher';
+    protected $table = 'tblstudent';
 
     protected $fillable = [
            'user_id',

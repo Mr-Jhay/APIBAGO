@@ -11,7 +11,7 @@ class teacher_strand extends Model
 {
     use HasFactory, Notifiable, HasApiTokens;
 
-    protected $table = 'tblteacher';
+    protected $table = 'teacher_strand';
 
     protected $fillable = [
            'teacher_id',
@@ -21,5 +21,11 @@ class teacher_strand extends Model
     public function teachers()
     {
         return $this->belongsToMany(tblteacher::class, 'teacher_strand', 'strand_id', 'teacher_id');
+    }
+
+
+    public function strands()
+    {
+        return $this->belongsTo(tblstrand::class, 'strand_id');
     }
 }

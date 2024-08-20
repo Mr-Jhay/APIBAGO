@@ -11,6 +11,11 @@ use App\Http\Resources;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\tblstudent;
+use App\Models\tblstrand;
+use App\Models\tblsection;
+use App\Models\tblposition;
+use App\Models\tblteacher;
+use App\Models\teacher_strand;
 
 class UsersController extends Controller
 {
@@ -44,7 +49,7 @@ class UsersController extends Controller
                 'sex' => $data['sex'],
                 'usertype' => $data['usertype'],
                 'email' => $data['email'],
-               // 'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
+               'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
                 'password' => Hash::make($data['password']),
             ]);
     
@@ -112,6 +117,12 @@ class UsersController extends Controller
         ]);
     
         try {
+            // Start a database transaction
+            DB::beginTransaction();
+    
+            // Automatically set the usertype to 'student'
+            $usertype = 'student';
+    
             // Create the user
             $user = User::create([
                 'idnumber' => $validated['idnumber'],
@@ -119,6 +130,7 @@ class UsersController extends Controller
                 'mname' => $validated['mname'],
                 'lname' => $validated['lname'],
                 'sex' => $validated['sex'],
+                'usertype' => $usertype, // Automatically set to 'student'
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);
@@ -131,6 +143,9 @@ class UsersController extends Controller
                 'Mobile_no' => $validated['Mobile_no'] ?? null,
             ]);
     
+            // Commit the transaction
+            DB::commit();
+    
             // Generate the token
             $token = $user->createToken('auth_token')->plainTextToken;
     
@@ -142,83 +157,106 @@ class UsersController extends Controller
             ], 201);
     
         } catch (\Exception $e) {
+            // Rollback the transaction if there's an error
+            DB::rollBack();
+    
             // Log the error for debugging
             \Log::error('Registration failed: ' . $e->getMessage());
     
             // Return a response with error details
             return response()->json([
                 'message' => 'Registration failed',
-                'error' => 'An unexpected error occurred. Please try again later.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
     
+    
 
-public function registerTeacher(Request $request)
-{
-    // Validate the incoming request data
-    $data = $request->validate([
-        'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
-        'fname' => ['required', 'string'],
-        'mname' => ['required', 'string'],
-        'lname' => ['required', 'string'],
-        'sex' => ['required', 'string'],
-        'usertype' => ['required', 'string', 'in:teacher'],
-        'email' => ['required', 'email', 'unique:users,email'],
-        'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
-        'position_id' => ['required', 'exists:tblposition,id'],
-        'strand_ids' => ['required', 'array'],
-        'strand_ids.*' => ['exists:tblstrand,id'],
-    ]);
-
-    try {
-        // Create the user
-        $user = User::create([
-            'idnumber' => $data['idnumber'],
-            'fname' => $data['fname'],
-            'mname' => $data['mname'],
-            'lname' => $data['lname'],
-            'sex' => $data['sex'],
-            'usertype' => $data['usertype'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+    public function registerTeacher(Request $request)
+    {
+        // Validate the incoming request data
+        $data = $request->validate([
+            'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
+            'fname' => ['required', 'string'],
+            'mname' => ['required', 'string'],
+            'lname' => ['required', 'string'],
+            'sex' => ['required', 'string'],
+            'email' => ['required', 'email', 'unique:users,email'],
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+            ],
+            'position_id' => 'required|exists:tblposition,id',
+            'strand_id' => 'nullable|exists:tblstrand,id',
         ]);
-
-        // Create the teacher record
-        $teacher = new tblteacher();
-        $teacher->user_id = $user->id;
-        $teacher->position_id = $data['position_id'];
-        $teacher->save();
-
-        // Attach strands to the teacher
-        $teacher->strands()->sync($data['strand_ids']);
-
-        // Generate the token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        // Return the user, teacher, strands, and token
-        return response()->json([
-            'user' => $user,
-            'teacher' => $teacher->load('strands'),
-            'token' => $token,
-        ], 201);
-
-    } catch (\Exception $e) {
-        // Log the error for debugging
-        \Log::error('Registration failed: ' . $e->getMessage());
-
-        // Return a response with error details
-        return response()->json([
-            'message' => 'Registration failed',
-            'error' => 'An unexpected error occurred. Please try again later.',
-        ], 500);
+    
+        try {
+            // Start a database transaction
+            DB::beginTransaction();
+    
+            // Automatically set the usertype to 'teacher'
+            $usertype = 'teacher';
+    
+            // Create the user
+            $user = User::create([
+                'idnumber' => $data['idnumber'],
+                'fname' => $data['fname'],
+                'mname' => $data['mname'],
+                'lname' => $data['lname'],
+                'sex' => $data['sex'],
+                'usertype' => $usertype,
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+            ]);
+    
+            // Create the teacher record
+            $teacher = tblteacher::create([
+                'user_id' => $user->id,
+                'position_id' => $data['position_id'],
+            ]);
+    
+            // Create the teacher-strand relationship if `strand_id` is provided
+            if (!empty($data['strand_id'])) {
+                teacher_strand::create([
+                    'teacher_id' => $teacher->id,
+                    'strand_id' => $data['strand_id'],
+                ]);
+            }
+    
+            // Generate the token
+            $token = $user->createToken('auth_token')->plainTextToken;
+    
+            // Commit the transaction
+            DB::commit();
+    
+            // Return the user, teacher, token, and success message
+            return response()->json([
+                'message' => 'Registration successful!',
+                'user' => $user,
+                'teacher' => $teacher,
+                'token' => $token,
+            ], 201);
+    
+        } catch (\Exception $e) {
+            // Rollback the transaction
+            DB::rollBack();
+    
+            // Log the error for debugging
+            \Log::error('Registration failed: ' . $e->getMessage());
+    
+            // Return a response with error details
+            return response()->json([
+                'message' => 'Registration failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
+    
+    
+    
 
 public function userprofile(Request $request)
 {

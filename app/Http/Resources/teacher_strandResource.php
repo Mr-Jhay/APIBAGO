@@ -14,6 +14,13 @@ class teacher_strandResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id'=>$this->id,
+            
+            'teacher_id'=>$this->teacher_id,
+            'strand_id'=>$this->strand_id,
+            'created_at'=>$this->created_at,
+            'updated_at' => $this->updated_at,
+            ];
     }
 }
