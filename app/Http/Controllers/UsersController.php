@@ -292,23 +292,44 @@ public function userprofile(Request $request)
     ];
 
     if (!$includeUserOnly) {
-        // Load additional data based on usertype if available
         if ($user->usertype === 'student') {
-            $student = tblstudent::where('user_id', $user->id)->first();
+            $student = tblstudent::select('tblstudent.*','tblstrand.addstrand as strand_name','tblstrand.grade_level as grade_level', 'tblsection.section as section_name')
+            ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+            ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
+                
+               // ->join('gradelevels', 'tblstudent.gradelevel_id', '=', 'gradelevels.id')
+                ->where('tblstudent.user_id', $user->id)
+                ->first();
+
             if ($student) {
                 $profileData['student'] = [
-                    'section_id' => $student->section_id,
-                    'strand_id' => $student->strand_id,
-                    'gradelevel_id' => $student->gradelevel_id,
+                   // 'strand_id' => $student->strand_id,
+                    'strand_name' => $student->strand_name,
+                    //'section_id' => $student->section_id,
+                    'grade_level' => $student->grade_level,
+                    'section_name' => $student->section_name,
+                  //  'grade_level' => $student->grade_level,
+                  // 'gradelevel_id' => $student->gradelevel_id,
+                  // 'gradelevel_name' => $student->gradelevel_name,
                     'Mobile_no' => $student->Mobile_no,
                 ];
             }
-        } elseif ($user->usertype === 'teacher') {
-            $teacher = tblteacher::where('user_id', $user->id)->with('strands')->first();
+         } elseif ($user->usertype === 'teacher') {
+            $teacher = tblteacher::select('tblteacher.*', 'tblposition.teacher_postion as teacher_postion', 'tblstrand.addstrand as addstrand','tblstrand.grade_level as grade_level')
+                ->join('tblposition', 'tblteacher.position_id', '=', 'tblposition.id')
+                ->join('teacher_strand', 'tblteacher.id', '=', 'teacher_strand.teacher_id')
+                ->join('tblstrand', 'teacher_strand.strand_id', '=', 'tblstrand.id')
+                ->where('tblteacher.user_id', $user->id)
+                ->with('tblstrand')
+                ->first();
+
             if ($teacher) {
                 $profileData['teacher'] = [
-                    'position_id' => $teacher->position_id,
-                    'strands' => $teacher->strands->pluck('id')->toArray(),
+                   // 'position_id' => $teacher->position_id,
+                    'teacher_postion' => $teacher->teacher_postion,
+                    'tblstrand' => $teacher->strands->pluck('id')->toArray(),
+                    'addstrand' => $teacher->strands->pluck('addstrand','grade_level')->toArray(),
+                   // 'addstrand' => $teacher->strands->pluck('addstrand')->toArray(),
                 ];
             }
         }
@@ -320,6 +341,7 @@ public function userprofile(Request $request)
         'data' => $profileData,
     ], 200);
 }
+
 
 public function logout()
 {

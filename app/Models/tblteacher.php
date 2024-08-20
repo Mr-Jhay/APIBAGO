@@ -25,6 +25,10 @@ class TblTeacher extends Model
     {
         return $this->belongsToMany(tblstrand::class, 'teacher_strand', 'teacher_id', 'strand_id');
     }
+    public function tblstrand()
+    {
+        return $this->belongsToMany(tblstrand::class, 'teacher_strand', 'teacher_id', 'strand_id');
+    }
 
     // Optionally, define a relationship with the User model if applicable
     public function user()
@@ -37,4 +41,5 @@ class TblTeacher extends Model
     {
         return $this->belongsTo(tblposition::class, 'position_id');
     }
+
 }
