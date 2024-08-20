@@ -369,4 +369,191 @@ public function logout()
 
 
 
+
+public function viewAllTeachers()
+{
+    try {
+        // Fetch all teachers along with their user information and associated strands
+        // and order by the user's last name (lname) from A to Z
+        $teachers = tblteacher::with('user', 'position', 'strands')
+                              ->join('users', 'tblteacher.user_id', '=', 'users.id')
+                              ->orderBy('users.lname', 'asc')
+                              ->select('tblteacher.*') // Ensure only tblteacher columns are selected
+                              ->get();
+
+        // Return a success response with the list of teachers
+        return response()->json([
+            'message' => 'Teachers retrieved successfully!',
+            'teachers' => $teachers,
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        \Log::error('Failed to retrieve teachers: ' . $e->getMessage());
+
+        // Return a response with error details
+        return response()->json([
+            'message' => 'Failed to retrieve teachers',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function viewAllStudents()
+{
+    try {
+        // Retrieve all students along with their user information, strand, and section
+        // and order by the user's last name (lname) from A to Z
+        $students = tblstudent::with(['user', 'strand', 'section'])
+                            ->join('users', 'tblstudent.user_id', '=', 'users.id')
+                            ->orderBy('users.lname', 'asc')
+                            ->select('tblstudent.*') // Ensure you select student fields
+                            ->get();
+
+        return response()->json([
+            'message' => 'Students retrieved successfully!',
+            'students' => $students,
+        ], 200);
+    } catch (\Exception $e) {
+        \Log::error('Failed to retrieve students: ' . $e->getMessage());
+
+        return response()->json([
+            'message' => 'Failed to retrieve students',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function updateStudent(Request $request, $id)
+{
+    // Validate the incoming request data
+    $validated = $request->validate([
+        'fname' => ['sometimes', 'string'],
+        'mname' => ['sometimes', 'string'],
+        'lname' => ['sometimes', 'string'],
+        'sex' => ['sometimes', 'string'],
+        'email' => ['sometimes', 'email', 'unique:users,email,' . $id . ',user_id'],
+        'strand_id' => 'sometimes|exists:tblstrand,id',
+        'section_id' => 'sometimes|exists:tblsection,id',
+        'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $id],
+    ]);
+
+    try {
+        // Start a database transaction
+        DB::beginTransaction();
+
+        // Find the student record
+        $student = tblstudent::findOrFail($id);
+
+        // Update the user record
+        $student->user->update([
+            'fname' => $validated['fname'] ?? $student->user->fname,
+            'mname' => $validated['mname'] ?? $student->user->mname,
+            'lname' => $validated['lname'] ?? $student->user->lname,
+            'sex' => $validated['sex'] ?? $student->user->sex,
+            'email' => $validated['email'] ?? $student->user->email,
+        ]);
+
+        // Update the student record
+        $student->update([
+            'strand_id' => $validated['strand_id'] ?? $student->strand_id,
+            'section_id' => $validated['section_id'] ?? $student->section_id,
+            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+        ]);
+
+        // Commit the transaction
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Student updated successfully!',
+            'student' => $student,
+        ], 200);
+    } catch (\Exception $e) {
+        // Rollback the transaction if there's an error
+        DB::rollBack();
+
+        \Log::error('Failed to update student: ' . $e->getMessage());
+
+        return response()->json([
+            'message' => 'Failed to update student',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+public function updateTeacher(Request $request, $id)
+{
+    // Validate the incoming request data
+    $data = $request->validate([
+        'fname' => ['sometimes', 'string'],
+        'mname' => ['sometimes', 'string'],
+        'lname' => ['sometimes', 'string'],
+        'sex' => ['sometimes', 'string'],
+        'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
+        'password' => [
+            'sometimes',
+            'string',
+            'min:8',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+        'position_id' => 'sometimes|exists:tblposition,id',
+        'strand_id' => 'nullable',
+        'strand_id.*' => 'exists:tblstrand,id',
+    ]);
+
+    try {
+        // Start a database transaction
+        DB::beginTransaction();
+
+        // Find the teacher and user
+        $teacher = tblteacher::with('user')->findOrFail($id);
+        $user = $teacher->user;
+
+        // Update user details
+        $user->update(array_filter([
+            'fname' => $data['fname'] ?? $user->fname,
+            'mname' => $data['mname'] ?? $user->mname,
+            'lname' => $data['lname'] ?? $user->lname,
+            'sex' => $data['sex'] ?? $user->sex,
+            'email' => $data['email'] ?? $user->email,
+            'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
+        ]));
+
+        // Update teacher details
+        $teacher->update([
+            'position_id' => $data['position_id'] ?? $teacher->position_id,
+        ]);
+
+        // Update strands
+        if (isset($data['strand_id'])) {
+            teacher_strand::where('teacher_id', $teacher->id)->delete();
+            foreach ($data['strand_id'] as $strandId) {
+                teacher_strand::create([
+                    'teacher_id' => $teacher->id,
+                    'strand_id' => $strandId,
+                ]);
+            }
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Teacher updated successfully!',
+            'teacher' => $teacher,
+            'user' => $user,
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Rollback the transaction
+        DB::rollBack();
+        \Log::error('Updating teacher failed: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Updating teacher failed',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }
