@@ -480,4 +480,79 @@ public function updateStudent(Request $request, $id)
     }
 }
 
+
+public function updateTeacher(Request $request, $id)
+{
+    // Validate the incoming request data
+    $data = $request->validate([
+        'fname' => ['sometimes', 'string'],
+        'mname' => ['sometimes', 'string'],
+        'lname' => ['sometimes', 'string'],
+        'sex' => ['sometimes', 'string'],
+        'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
+        'password' => [
+            'sometimes',
+            'string',
+            'min:8',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+        'position_id' => 'sometimes|exists:tblposition,id',
+        'strand_id' => 'nullable',
+        'strand_id.*' => 'exists:tblstrand,id',
+    ]);
+
+    try {
+        // Start a database transaction
+        DB::beginTransaction();
+
+        // Find the teacher and user
+        $teacher = tblteacher::with('user')->findOrFail($id);
+        $user = $teacher->user;
+
+        // Update user details
+        $user->update(array_filter([
+            'fname' => $data['fname'] ?? $user->fname,
+            'mname' => $data['mname'] ?? $user->mname,
+            'lname' => $data['lname'] ?? $user->lname,
+            'sex' => $data['sex'] ?? $user->sex,
+            'email' => $data['email'] ?? $user->email,
+            'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
+        ]));
+
+        // Update teacher details
+        $teacher->update([
+            'position_id' => $data['position_id'] ?? $teacher->position_id,
+        ]);
+
+        // Update strands
+        if (isset($data['strand_id'])) {
+            teacher_strand::where('teacher_id', $teacher->id)->delete();
+            foreach ($data['strand_id'] as $strandId) {
+                teacher_strand::create([
+                    'teacher_id' => $teacher->id,
+                    'strand_id' => $strandId,
+                ]);
+            }
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Teacher updated successfully!',
+            'teacher' => $teacher,
+            'user' => $user,
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Rollback the transaction
+        DB::rollBack();
+        \Log::error('Updating teacher failed: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Updating teacher failed',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }
