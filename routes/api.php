@@ -65,6 +65,12 @@ Route::group([
    
     Route::get('userprofile', [UsersController::class, 'userprofile']);
 
+    
+    Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);
+    Route::get('viewAllStudents', [UsersController::class, 'viewAllStudents']);
+    Route::post('updateStudent', [UsersController::class, 'updateStudent']);
+   
+  
    
     //TEACHER
 
