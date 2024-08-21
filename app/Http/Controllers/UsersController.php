@@ -192,6 +192,7 @@ class UsersController extends Controller
         'position_id' => 'required|exists:tblposition,id',
         'strand_id' => 'nullable',
         'strand_id.*' => 'exists:tblstrand,id',  // Validate array elements if it's an array
+        
     ]);
 
     try {
