@@ -19,4 +19,17 @@ class tblstudent extends Model
            'section_id',  
            'Mobile_no',    
        ];
+
+       public function user()
+       {
+           return $this->belongsTo(User::class, 'user_id');
+       }
+       public function strands()
+       {
+           return $this->belongsTo(tblstrand::class, 'strand_id');
+       }
+       public function section()
+       {
+           return $this->belongsTo(tblstrand::class, 'section_id');
+       }
 }

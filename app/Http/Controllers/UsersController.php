@@ -403,7 +403,7 @@ public function viewAllStudents()
     try {
         // Retrieve all students along with their user information, strand, and section
         // and order by the user's last name (lname) from A to Z
-        $students = tblstudent::with(['user', 'strand', 'section'])
+        $students = tblstudent::with(['user', 'strands', 'section'])
                             ->join('users', 'tblstudent.user_id', '=', 'users.id')
                             ->orderBy('users.lname', 'asc')
                             ->select('tblstudent.*') // Ensure you select student fields
