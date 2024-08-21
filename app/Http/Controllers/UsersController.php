@@ -445,21 +445,45 @@ public function updateStudent(Request $request, $id)
         // Find the student record
         $student = tblstudent::findOrFail($id);
 
-        // Update the user record
-        $student->user->update([
-            'fname' => $validated['fname'] ?? $student->user->fname,
-            'mname' => $validated['mname'] ?? $student->user->mname,
-            'lname' => $validated['lname'] ?? $student->user->lname,
-            'sex' => $validated['sex'] ?? $student->user->sex,
-            'email' => $validated['email'] ?? $student->user->email,
-        ]);
+        // Prepare the update data for user
+        $userUpdateData = [];
+        if ($request->has('fname')) {
+            $userUpdateData['fname'] = $validated['fname'];
+        }
+        if ($request->has('mname')) {
+            $userUpdateData['mname'] = $validated['mname'];
+        }
+        if ($request->has('lname')) {
+            $userUpdateData['lname'] = $validated['lname'];
+        }
+        if ($request->has('sex')) {
+            $userUpdateData['sex'] = $validated['sex'];
+        }
+        if ($request->has('email')) {
+            $userUpdateData['email'] = $validated['email'];
+        }
 
-        // Update the student record
-        $student->update([
-            'strand_id' => $validated['strand_id'] ?? $student->strand_id,
-            'section_id' => $validated['section_id'] ?? $student->section_id,
-            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
-        ]);
+        // Update the user record if there's data to update
+        if (!empty($userUpdateData)) {
+            $student->user->update($userUpdateData);
+        }
+
+        // Prepare the update data for student
+        $studentUpdateData = [];
+        if ($request->has('strand_id')) {
+            $studentUpdateData['strand_id'] = $validated['strand_id'];
+        }
+        if ($request->has('section_id')) {
+            $studentUpdateData['section_id'] = $validated['section_id'];
+        }
+        if ($request->has('Mobile_no')) {
+            $studentUpdateData['Mobile_no'] = $validated['Mobile_no'];
+        }
+
+        // Update the student record if there's data to update
+        if (!empty($studentUpdateData)) {
+            $student->update($studentUpdateData);
+        }
 
         // Commit the transaction
         DB::commit();
@@ -482,6 +506,8 @@ public function updateStudent(Request $request, $id)
 }
 
 
+
+
 public function updateTeacher(Request $request, $id)
 {
     // Validate the incoming request data
@@ -498,7 +524,7 @@ public function updateTeacher(Request $request, $id)
             'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
         ],
         'position_id' => 'sometimes|exists:tblposition,id',
-        'strand_id' => 'nullable',
+        'strand_id' => 'nullable|array',
         'strand_id.*' => 'exists:tblstrand,id',
     ]);
 
@@ -510,23 +536,45 @@ public function updateTeacher(Request $request, $id)
         $teacher = tblteacher::with('user')->findOrFail($id);
         $user = $teacher->user;
 
-        // Update user details
-        $user->update(array_filter([
-            'fname' => $data['fname'] ?? $user->fname,
-            'mname' => $data['mname'] ?? $user->mname,
-            'lname' => $data['lname'] ?? $user->lname,
-            'sex' => $data['sex'] ?? $user->sex,
-            'email' => $data['email'] ?? $user->email,
-            'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
-        ]));
+        // Prepare user data for update
+        $userUpdateData = [];
+        if ($request->has('fname')) {
+            $userUpdateData['fname'] = $data['fname'];
+        }
+        if ($request->has('mname')) {
+            $userUpdateData['mname'] = $data['mname'];
+        }
+        if ($request->has('lname')) {
+            $userUpdateData['lname'] = $data['lname'];
+        }
+        if ($request->has('sex')) {
+            $userUpdateData['sex'] = $data['sex'];
+        }
+        if ($request->has('email')) {
+            $userUpdateData['email'] = $data['email'];
+        }
+        if ($request->has('password')) {
+            $userUpdateData['password'] = Hash::make($data['password']);
+        }
 
-        // Update teacher details
-        $teacher->update([
-            'position_id' => $data['position_id'] ?? $teacher->position_id,
-        ]);
+        // Update user record only if there is data to update
+        if (!empty($userUpdateData)) {
+            $user->update($userUpdateData);
+        }
 
-        // Update strands
-        if (isset($data['strand_id'])) {
+        // Prepare teacher data for update
+        $teacherUpdateData = [];
+        if ($request->has('position_id')) {
+            $teacherUpdateData['position_id'] = $data['position_id'];
+        }
+
+        // Update teacher record only if there is data to update
+        if (!empty($teacherUpdateData)) {
+            $teacher->update($teacherUpdateData);
+        }
+
+        // Update strands if strand_id is provided in the request
+        if ($request->has('strand_id')) {
             teacher_strand::where('teacher_id', $teacher->id)->delete();
             foreach ($data['strand_id'] as $strandId) {
                 teacher_strand::create([
@@ -555,5 +603,6 @@ public function updateTeacher(Request $request, $id)
         ], 500);
     }
 }
+
 
 }

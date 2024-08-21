@@ -30,6 +30,6 @@ class tblstudent extends Model
        }
        public function section()
        {
-           return $this->belongsTo(tblstrand::class, 'section_id');
+           return $this->belongsTo(tblsection::class, 'section_id');
        }
 }
