@@ -605,4 +605,30 @@ public function updateTeacher(Request $request, $id)
 }
 
 
+public function updateUserPassword(Request $request, User $user)
+{
+    // Validate the new password with additional rules
+    $validator = Validator::make($request->all(), [
+        'new_password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+    ], [
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    // Update the user's password
+    $user->password = Hash::make($request->new_password);
+    $user->save();
+
+    return response()->json(['message' => 'Password updated successfully for user: ' . $user->lname], 200);
+}
+
 }
