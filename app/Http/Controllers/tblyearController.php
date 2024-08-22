@@ -2,30 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\tblyear; 
+use App\Models\tblyear;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class tblyearController extends Controller
 {
-    // Method to add a new year (already exists)
     public function addyear(Request $request)
     {
-        $request->validate([
+        // Validate the incoming request data
+        $validated = $request->validate([
             'addyear' => 'required|string|max:255',
         ]);
 
-        $year = tblyear::create([
-            'addyear' => $request->input('addyear'),
-        ]);
+        // Check for duplicate year names
+        $existingYear = tblyear::where('addyear', $validated['addyear'])->first();
+        if ($existingYear) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate year detected',
+            ], 409); // 409 Conflict status code
+        }
 
+        // Create a new year record with the validated data
+        $year = tblyear::create($validated);
+
+        // Return a JSON response with the created year and a 201 (Created) status code
         return response()->json([
-            'message' => 'Year created successfully!',
-            'data' => $year,
+            'success' => true,
+            'message' => 'Year created successfully',
+            'data' => $year
         ], 201);
     }
 
-    // Method to view all years (already exists)
     public function viewyear()
     {
         $years = tblyear::all();
@@ -37,38 +45,55 @@ class tblyearController extends Controller
         ], 200);
     }
 
-    // Method to update an existing year
     public function updateyear(Request $request, $id)
     {
-        $request->validate([
+        $validated = $request->validate([
             'addyear' => 'required|string|max:255',
         ]);
 
-        // Find the year record
-        $year = tblyear::findOrFail($id);
+        $year = tblyear::find($id);
 
-        // Update the year field
-        $year->update([
-            'addyear' => $request->input('addyear'),
-        ]);
+        if (!$year) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Year not found'
+            ], 404);
+        }
+
+        // Check for duplicate year names
+        $existingYear = tblyear::where('addyear', $validated['addyear'])->where('id', '!=', $id)->first();
+        if ($existingYear) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate year detected',
+            ], 409); // 409 Conflict status code
+        }
+
+        $year->update($validated);
 
         return response()->json([
-            'message' => 'Year updated successfully!',
-            'data' => $year,
+            'success' => true,
+            'message' => 'Year updated successfully',
+            'data' => $year
         ], 200);
     }
 
-    // Method to delete a year
     public function deleteyear($id)
     {
-        // Find the year record
-        $year = tblyear::findOrFail($id);
+        $year = tblyear::find($id);
 
-        // Delete the year
+        if (!$year) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Year not found'
+            ], 404);
+        }
+
         $year->delete();
 
         return response()->json([
-            'message' => 'Year deleted successfully!',
+            'success' => true,
+            'message' => 'Year deleted successfully'
         ], 200);
     }
 }
