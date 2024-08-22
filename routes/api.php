@@ -100,6 +100,7 @@ Route::group([
     Route::get('allclasses', [tblclassController::class, 'allclasses']);
     Route::get('classes/{id}', [tblclassController::class, 'showclass']);
     //STUDENTS
+    
 
 
 });
