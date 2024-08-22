@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\joinclass;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,46 @@ class joinclassController extends Controller
         // Return the newly created record with a 201 status code
         return response()->json($joinClass, 201); // HTTP Created
     }
+
+    public function addwocode(Request $request)
+{
+    // Validate the request with the necessary fields
+    $request->validate([
+        'user_id' => 'required|exists:users,id',
+        'status' => 'nullable|integer',
+    ]);
+
+    // Retrieve the authenticated user or use the provided user_id
+    $user = User::find($request->input('user_id'));
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+    }
+
+    // Assume the teacher is authenticated and assign the class_id based on the teacher's context
+    $teacher = auth()->user(); // Assuming the teacher is logged in
+
+    // Retrieve the class_id where the teacher is assigned
+    $class = \DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
+
+    if (!$class) {
+        return response()->json(['error' => 'Class not found'], Response::HTTP_NOT_FOUND);
+    }
+
+    // Default status if the user is a student
+    $status = ($user->usertype === 'student') ? 1 : $request->input('status');
+
+    // Create the join class record
+    $joinClass = joinclass::create([
+        'user_id' => $request->input('user_id'),
+        'class_id' => $class->id,  // Use the class_id from the teacher's context
+        'status' => $status,
+    ]);
+
+    // Return response
+    return response()->json($joinClass, Response::HTTP_CREATED);
+}
+
     
 
 }
