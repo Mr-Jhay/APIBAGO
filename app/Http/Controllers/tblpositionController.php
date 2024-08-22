@@ -12,15 +12,21 @@ class tblpositionController extends Controller
 {
     public function addposition(Request $request)
     {
-        // Validate the incoming request data
         $validated = $request->validate([
             'teacher_postion' => 'required|string|max:255',
         ]);
 
-        // Create a new position record
+        // Check for duplicate position names
+        $existingPosition = tblposition::where('teacher_postion', $validated['teacher_postion'])->first();
+        if ($existingPosition) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate teacher position detected',
+            ], 409); // 409 Conflict status code
+        }
+
         $position = tblposition::create($validated);
 
-        // Return a JSON response
         return response()->json([
             'success' => true,
             'message' => 'Position created successfully!',
@@ -28,21 +34,52 @@ class tblpositionController extends Controller
         ], 201);
     }
 
-    /**
-     * Display a listing of all positions.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function viewposition()
     {
-        // Retrieve all position records from the database
         $positions = tblposition::all();
 
-        // Return a JSON response with the list of positions
         return response()->json([
             'success' => true,
             'message' => 'Positions retrieved successfully',
             'data' => $positions
+        ], 200);
+    }
+
+    public function updateposition(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'teacher_postion' => 'required|string|max:255',
+        ]);
+
+        // Check for duplicate position names (exclude current record)
+        $existingPosition = tblposition::where('teacher_postion', $validated['teacher_postion'])
+            ->where('id', '!=', $id)
+            ->first();
+        if ($existingPosition) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Duplicate teacher position detected',
+            ], 409); // 409 Conflict status code
+        }
+
+        $position = tblposition::findOrFail($id);
+        $position->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Position updated successfully!',
+            'data' => $position,
+        ], 200);
+    }
+
+    public function deleteposition($id)
+    {
+        $position = tblposition::findOrFail($id);
+        $position->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Position deleted successfully!'
         ], 200);
     }
 }

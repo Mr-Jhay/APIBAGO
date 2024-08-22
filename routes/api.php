@@ -61,6 +61,8 @@ Route::group([
 
     Route::post('addposition', [tblpositionController::class, 'addposition']);//add view ng lahat position
     Route::get('viewposition', [tblpositionController::class, 'viewposition']);//view ng lahat ng position
+    Route::put('updateposition/{id}', [tblpositionController::class, 'updateposition']);
+    Route::delete('deleteposition/{id}', [tblpositionController::class, 'deleteposition']);
 
     Route::post('addcuriculum', [manage_curiculumController::class, 'addcuriculum']);//pag add ng available subject
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']);//pag view ng available subject

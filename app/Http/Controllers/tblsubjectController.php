@@ -11,7 +11,7 @@ class tblsubjectController extends Controller
     {
         // Validate the incoming request data
         $validated = $request->validate([
-            'subjectname' => 'required|string|max:255',
+            'subjectname' => 'required|string|max:255', 
         ]);
     
         // Check for duplicate subject names
