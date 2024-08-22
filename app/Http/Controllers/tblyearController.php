@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\tblyear;
+use App\Models\tblyear; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 

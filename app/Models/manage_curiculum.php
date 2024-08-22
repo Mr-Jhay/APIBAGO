@@ -16,7 +16,7 @@ class manage_curiculum extends Model
            'subject_id',  
            'strand_id',             
            'semester',            
-       ];
+       ]; 
 
        public function strand()
        {

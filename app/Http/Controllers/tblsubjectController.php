@@ -4,23 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\tblsubject;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 
 class tblsubjectController extends Controller
 {
     public function addsubject(Request $request)
     {
-        // Validate the incoming request data
         $validated = $request->validate([
-            'subjectname' => 'required|string|max:255', // 'subjectname' is required, must be a string, and up to 255 characters
+            'subjectname' => 'required|string|max:255',
         ]);
 
-        // Create a new subject record with the validated data
         $subject = tblsubject::create($validated);
 
-        // Return a JSON response with the created subject and a 201 (Created) status code
         return response()->json([
             'success' => true,
             'message' => 'Subject created successfully',
@@ -30,14 +24,55 @@ class tblsubjectController extends Controller
 
     public function viewsubject()
     {
-        // Retrieve all subjects from the database
         $subjects = tblsubject::all();
 
-        // Return a JSON response with the list of subjects and a 200 (OK) status code
         return response()->json([
             'success' => true,
             'message' => 'Subjects retrieved successfully',
             'data' => $subjects
+        ], 200);
+    }
+
+    public function updatesubject(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'subjectname' => 'required|string|max:255',
+        ]);
+
+        $subject = tblsubject::find($id);
+
+        if (!$subject) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subject not found'
+            ], 404);
+        }
+
+        $subject->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subject updated successfully',
+            'data' => $subject
+        ], 200);
+    }
+
+    public function deletesubject($id)
+    {
+        $subject = tblsubject::find($id);
+
+        if (!$subject) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Subject not found'
+            ], 404);
+        }
+
+        $subject->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subject deleted successfully'
         ], 200);
     }
 }
