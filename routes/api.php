@@ -84,6 +84,10 @@ Route::group([
     
     Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
     Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
+
+    Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
+
+
  
    
     //TEACHER

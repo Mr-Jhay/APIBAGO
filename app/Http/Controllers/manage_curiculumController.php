@@ -43,4 +43,25 @@ class manage_curiculumController extends Controller
 
         return response()->json(['data' => $curriculums], 200);
     }
+
+    public function updateStatus(Request $request, $id)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'status' => 'required|integer|in:0,1', // Ensure status is either 0=not active or 1=active
+        ]);
+
+        // Find the record by ID
+        $manageCuriculum = manage_curiculum::findOrFail($id);
+
+        // Update the status column
+        $manageCuriculum->status = $request->input('status');
+        $manageCuriculum->save();
+
+        // Return a response, e.g., success message or updated record
+        return response()->json([
+            'message' => 'Status updated successfully!',
+            'data' => $manageCuriculum,
+        ], 200);
+    }
 }
