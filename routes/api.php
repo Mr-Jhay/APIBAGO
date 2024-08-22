@@ -14,6 +14,7 @@ use App\Http\Controllers\tblpositionController;
 use App\Http\Controllers\manage_curiculumController;
 use App\Http\Controllers\strandcuriculumController;
 use App\Http\Controllers\tblclassController;
+use App\Http\Controllers\joinclassController;
 
 
 Route::get('/user', function (Request $request) {
@@ -100,7 +101,9 @@ Route::group([
     Route::get('allclasses', [tblclassController::class, 'allclasses']);
     Route::get('classes/{id}', [tblclassController::class, 'showclass']);
     //STUDENTS
-    
+
+    Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
+
 
 
 });
