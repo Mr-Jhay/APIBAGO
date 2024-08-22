@@ -12,6 +12,7 @@ use App\Http\Controllers\tblpostionController;
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\tblpositionController;
 use App\Http\Controllers\manage_curiculumController;
+use App\Http\Controllers\strandcuriculumController;
 
 
 Route::get('/user', function (Request $request) {
@@ -81,6 +82,14 @@ Route::group([
    
     Route::put('updateUserPassword', [UsersController::class, 'updateUserPassword']);//both teacher and student
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
+
+    
+    Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
+    Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
+
+    Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
+
+
  
    
     //TEACHER
