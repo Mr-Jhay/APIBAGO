@@ -631,4 +631,10 @@ public function updateUserPassword(Request $request, User $user)
     return response()->json(['message' => 'Password updated successfully for user: ' . $user->lname], 200);
 }
 
+
+public function viewallusers()
+{
+    $users = User::all();
+    return response()->json($users);
+}
 }

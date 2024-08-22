@@ -76,6 +76,8 @@ Route::group([
 
    
     Route::put('updateUserPassword', [UsersController::class, 'updateUserPassword']);//both teacher and student
+    Route::get('viewallusers', [UsersController::class, 'viewallusers']);
+ 
    
     //TEACHER
 
