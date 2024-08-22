@@ -41,7 +41,7 @@ class joinclassController extends Controller
         }
     
         // Create the joinClass record
-        $joinClass = JoinClass::create([
+        $joinClass = joinclass::create([
             'user_id' => $user->id, // Use the authenticated user's ID
             'class_id' => $request->input('class_id'),
             'status' => $request->input('status', 0) // Default to 0 if not provided
