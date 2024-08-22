@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\strandcuriculumController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsersController;
@@ -12,7 +13,6 @@ use App\Http\Controllers\tblpostionController;
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\tblpositionController;
 use App\Http\Controllers\manage_curiculumController;
-use App\Http\Controllers\strandcuriculumController;
 
 
 Route::get('/user', function (Request $request) {
@@ -83,15 +83,11 @@ Route::group([
     Route::put('updateUserPassword', [UsersController::class, 'updateUserPassword']);//both teacher and student
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
 
+    Route::post('addcuri', [strandcuriculumController::class, 'addcuri']); // Add curriculum
+    Route::get('viewcuri', [strandcuriculumController::class, 'viewcuri']); // View curriculum
+    Route::put('updatecuri/{id}', [strandcuriculumController::class, 'updatecuri']); // Update curriculum
+    Route::delete('deletecuri/{id}', [strandcuriculumController::class, 'deletecuri']); // Delete curriculum
     
-    Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
-    Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
-
-    Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
-
-
- 
-   
     //TEACHER
 
     //STUDENTS

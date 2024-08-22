@@ -19,7 +19,7 @@ class tblpositionController extends Controller
         // Check for duplicate position names
         $existingPosition = tblposition::where('teacher_postion', $validated['teacher_postion'])->first();
         if ($existingPosition) {
-            return response()->json([
+            return response()->json([ 
                 'success' => false,
                 'message' => 'Duplicate teacher position detected',
             ], 409); // 409 Conflict status code

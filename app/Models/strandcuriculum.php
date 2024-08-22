@@ -13,7 +13,7 @@ class strandcuriculum extends Model
     protected $table = 'strandcuriculum';
 
     protected $fillable = [
-           'Namecuriculum',  
-         
-       ];
+        'Namecuriculum',
+        
+    ];
 }

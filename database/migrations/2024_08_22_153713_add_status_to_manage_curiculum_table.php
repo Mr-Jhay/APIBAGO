@@ -20,7 +20,7 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
+    public function down(): void 
     {
         Schema::table('manage_curiculum', function (Blueprint $table) {
             // Drop the 'status' column if the migration is rolled back
