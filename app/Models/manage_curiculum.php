@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Laravel\Sanctum\HasApiTokens;
+use Laravel\Sanctum\HasApiTokens; 
 use Illuminate\Notifications\Notifiable;
 
 class manage_curiculum extends Model
@@ -14,7 +14,7 @@ class manage_curiculum extends Model
 
     protected $fillable = [
            
-            'scuriculum_id',
+           'scuriculum_id',
            'subject_id',  
            'strand_id',             
            'semester',            
@@ -27,6 +27,11 @@ class manage_curiculum extends Model
        public function subject()
        {
            return $this->belongsTo(tblsubject::class, 'strand_id');
+       }
+
+       public function strandcuriculum()
+       {
+        return $this->belongsTo(strandcuriculum::class,'scuriculum_id');
        }
 
 

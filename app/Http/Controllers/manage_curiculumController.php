@@ -26,7 +26,7 @@ class manage_curiculumController extends Controller
         }
 
         // Create a new record in the manage_curiculum table
-        $manageCuriculum = manage_curiculum::create([
+        $manageCuriculum = manage_curiculum::create([ 
             'scuriculum_id' => $request->scuriculum_id,
             'subject_id' => $request->subject_id,
             'strand_id' => $request->strand_id,

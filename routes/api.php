@@ -88,8 +88,8 @@ Route::group([
 
     
     Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
-    Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
-    Route::put('updatecuri/{id}', [strandcuriculumController::class,'updarecuri']);
+    Route::get('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
+    Route::put('updatecuri/{id}', [strandcuriculumController::class,'updatecuri']);
     Route::delete('deletecuri/{id}', [strandcuriculumController::class,'deletecuri']);
     
     Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
