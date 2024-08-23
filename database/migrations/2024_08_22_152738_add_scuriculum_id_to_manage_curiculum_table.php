@@ -10,7 +10,7 @@ return new class extends Migration
      * Run the migrations.
      */
     public function up(): void
-    {
+    { 
         Schema::table('manage_curiculum', function (Blueprint $table) {
             // Add the new column after the 'id' column
             $table->unsignedBigInteger('scuriculum_id')->after('id');

@@ -1,19 +1,21 @@
 <?php
 
-use App\Http\Controllers\strandcuriculumController;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\UsersController;
-use App\Http\Controllers\tblyearController;
-use App\Http\Controllers\tblsubjectController;
-use App\Http\Controllers\tblstrandController;
-use App\Http\Controllers\tblsemesterController;
-use App\Http\Controllers\tblsectionController;
-use App\Http\Controllers\tblpostionController;
 use App\Http\Controllers\gradelevelController;
-use App\Http\Controllers\tblpositionController;
+use App\Http\Controllers\joinclassController;
 use App\Http\Controllers\manage_curiculumController;
 use App\Http\Controllers\strandcuriculumController;
+use App\Http\Controllers\tblclassController;
+use App\Http\Controllers\tblpositionController;
+use App\Http\Controllers\tblpostionController;
+use App\Http\Controllers\tblsectionController;
+use App\Http\Controllers\tblsemesterController;
+use App\Http\Controllers\tblstrandController;
+use App\Http\Controllers\tblsubjectController;
+use App\Http\Controllers\tblyearController;
+use App\Http\Controllers\UsersController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+
 
 
 Route::get('/user', function (Request $request) {
@@ -87,7 +89,9 @@ Route::group([
     
     Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
     Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
-
+    Route::put('updatecuri/{id}', [strandcuriculumController::class,'updarecuri']);
+    Route::delete('deletecuri/{id}', [strandcuriculumController::class,'deletecuri']);
+    
     Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
 
 

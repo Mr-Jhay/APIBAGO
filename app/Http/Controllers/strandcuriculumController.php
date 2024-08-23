@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
 class strandcuriculumController extends Controller
-{
+{ 
     public function addcuri(Request $request)
     {
         // Validate the incoming request data
