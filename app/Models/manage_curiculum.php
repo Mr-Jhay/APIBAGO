@@ -14,6 +14,7 @@ class manage_curiculum extends Model
 
     protected $fillable = [
            
+            'scuriculum_id',
            'subject_id',  
            'strand_id',             
            'semester',            
