@@ -13,6 +13,7 @@ class manage_curiculum extends Model
     protected $table = 'manage_curiculum';
 
     protected $fillable = [
+        'scuriculum_id',
            'subject_id',  
            'strand_id',             
            'semester',            

@@ -15,10 +15,10 @@ class manage_curiculumController extends Controller
     {
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
-            'scuriculum_id' => 'required|exists:strandcuriculum,id',
-            'subject_id' => 'required|exists:tblsubject,id',
-            'strand_id' => 'required|exists:tblstrand,id',
-            'semester' => 'required|string|max:255',
+            'scuriculum_id' => 'required|exists:strandcuriculum,id', //strandcuriculum na table ito yung pinadagdag mo
+            'subject_id' => 'required|exists:tblsubject,id', //id nung subject sa tblsubject
+            'strand_id' => 'required|exists:tblstrand,id',//tblstrand na table id niya 
+            'semester' => 'required|string|max:255',//ikaw mismo mag insert dito drop down ito 1st sem or second sem
         ]);
 
         if ($validator->fails()) {
