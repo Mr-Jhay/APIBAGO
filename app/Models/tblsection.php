@@ -12,7 +12,7 @@ class tblsection extends Model
     use HasFactory, Notifiable, HasApiTokens;
     protected $table = 'tblsection';
 
-    protected $fillable = [
+     protected $fillable = [
         'strand_id',
            'section',         
        ];

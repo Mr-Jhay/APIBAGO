@@ -9,7 +9,7 @@ use Illuminate\Notifications\Notifiable;
 
 class tblsubject extends Model
 {
-    use HasFactory, Notifiable, HasApiTokens;
+    use HasFactory, Notifiable, HasApiTokens; 
     protected $table = 'tblsubject';
 
     protected $fillable = [

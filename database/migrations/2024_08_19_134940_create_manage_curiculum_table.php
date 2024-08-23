@@ -13,11 +13,13 @@ return new class extends Migration
     {
         Schema::create('manage_curiculum', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('scuriculum_id');
             $table->unsignedBigInteger('subject_id');
             $table->unsignedBigInteger('strand_id');
             $table->string('semester');
             $table->timestamps();
 
+            $table->foreign('scuriculum_id')->references('id')->on('cascade');
             $table->foreign('subject_id')->references('id')->on('tblsubject')->onDelete('cascade');
             $table->foreign('strand_id')->references('id')->on('tblstrand')->onDelete('cascade');
         });
