@@ -38,4 +38,32 @@ class strandcuriculumController extends Controller
             'data' => $strandCuriculums
         ], 200);
     }
+
+    public function updatecuri(Request $request, $id)
+{
+    $validatedData = $request->validate([
+        'Namecuriculum' => 'required|string|max:255',
+    ]);
+
+    $strandCuriculum = strandcuriculum::findOrFail($id);
+    $strandCuriculum->update([
+        'Namecuriculum' => $validatedData['Namecuriculum'],
+    ]);
+
+    return response()->json([
+        'message' => 'Strand Curriculum updated successfully!',
+        'data' => $strandCuriculum
+    ], 200);
+}
+
+public function deletecuri($id)
+{
+    $strandCuriculum = strandcuriculum::findOrFail($id);
+    $strandCuriculum->delete();
+
+    return response()->json([
+        'message' => 'Strand Curriculum deleted successfully!'
+    ], 200);
+}
+
 }

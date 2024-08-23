@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\strandcuriculumController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsersController;
@@ -13,8 +14,6 @@ use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\tblpositionController;
 use App\Http\Controllers\manage_curiculumController;
 use App\Http\Controllers\strandcuriculumController;
-use App\Http\Controllers\tblclassController;
-use App\Http\Controllers\joinclassController;
 
 
 Route::get('/user', function (Request $request) {
@@ -87,12 +86,10 @@ Route::group([
 
     
     Route::post('addcuri', [strandcuriculumController::class, 'addcuri']);// add curiculum
-    Route::get('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
+    Route::post('viewcuri', [strandcuriculumController::class, 'viewcuri']);//view curiculum
 
-    Route::put('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
+    Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
 
-    
-   
 
  
    
