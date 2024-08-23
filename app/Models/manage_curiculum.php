@@ -8,7 +8,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 
 class manage_curiculum extends Model
-{
+{ 
     use HasFactory, Notifiable, HasApiTokens;
     protected $table = 'manage_curiculum';
 
@@ -26,7 +26,7 @@ class manage_curiculum extends Model
        }
        public function subject()
        {
-           return $this->belongsTo(tblsubject::class, 'strand_id');
+           return $this->belongsTo(tblsubject::class, 'subject_id');
        }
 
        public function strandcuriculum()
