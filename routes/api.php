@@ -77,13 +77,11 @@ Route::group([
     Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);
     Route::put('updateTeacher', [UsersController::class, 'updateTeacher']);
 
-
-
     Route::get('viewAllStudents', [UsersController::class, 'viewAllStudents']);
     Route::put('updateStudent', [UsersController::class, 'updateStudent']);
 
-   
     Route::put('updateUserPassword', [UsersController::class, 'updateUserPassword']);//both teacher and student
+    
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
 
     

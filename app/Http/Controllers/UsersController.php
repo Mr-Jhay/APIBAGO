@@ -16,6 +16,8 @@ use App\Models\tblsection;
 use App\Models\tblposition;
 use App\Models\tblteacher;
 use App\Models\teacher_strand;
+use Illuminate\Support\Facades\Validator;
+
 
 class UsersController extends Controller
 {
