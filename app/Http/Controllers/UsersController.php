@@ -519,12 +519,6 @@ public function updateTeacher(Request $request, $id)
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
         'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
-        'password' => [
-            'sometimes',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
         'position_id' => 'sometimes|exists:tblposition,id',
         'strand_id' => 'nullable|array',
         'strand_id.*' => 'exists:tblstrand,id',
@@ -554,9 +548,6 @@ public function updateTeacher(Request $request, $id)
         }
         if ($request->has('email')) {
             $userUpdateData['email'] = $data['email'];
-        }
-        if ($request->has('password')) {
-            $userUpdateData['password'] = Hash::make($data['password']);
         }
 
         // Update user record only if there is data to update
