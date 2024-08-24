@@ -639,6 +639,42 @@ public function updateUserPassword(Request $request, User $user)
 }
 
 
+public function updateOwnPassword(Request $request)
+{
+    // Validate the new password with additional rules
+    $validator = Validator::make($request->all(), [
+        'current_password' => 'required',
+        'new_password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+    ], [
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    // Get the authenticated user
+    $user = auth()->user();
+
+    // Check if the current password is correct
+    if (!Hash::check($request->current_password, $user->password)) {
+        return response()->json(['message' => 'Current password is incorrect.'], 401);
+    }
+
+    // Update the user's password
+    $user->password = Hash::make($request->new_password);
+    $user->save();
+
+    return response()->json(['message' => 'Password updated successfully.'], 200);
+}
+
+
 
 public function viewallusers()
 {

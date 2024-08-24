@@ -81,7 +81,7 @@ Route::group([
     Route::put('updateStudent', [UsersController::class, 'updateStudent']);
 
     Route::put('updateUserPassword/{user}', [UsersController::class, 'updateUserPassword']);//both teacher and student
-    
+    Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
     
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
 
