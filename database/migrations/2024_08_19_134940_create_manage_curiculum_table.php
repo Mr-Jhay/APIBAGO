@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('semester');
             $table->timestamps();
 
-            $table->foreign('scuriculum_id')->references('id')->on('cascade');
+            $table->foreign('scuriculum_id')->references('id')->on('strandcuriculum')->onDelete('cascade');
             $table->foreign('subject_id')->references('id')->on('tblsubject')->onDelete('cascade');
             $table->foreign('strand_id')->references('id')->on('tblstrand')->onDelete('cascade');
         });

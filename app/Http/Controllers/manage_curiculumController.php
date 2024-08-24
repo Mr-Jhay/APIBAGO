@@ -15,25 +15,32 @@ class manage_curiculumController extends Controller
     {
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
-            'scuriculum_id' => 'required|exists:strandcuriculum,id', //strandcuriculum na table ito yung pinadagdag mo
-            'subject_id' => 'required|exists:tblsubject,id', //id nung subject sa tblsubject
-            'strand_id' => 'required|exists:tblstrand,id',//tblstrand na table id niya 
-            'semester' => 'required|string|max:255',//ikaw mismo mag insert dito drop down ito 1st sem or second sem
+            'scuriculum_id' => 'required|exists:strandcuriculum,id', 
+            'subject_ids' => 'required|array', 
+            'subject_ids.*' => 'exists:tblsubject,id', 
+            'strand_id' => 'required|exists:tblstrand,id',
+            'semester' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Create a new record in the manage_curiculum table
-        $manageCuriculum = manage_curiculum::create([ 
-            'scuriculum_id' => $request->scuriculum_id,
-            'subject_id' => $request->subject_id,
-            'strand_id' => $request->strand_id,
-            'semester' => $request->semester,
-        ]);
+        $createdEntries = [];
 
-        return response()->json(['message' => 'Curriculum entry created successfully', 'data' => $manageCuriculum], 201);
+        // Loop through each subject ID and create a new record for each
+        foreach ($request->subject_ids as $subject_id) {
+            $manageCuriculum = manage_curiculum::create([
+                'scuriculum_id' => $request->scuriculum_id,
+                'subject_id' => $subject_id,
+                'strand_id' => $request->strand_id,
+                'semester' => $request->semester,
+            ]);
+
+            $createdEntries[] = $manageCuriculum;
+        }
+
+        return response()->json(['message' => 'Curriculum entries created successfully', 'data' => $createdEntries], 201);
     }
 
     public function viewcuriculum()
@@ -64,4 +71,67 @@ class manage_curiculumController extends Controller
             'data' => $manageCuriculum,
         ], 200);
     }
+
+    public function updateCuriculum(Request $request, $id)
+{
+    // Validate the incoming request data
+    $validator = Validator::make($request->all(), [
+        'scuriculum_id' => 'required|exists:strandcuriculum,id', 
+        'subject_ids' => 'required|array', 
+        'subject_ids.*' => 'exists:tblsubject,id', 
+        'strand_id' => 'required|exists:tblstrand,id',
+        'semester' => 'required|string|max:255',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // Find the record by ID and delete old entries
+    manage_curiculum::where('scuriculum_id', $request->scuriculum_id)
+        ->where('strand_id', $request->strand_id)
+        ->where('semester', $request->semester)
+        ->delete();
+
+    $updatedEntries = [];
+
+    // Loop through each subject ID and create a new record for each
+    foreach ($request->subject_ids as $subject_id) {
+        $manageCuriculum = manage_curiculum::create([
+            'scuriculum_id' => $request->scuriculum_id,
+            'subject_id' => $subject_id,
+            'strand_id' => $request->strand_id,
+            'semester' => $request->semester,
+        ]);
+
+        $updatedEntries[] = $manageCuriculum;
+    }
+
+    return response()->json(['message' => 'Curriculum entries updated successfully', 'data' => $updatedEntries], 200);
+}
+
+public function deleteCuriculum(Request $request)
+{
+    // Validate the incoming request data
+    $validator = Validator::make($request->all(), [
+        'scuriculum_id' => 'required|exists:strandcuriculum,id', 
+        'strand_id' => 'required|exists:tblstrand,id',
+        'semester' => 'required|string|max:255',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // Soft delete all curriculum entries that match the criteria
+    manage_curiculum::where('scuriculum_id', $request->scuriculum_id)
+        ->where('strand_id', $request->strand_id)
+        ->where('semester', $request->semester)
+        ->delete(); // Soft delete the matching records
+
+    return response()->json(['message' => 'Curriculum entries deleted successfully'], 200);
+}
+
+
+    
 }
