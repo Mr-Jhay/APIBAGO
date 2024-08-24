@@ -519,12 +519,6 @@ public function updateTeacher(Request $request, $id)
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
         'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
-        'password' => [
-            'sometimes',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
         'position_id' => 'sometimes|exists:tblposition,id',
         'strand_id' => 'nullable|array',
         'strand_id.*' => 'exists:tblstrand,id',
@@ -554,9 +548,6 @@ public function updateTeacher(Request $request, $id)
         }
         if ($request->has('email')) {
             $userUpdateData['email'] = $data['email'];
-        }
-        if ($request->has('password')) {
-            $userUpdateData['password'] = Hash::make($data['password']);
         }
 
         // Update user record only if there is data to update
@@ -636,6 +627,42 @@ public function updateUserPassword(Request $request, User $user)
     $user->save();
 
     return response()->json(['message' => 'Password updated successfully for user: ' . $user->lname], 200);
+}
+
+
+public function updateOwnPassword(Request $request)
+{
+    // Validate the new password with additional rules
+    $validator = Validator::make($request->all(), [
+        'current_password' => 'required',
+        'new_password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+    ], [
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    // Get the authenticated user
+    $user = auth()->user();
+
+    // Check if the current password is correct
+    if (!Hash::check($request->current_password, $user->password)) {
+        return response()->json(['message' => 'Current password is incorrect.'], 401);
+    }
+
+    // Update the user's password
+    $user->password = Hash::make($request->new_password);
+    $user->save();
+
+    return response()->json(['message' => 'Password updated successfully.'], 200);
 }
 
 
