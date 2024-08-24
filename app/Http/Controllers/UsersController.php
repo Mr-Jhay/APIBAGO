@@ -609,6 +609,11 @@ public function updateTeacher(Request $request, $id)
 
 public function updateUserPassword(Request $request, User $user)
 {
+    // Check if the authenticated user is an admin
+    if (auth()->user()->usertype !== 'admin') {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+
     // Validate the new password with additional rules
     $validator = Validator::make($request->all(), [
         'new_password' => [
@@ -634,9 +639,13 @@ public function updateUserPassword(Request $request, User $user)
 }
 
 
+
 public function viewallusers()
 {
     $users = User::all();
     return response()->json($users);
 }
+
+
+
 }
