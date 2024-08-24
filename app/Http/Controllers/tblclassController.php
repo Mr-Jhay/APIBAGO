@@ -14,9 +14,9 @@ class tblclassController extends Controller
 {
     // Validate the incoming request
     $validatedData = $request->validate([
-        'strand_id' => 'required|exists:tblstrand,id',
-        'section_id' => 'required|exists:tblsection,id',
         'subject_id' => 'required|exists:manage_curiculum,id',
+        'section_id' => 'required|exists:tblsection,id',
+        'year_id' => 'required|exists:tblyear,id',
         'class_desc' => 'nullable|string',
         'profile_img' => 'nullable|string',
         'gen_code' => 'required|string',
