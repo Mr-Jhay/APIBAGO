@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Validator; 
+use App\Models\strandcuriculum;
+use App\Models\tblsubject;
 use App\Models\tblstrand;
-use App\Models\tblsection;
+
 
 class manage_curiculumController extends Controller
 {
