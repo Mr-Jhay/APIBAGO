@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Validator; 
+use App\Models\tblstrand;
+use App\Models\tblsection;
 
 class manage_curiculumController extends Controller
 {
@@ -43,11 +45,30 @@ class manage_curiculumController extends Controller
         return response()->json(['message' => 'Curriculum entries created successfully', 'data' => $createdEntries], 201);
     }
 
+ //   public function viewcuriculum()
+//    {
+        // Retrieve all records from the manage_curiculum table
+ //       $curriculums = manage_curiculum::all();
+
+   //     return response()->json(['data' => $curriculums], 200);
+   // }
+
     public function viewcuriculum()
     {
-        // Retrieve all records from the manage_curiculum table
-        $curriculums = manage_curiculum::all();
-
+        // Retrieve all records from the manage_curiculum table with related data
+        $curriculums = manage_curiculum::select(
+            'manage_curiculum.id',
+            'strandcuriculum.Namecuriculum',  // Field from strandcuriculum table
+            'tblsubject.subjectname',  // Field from tblsubject table
+            'tblstrand.addstrand',  // Field from tblstrand table
+            'tblstrand.grade_level',  // Field from tblstrand table
+            'manage_curiculum.semester'
+        )
+        ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+        ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        ->get();
+    
         return response()->json(['data' => $curriculums], 200);
     }
 
