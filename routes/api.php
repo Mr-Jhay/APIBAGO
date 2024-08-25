@@ -100,9 +100,16 @@ Route::group([
  
    
     //TEACHER
+
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('allclasses', [tblclassController::class, 'allclasses']);
     Route::get('classes/{id}', [tblclassController::class, 'showclass']);
+    Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
+
+    Route::get('viewcuriculum/{id}', [tblclassController::class, 'getCurriculumDetails']);
+   
+
+    
     Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
     //STUDENTS
 

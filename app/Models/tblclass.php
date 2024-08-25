@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Models;
 
@@ -10,16 +10,39 @@ use Illuminate\Notifications\Notifiable;
 class tblclass extends Model
 {
     use HasFactory, Notifiable, HasApiTokens;
+
     protected $table = 'tblclass';
 
     protected $fillable = [
-           'user_id',  
-           'strand_id',  
-           'section_id',  
-           'subject_id',  
-           'class_desc',  
-           'profile_img',  
-           'gen_code',  
-         
-       ];
+        'user_id',  
+        'strand_id',  
+        'section_id',  
+        'subject_id',  
+        'scuriculum_id', // Added curriculum ID
+        'class_desc',  
+        'profile_img',  
+        'gen_code',
+        'semester', // Added semester
+        'year',     // Added year
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function strand()
+    {
+        return $this->belongsTo(tblstrand::class, 'strand_id');
+    }
+
+    public function subject()
+    {
+        return $this->belongsTo(tblsubject::class, 'subject_id');
+    }
+
+    public function curriculum()
+    {
+        return $this->belongsTo(manage_curiculum::class, 'scuriculum_id');
+    }
 }

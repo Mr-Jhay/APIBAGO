@@ -133,5 +133,5 @@ public function deleteCuriculum(Request $request)
 }
 
 
-    
+
 }
