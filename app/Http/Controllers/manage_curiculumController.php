@@ -20,9 +20,10 @@ class manage_curiculumController extends Controller
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'scuriculum_id' => 'required|exists:strandcuriculum,id', 
+            'strand_id' => 'required|exists:tblstrand,id',
             'subject_ids' => 'required|array', 
             'subject_ids.*' => 'exists:tblsubject,id', 
-            'strand_id' => 'required|exists:tblstrand,id',
+           // 'strand_id' => 'required|exists:tblstrand,id',
             'semester' => 'required|string|max:255',
         ]);
 
@@ -36,8 +37,9 @@ class manage_curiculumController extends Controller
         foreach ($request->subject_ids as $subject_id) {
             $manageCuriculum = manage_curiculum::create([
                 'scuriculum_id' => $request->scuriculum_id,
-                'subject_id' => $subject_id,
                 'strand_id' => $request->strand_id,
+                'subject_id' => $subject_id,
+                //'strand_id' => $request->strand_id,
                 'semester' => $request->semester,
             ]);
 

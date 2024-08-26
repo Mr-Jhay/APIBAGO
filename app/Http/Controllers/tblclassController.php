@@ -5,6 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\tblclass;
 use App\Models\manage_curiculum;
 use Illuminate\Http\Request;
+use App\Models\strandcuriculum;
+use App\Models\tblsubject;
+use App\Models\tblstrand;
+use App\Models\tblsection;
+use App\Models\tblyear;
+
 
 class tblclassController extends Controller
 {
@@ -12,14 +18,14 @@ class tblclassController extends Controller
     {
         $validatedData = $request->validate([
             'curriculum' => 'required|exists:manage_curiculum,id',
-            'subject_id' => 'required|exists:tblsubject,id',
             'strand_id' => 'required|exists:tblstrand,id',
+            'section_id' => 'required|exists:tblsection,id',
+            'subject_id' => 'required|exists:tblsubject,id',
+            'year_id' => 'required|exists:tblyear,id',
             'semester' => 'required|string|max:255',
-            'section' => 'required|string|max:255',
-            'year' => 'required|string|max:255',
             'description' => 'nullable|string',
             'image' => 'nullable|string',
-            'code' => 'required|string|max:255',
+            'gen_code' => 'required|string|max:255',
         ]);
 
         $user = $request->user();
