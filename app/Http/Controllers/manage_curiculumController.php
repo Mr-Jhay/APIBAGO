@@ -215,7 +215,7 @@ public function viewCurriculum3(Request $request)
         $sections = DB::table('tblsection')
             ->join('tblstrand', 'tblsection.strand_id', '=', 'tblstrand.id')
             ->whereIn('tblstrand.id', $strands->pluck('id'))
-            ->select('tblsection.id', 'tblsection.section_name', 'tblsection.strand_id')
+            ->select('tblsection.id', 'tblsection.section', 'tblsection.strand_id')
             ->distinct()
             ->get();
 
