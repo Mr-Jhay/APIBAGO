@@ -69,6 +69,7 @@ Route::group([
     Route::delete('deleteposition/{id}', [tblpositionController::class, 'deleteposition']);
 
     Route::post('addcuriculum', [manage_curiculumController::class, 'addcuriculum']); // Add curriculum
+    Route::post('addcuriculum2', [manage_curiculumController::class, 'addcuriculum2']); 
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']); // View all curriculum entries
     Route::put('updatecuriculum/{id}', [manage_curiculumController::class, 'updateCuriculum']); // Update curriculum
     Route::delete('deletecuriculum', [manage_curiculumController::class, 'deleteCuriculum']); // Delete curriculum

@@ -74,6 +74,34 @@ class manage_curiculumController extends Controller
         return response()->json(['data' => $curriculums], 200);
     }
 
+    public function viewcuriculum2()
+{
+    // Retrieve all records from the manage_curiculum table with related data
+    $curriculums = manage_curiculum::select(
+        'strandcuriculum.Namecuriculum',  // Curriculum name
+        'tblsubject.subjectname',  // Subject name
+        'tblstrand.addstrand',  // Strand name
+        'tblstrand.grade_level',  // Grade level
+        'manage_curiculum.semester'  // Semester
+    )
+    ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+    ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+    ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+    ->orderBy('strandcuriculum.Namecuriculum')
+    ->orderBy('tblsubject.subjectname')
+    ->orderBy('tblstrand.addstrand')
+    ->get();
+    
+    // Group the result by curriculum, then subject, and finally by strand
+    $groupedData = $curriculums->groupBy('Namecuriculum')->map(function ($curriculum) {
+        return $curriculum->groupBy('subjectname')->map(function ($subjects) {
+            return $subjects->groupBy('addstrand');
+        });
+    });
+
+    return response()->json(['data' => $groupedData], 200);
+}
+
     public function updateStatus(Request $request, $id)
     {
         // Validate the incoming request data
