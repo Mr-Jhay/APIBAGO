@@ -430,6 +430,7 @@ public function updateStudent(Request $request, $id)
 {
     // Validate the incoming request data
     $validated = $request->validate([
+        'idnumber'=> ['sometimes', 'string'],
         'fname' => ['sometimes', 'string'],
         'mname' => ['sometimes', 'string'],
         'lname' => ['sometimes', 'string'],
@@ -449,6 +450,9 @@ public function updateStudent(Request $request, $id)
 
         // Prepare the update data for user
         $userUpdateData = [];
+        if ($request->has('idnumber')) {
+            $userUpdateData['idnumber'] = $validated['idnumber'];
+        }
         if ($request->has('fname')) {
             $userUpdateData['fname'] = $validated['fname'];
         }
@@ -514,6 +518,7 @@ public function updateTeacher(Request $request, $id)
 {
     // Validate the incoming request data
     $data = $request->validate([
+        'idnumber'=> ['sometimes', 'string'],
         'fname' => ['sometimes', 'string'],
         'mname' => ['sometimes', 'string'],
         'lname' => ['sometimes', 'string'],
@@ -534,6 +539,9 @@ public function updateTeacher(Request $request, $id)
 
         // Prepare user data for update
         $userUpdateData = [];
+        if ($request->has('idnumber')) {
+            $userUpdateData['idnumber'] = $validated['idnumber'];
+        }
         if ($request->has('fname')) {
             $userUpdateData['fname'] = $data['fname'];
         }

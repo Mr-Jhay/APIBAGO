@@ -187,10 +187,11 @@ public function deleteCuriculum(Request $request)
 public function viewCurriculum3(Request $request)
 {
     $curriculumId = $request->query('curriculumId');
+    $strandId = $request->query('strandId');
     $subjectId = $request->query('subjectId');
 
     // Step 1: Retrieve all curriculums if no parameters are provided
-    if (!$curriculumId && !$subjectId) {
+    if (!$curriculumId && !$strandId && !$subjectId) {
         $curriculums = DB::table('strandcuriculum')
             ->select('id', 'Namecuriculum')
             ->get();
@@ -199,7 +200,7 @@ public function viewCurriculum3(Request $request)
     }
 
     // Step 2: Retrieve subjects based on the selected curriculum
-    if ($curriculumId && !$subjectId) {
+    if ($curriculumId && !$strandId && !$subjectId) {
         $subjects = DB::table('tblsubject')
             ->join('manage_curiculum', 'tblsubject.id', '=', 'manage_curiculum.subject_id')
             ->where('manage_curiculum.scuriculum_id', $curriculumId)
@@ -214,7 +215,7 @@ public function viewCurriculum3(Request $request)
         $strands = DB::table('tblstrand')
             ->join('manage_curiculum', 'tblstrand.id', '=', 'manage_curiculum.strand_id')
             ->where('manage_curiculum.subject_id', $subjectId)
-            ->select('tblstrand.addstrand', 'tblstrand.grade_level', 'manage_curiculum.semester')
+            ->select('tblstrand.id', 'tblstrand.addstrand', 'tblstrand.grade_level', 'manage_curiculum.semester')
             ->get();
 
         return response()->json(['strands' => $strands], 200);
@@ -223,4 +224,5 @@ public function viewCurriculum3(Request $request)
     // If no valid parameters are provided, return an error
     return response()->json(['error' => 'Invalid parameters provided.'], 400);
 }
+
 }
