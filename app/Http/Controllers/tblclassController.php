@@ -16,6 +16,7 @@ class tblclassController extends Controller
 {
     public function addclass(Request $request)
     {
+        // Validate the request data
         $validatedData = $request->validate([
             'curriculum' => 'required|exists:manage_curiculum,id',
             'strand_id' => 'required|exists:tblstrand,id',
@@ -27,27 +28,31 @@ class tblclassController extends Controller
             'image' => 'nullable|string',
             'gen_code' => 'required|string|max:255',
         ]);
-
+    
+        // Get the authenticated user
         $user = $request->user();
-
+    
         // Validate that the subject is associated with the selected curriculum, strand, and semester
-        $curriculumEntry = manage_curiculum::where('scuriculum_id', $request->curriculum)
+        $curriculumEntry = manage_curiculum::where('id', $request->curriculum)
+             ->where('strand_id', $request->strand_id)
             ->where('subject_id', $request->subject_id)
-            ->where('strand_id', $request->strand_id)
             ->where('semester', $request->semester)
             ->first();
-
+    
         if (!$curriculumEntry) {
             return response()->json(['message' => 'Invalid subject selection for the given curriculum, strand, and semester.'], 422);
         }
-
+    
+        // Check if the user is authorized
         if ($user && $user->usertype === 'teacher') {
+            // Create the class entry
             $class = tblclass::create(array_merge($validatedData, ['user_id' => $user->id]));
             return response()->json(['message' => 'Class created successfully.', 'data' => $class], 201);
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
     }
+    
 
     public function getCurriculums()
     {
