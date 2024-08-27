@@ -64,14 +64,14 @@ class manage_curiculumController extends Controller
         $curriculums = manage_curiculum::select(
             'manage_curiculum.id',
             'strandcuriculum.Namecuriculum',  // Field from strandcuriculum table
-            'tblsubject.subjectname',  // Field from tblsubject table
             'tblstrand.addstrand',  // Field from tblstrand table
             'tblstrand.grade_level',  // Field from tblstrand table
+            'tblsubject.subjectname',  // Field from tblsubject table
             'manage_curiculum.semester'
         )
         ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
-        ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
         ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
         ->get();
     
         return response()->json(['data' => $curriculums], 200);
