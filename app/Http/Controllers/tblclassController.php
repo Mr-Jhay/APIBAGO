@@ -59,4 +59,78 @@ class tblclassController extends Controller
         $curriculums = manage_curiculum::with('subjects')->get(); // Eager load subjects
         return response()->json($curriculums);
     }
+
+
+
+
+
+    public function getCurriculum($id)
+    {
+        $curriculum = manage_curriculum::find($id);
+        if (!$curriculum) {
+            return response()->json(['error' => 'Curriculum not found'], 404);
+        }
+    
+        return $curriculum;
+    }
+    public function getStrandIdAndValue($scuriculumId)
+{
+    $curriculum = manage_curriculum::where('scuriculum_id', $scuriculumId)->first();
+    if (!$curriculum) {
+        return response()->json(['error' => 'Curriculum not found'], 404);
+    }
+
+    $strandId = $curriculum->strand_id;
+    $strand = tblstrand::find($strandId); // Assuming you have a Strand model
+
+    if (!$strand) {
+        return response()->json(['error' => 'Strand not found'], 404);
+    }
+
+    return [
+        'strand_id' => $strandId,
+        'strand_value' => $strand->value // Assuming 'value' is a column in the Strand table
+    ];
+}
+public function getAvailableSubjects($scuriculumId, $strandId)
+{
+    $subjects = tblsubject::where('strand_id', $strandId)
+                       ->where('curriculum_id', $scuriculumId)
+                       ->get();
+
+    return $subjects;
+}
+
+public function getCurriculumDetails($id)
+{
+    // Retrieve the Curriculum
+    $curriculum = manage_curriculum::find($id);
+    if (!$curriculum) {
+        return response()->json(['error' => 'Curriculum not found'], 404);
+    }
+
+    $scuriculumId = $curriculum->scuriculum_id;
+
+    // Retrieve Strand ID and its details
+    $strandId = $curriculum->strand_id;
+    $strand = tblstrand::find($strandId); // Assuming you have a Strand model
+    if (!$strand) {
+        return response()->json(['error' => 'Strand not found'], 404);
+    }
+
+    // Retrieve Available Subjects
+    $subjects = tblsubject::where('strand_id', $strandId)
+                       ->where('curriculum_id', $scuriculumId)
+                       ->get();
+
+    return response()->json([
+        'curriculum_id' => $scuriculumId,
+        'namecuriculum' => $curriculum->namecuriculum, // Assuming 'namecuriculum' is a column in ManageCurriculum
+        'strand_id' => $strandId,
+        'strand' => $strand->strand, // Assuming 'strand' is a column in Strand
+        'grade_level' => $strand->grade_level, // Assuming 'grade_level' is a column in Strand
+        'subjects' => $subjects
+    ]);
+}
+
 }

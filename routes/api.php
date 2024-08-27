@@ -109,7 +109,10 @@ Route::group([
     Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
 
     Route::get('viewcuriculum/{id}', [tblclassController::class, 'getCurriculumDetails']);
-   
+
+    Route::get('viewcuriculum3', [manage_curiculumController::class, 'viewCurriculum3']); 
+    Route::get('getCurriculumDetails{$id}', [tblclassController::class, 'getCurriculumDetails']);
+   // g'getCurriculumDetails{$id}'
 
     
     Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
