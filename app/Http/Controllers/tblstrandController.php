@@ -16,9 +16,21 @@ class tblstrandController extends Controller
             'addstrand' => 'required|string|max:255',
             'grade_level' => 'required|string|max:255',
         ]);
-
+    
+        // Check for existing record with the same addstrand and grade_level
+        $existingStrand = tblstrand::where('addstrand', $validated['addstrand'])
+                                   ->where('grade_level', $validated['grade_level'])
+                                   ->first();
+    
+        if ($existingStrand) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The combination of strand and grade level already exists.',
+            ], 409); // Conflict status code
+        }
+    
         $strand = tblstrand::create($validated);
-
+    
         return response()->json([
             'success' => true,
             'message' => 'Strand created successfully!',
