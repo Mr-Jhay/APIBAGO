@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Mail;
+use App\Mail\InvitationMail; 
 use App\Models\joinclass;
 use App\Models\User;
 use App\Models\tblclass;
@@ -54,43 +56,48 @@ class joinclassController extends Controller
     }
 
     public function addwocode(Request $request)
-{
-    // Validate the request with the necessary fields
-    $request->validate([
-        'user_id' => 'required|exists:users,id',
-        'status' => 'nullable|integer',
-    ]);
-
-    // Retrieve the authenticated user or use the provided user_id
-    $user = User::find($request->input('user_id'));
-
-    if (!$user) {
-        return response()->json(['error' => 'User not found'], Response::HTTP_NOT_FOUND);
+    {
+        // Validate the request with the necessary fields
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'status' => 'nullable|integer',
+        ]);
+    
+        // Retrieve the user based on the provided user_id
+        $user = User::find($request->input('user_id'));
+    
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+    
+        // Assume the teacher is authenticated and assign the class_id based on the teacher's context
+        $teacher = auth()->user(); // Assuming the teacher is logged in
+    
+        // Retrieve the class_id where the teacher is assigned
+        $class = \DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
+    
+        if (!$class) {
+            return response()->json(['error' => 'Class not found'], 404);
+        }
+    
+        // Default status if the user is a student
+        $status = ($user->usertype === 'student') ? 0 : $request->input('status');
+    
+        // Create the join class record
+        $joinClass = joinclass::create([
+            'user_id' => $request->input('user_id'),
+            'class_id' => $class->id,  // Use the class_id from the teacher's context
+            'status' => $status,
+        ]);
+    
+        // Send an email invitation to the student
+        if ($user->usertype === 'student') {
+            Mail::to($user->email)->send(new InvitationMail($class, $user));
+        }
+    
+        // Return response
+        return response()->json($joinClass, 201);
     }
-
-    // Assume the teacher is authenticated and assign the class_id based on the teacher's context
-    $teacher = auth()->user(); // Assuming the teacher is logged in
-
-    // Retrieve the class_id where the teacher is assigned
-    $class = \DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
-
-    if (!$class) {
-        return response()->json(['error' => 'Class not found'], Response::HTTP_NOT_FOUND);
-    }
-
-    // Default status if the user is a student
-    $status = ($user->usertype === 'student') ? 1 : $request->input('status');
-
-    // Create the join class record
-    $joinClass = joinclass::create([
-        'user_id' => $request->input('user_id'),
-        'class_id' => $class->id,  // Use the class_id from the teacher's context
-        'status' => $status,
-    ]);
-
-    // Return response
-    return response()->json($joinClass, Response::HTTP_CREATED);
-}
 
     
 

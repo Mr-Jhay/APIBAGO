@@ -14,16 +14,27 @@ class tblclass extends Model
     protected $table = 'tblclass';
 
     protected $fillable = [
-        'user_id',  
-        'strand_id',  
-        'section_id',  
-        'subject_id',  
-        'scuriculum_id', // Added curriculum ID
-        'class_desc',  
-        'profile_img',  
+       // 'user_id',  
+       // 'strand_id',  
+       // 'section_id',  
+       // 'subject_id',  
+       // 'scuriculum_id', // Added curriculum ID
+       // 'class_desc',  
+      //  'profile_img',  
+      //  'gen_code',
+       // 'semester', // Added semester
+       // 'year',     // Added year
+
+        'curiculum_id',
+        'strand_id',
+        'section_id',
+        'subject_id',
+        'year_id',
+        'semester',
+        'class_desc',
+        'image',
         'gen_code',
-        'semester', // Added semester
-        'year',     // Added year
+        'user_id',
     ];
 
     public function user()
