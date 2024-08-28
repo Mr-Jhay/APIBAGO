@@ -121,11 +121,14 @@ Route::group([
     Route::get('getAllCurriculums9', [tblclassController::class, 'getAllCurriculums9']);
     Route::get('getAllStrandDetailsByCurriculum', [tblclassController::class, 'getAllStrandDetailsByCurriculum']);
     Route::get('getAllStrandDetailsByCurriculum1/{scuriculumId}', [tblclassController::class, 'getAllStrandDetailsByCurriculum1']);
+
+
    // g'getCurriculumDetails{$id}'
 
     
     Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
     //STUDENTS
+    
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
  
