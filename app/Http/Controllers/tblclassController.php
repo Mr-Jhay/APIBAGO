@@ -34,11 +34,26 @@ class tblclassController extends Controller
         // Get the authenticated user
         $user = $request->user();
     
-    
         // Check if the user is authorized
         if ($user && $user->usertype === 'teacher') {
+            // Check if a class with the same details already exists
+            $existingClass = tblclass::where([
+                'curiculum_id' => $validatedData['curiculum_id'],
+                'strand_id' => $validatedData['strand_id'],
+                'section_id' => $validatedData['section_id'],
+                'subject_id' => $validatedData['subject_id'],
+                'year_id' => $validatedData['year_id'],
+                'semester' => $validatedData['semester'],
+            ])->first();
+    
+            if ($existingClass) {
+                // If a class with the same details exists, return a conflict response
+                return response()->json(['message' => 'Class with these details already exists.'], 409);
+            }
+    
             // Create the class entry
             $class = tblclass::create(array_merge($validatedData, ['user_id' => $user->id]));
+    
             return response()->json(['message' => 'Class created successfully.', 'data' => $class], 201);
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
