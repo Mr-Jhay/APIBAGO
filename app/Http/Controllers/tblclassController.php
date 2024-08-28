@@ -10,6 +10,8 @@ use App\Models\tblsubject;
 use App\Models\tblstrand;
 use App\Models\tblsection;
 use App\Models\tblyear;
+use Illuminate\Support\Facades\DB;
+
 
 
 class tblclassController extends Controller
@@ -18,7 +20,7 @@ class tblclassController extends Controller
     {
         // Validate the request data
         $validatedData = $request->validate([
-            'curriculum' => 'required|exists:manage_curiculum,id',
+            'curriculum' => 'required|exists:strandcuriculum,id',
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
             'subject_id' => 'required|exists:tblsubject,id',
@@ -33,15 +35,16 @@ class tblclassController extends Controller
         $user = $request->user();
     
         // Validate that the subject is associated with the selected curriculum, strand, and semester
-        $curriculumEntry = manage_curiculum::where('id', $request->curriculum)
-             ->where('strand_id', $request->strand_id)
-            ->where('subject_id', $request->subject_id)
-            ->where('semester', $request->semester)
-            ->first();
+    //    $curriculumEntry = manage_curiculum::where('id', $request->curriculum)
+     //        ->where('scuriculum_id', $request->scuriculum_id)
+     //        ->where('strand_id', $request->strand_id)
+     //       ->where('subject_id', $request->subject_id)
+     //       ->where('semester', $request->semester)
+      //      ->first();
     
-        if (!$curriculumEntry) {
-            return response()->json(['message' => 'Invalid subject selection for the given curriculum, strand, and semester.'], 422);
-        }
+      //  if (!$curriculumEntry) {
+      //      return response()->json(['message' => 'Invalid subject selection for the given curriculum, strand, and semester.'], 422);
+     //   }
     
         // Check if the user is authorized
         if ($user && $user->usertype === 'teacher') {
@@ -104,7 +107,7 @@ public function getAvailableSubjects($scuriculumId, $strandId)
 public function getCurriculumDetails($id)
 {
     // Retrieve the Curriculum
-    $curriculum = manage_curriculum::find($id);
+    $curriculum = manage_curiculum::find($id);
     if (!$curriculum) {
         return response()->json(['error' => 'Curriculum not found'], 404);
     }
@@ -132,5 +135,102 @@ public function getCurriculumDetails($id)
         'subjects' => $subjects
     ]);
 }
+
+     public function getCurriculumDetails2(Request $request)
+    {
+        $curriculum = manage_curiculum::join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+            ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+            ->join('tblyear', 'manage_curiculum.year_id', '=', 'tblyear.id')
+            ->where('manage_curiculum.id', $request->Namecuriculum)
+            ->where('manage_curiculum.strand_id', $request->strand_id)
+            ->where('manage_curiculum.subject_id', $request->subject_id)
+            ->where('manage_curiculum.year_id', $request->year_id)
+            ->where('manage_curiculum.semester', $request->semester)
+            ->where('tblstrand.gradelevel', $request->gradelevel)
+            ->select('manage_curiculum.*')
+            ->first();
+
+        if ($curriculum) {
+            return response()->json($curriculum);
+        } else {
+            return response()->json(['message' => 'Curriculum not found'], 404);
+        }
+    }
+
+
+    public function getAllCurriculums()
+{
+    $curriculums = manage_curiculum::all();
+    return response()->json($curriculums);
+}
+public function getStrandsByCurriculum($curriculumId)
+{
+    $strands = tblstrand::where('curriculum_id', $curriculumId)->get();
+    return response()->json($strands);
+}
+
+
+public function getAllCurriculums9()
+{
+    $curriculums = DB::table('manage_curiculum')
+        ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+        ->select('manage_curiculum.scuriculum_id', 'strandcuriculum.Namecuriculum')
+        ->get();
+        
+    return response()->json($curriculums);
+}
+public function getAllStrandDetailsByCurriculum()
+{
+    $strandDetails = DB::table('manage_curiculum')
+        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+       // ->where('manage_curiculum.strand_id', $scuriculumId)
+        ->select('tblstrand.addstrand', 'tblstrand.grade_level') // Adjust column names as needed
+        ->get();
+        
+    return response()->json($strandDetails);
+}
+public function getCurriculumsWithSameStrand($scuriculum_id)
+{
+    $strand_id = manage_curiculum::where('scuriculum_id', $scuriculum_id)->value('strand_id');
+
+    if ($strand_id) {
+        $curriculums = manage_curiculum::where('strand_id', $strand_id)->get();
+        return response()->json($curriculums);
+    } else {
+        return response()->json(['message' => 'Strand not found'], 404);
+    }
+
+
+
+
+    
+}
+
+public function getAllStrandDetailsByCurriculum1($scuriculumId)
+{
+    $strandDetails = DB::table('manage_curiculum')
+        ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        ->where('manage_curiculum.strand_id', $scuriculumId)
+        ->select('strandcuriculum.Namecuriculum', 'tblstrand.addstrand', 'tblstrand.grade_level')
+        ->get();
+
+    // If you need to group the results by curriculum name
+    $curriculum = $strandDetails->first(); // Get the first result to access curriculum name
+    $strands = $strandDetails->map(function($item) {
+        return [
+            'addstrand' => $item->addstrand,
+            'grade_level' => $item->grade_level
+        ];
+    });
+
+    return response()->json([
+        'Namecuriculum' => $curriculum,
+        'strands' => $strands
+    ]);
+}
+
+
+
 
 }

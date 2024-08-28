@@ -111,7 +111,16 @@ Route::group([
     Route::get('viewcuriculum/{id}', [tblclassController::class, 'getCurriculumDetails']);
 
     Route::get('viewcuriculum3', [manage_curiculumController::class, 'viewCurriculum3']); 
-    Route::get('getCurriculumDetails{$id}', [tblclassController::class, 'getCurriculumDetails']);
+    Route::get('getCurriculumDetails/{id}', [tblclassController::class, 'getCurriculumDetails']);
+    Route::get('getCurriculumDetails2', [tblclassController::class, 'getCurriculumDetails2']);
+
+    Route::get('getAllCurriculums', [tblclassController::class, 'getAllCurriculums']);
+    Route::get('getStrandsByCurriculum/{id}', [tblclassController::class, 'getStrandsByCurriculum']);
+    Route::get('getStrandsByCurriculum/{id}', [tblclassController::class, 'getStrandsByCurriculum']);
+
+    Route::get('getAllCurriculums9', [tblclassController::class, 'getAllCurriculums9']);
+    Route::get('getAllStrandDetailsByCurriculum', [tblclassController::class, 'getAllStrandDetailsByCurriculum']);
+    Route::get('getAllStrandDetailsByCurriculum1/{scuriculumId}', [tblclassController::class, 'getAllStrandDetailsByCurriculum1']);
    // g'getCurriculumDetails{$id}'
 
     
