@@ -15,6 +15,7 @@ use App\Http\Controllers\tblstrandController;
 use App\Http\Controllers\tblsubjectController;
 use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\MailController;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +30,8 @@ Route::post('register',[UsersController::class,'register']);//register user wala
 Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
 Route::post('registerstudent', [UsersController::class, 'registerstudent']);
+
+Route::get('sent-email', [MailController::class, 'sendEmail']);
 
 Route::group([
     "middleware" => "auth:sanctum"
@@ -110,8 +113,8 @@ Route::group([
     //TEACHER
 
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
-    Route::get('allclasses', [tblclassController::class, 'allclasses']);
-    Route::get('classes/{id}', [tblclassController::class, 'showclass']);
+    Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
+    Route::get('class/{class_id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
     Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
 
     Route::get('viewcuriculum/{id}', [tblclassController::class, 'getCurriculumDetails']);
@@ -126,17 +129,20 @@ Route::group([
 
     Route::get('getAllCurriculums9', [tblclassController::class, 'getAllCurriculums9']);
     Route::get('getAllStrandDetailsByCurriculum', [tblclassController::class, 'getAllStrandDetailsByCurriculum']);
-    Route::get('getAllStrandDetailsByCurriculum1/{scuriculumId}', [tblclassController::class, 'getAllStrandDetailsByCurriculum1']);
+    
 
 
    // g'getCurriculumDetails{$id}'
 
     
     Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
+
+    Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
     
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
+    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
  
 
 });

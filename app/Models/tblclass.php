@@ -54,6 +54,22 @@ class tblclass extends Model
 
     public function curriculum()
     {
-        return $this->belongsTo(manage_curiculum::class, 'scuriculum_id');
+        return $this->belongsTo(strandcuriculum::class, 'curiculum_id');
+    }
+
+
+
+    public function section()
+    {
+        return $this->belongsTo(tblsection::class, 'section_id');
+    }
+
+
+
+
+
+    public function year()
+    {
+        return $this->belongsTo(tblyear::class, 'year_id');
     }
 }

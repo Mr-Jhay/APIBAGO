@@ -27,7 +27,7 @@ class tblclassController extends Controller
             'year_id' => 'required|exists:tblyear,id',
             'semester' => 'required|string|max:255',
             'class_desc' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'gen_code' => 'required|string|max:255',
         ]);
     
@@ -50,6 +50,12 @@ class tblclassController extends Controller
                 // If a class with the same details exists, return a conflict response
                 return response()->json(['message' => 'Class with these details already exists.'], 409);
             }
+            
+            if ($request->hasFile('image')) {
+                $imageName = time().'.'.$request->image->extension();
+                $filePath = $request->image->storeAs('images', $imageName, 'public');
+                $validatedData['image'] = $filePath;
+            }
     
             // Create the class entry
             $class = tblclass::create(array_merge($validatedData, ['user_id' => $user->id]));
@@ -60,6 +66,56 @@ class tblclassController extends Controller
         }
     }
     
+
+
+    public function viewAllClassDetails(Request $request)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Retrieve all classes created by this teacher with related data
+        $classes = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])  // Adjust the relations based on your models
+                           ->where('user_id', $user->id)
+                           ->get();
+
+        if ($classes->isNotEmpty()) {
+            return response()->json(['classes' => $classes], 200);
+        } else {
+            return response()->json(['message' => 'No classes found.'], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
+
+
+public function showClass(Request $request, $class_id)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Retrieve the class created by this teacher with related data
+        $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                         ->where('id', $class_id)
+                         ->where('user_id', $user->id)
+                         ->first();
+
+        if ($class) {
+            return response()->json(['class' => $class], 200);
+        } else {
+            // If the class is not found or doesn't belong to the teacher
+            return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
 
     public function getCurriculums()
     {
