@@ -13,6 +13,7 @@ use App\Http\Controllers\tblstrandController;
 use App\Http\Controllers\tblsubjectController;
 use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
+use App\Http\Controllers\MailController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,8 @@ Route::post('register',[UsersController::class,'register']);//register user wala
 Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
 Route::post('registerstudent', [UsersController::class, 'registerstudent']);
+
+Route::get('sent-email', [MailController::class, 'sendEmail']);
 
 Route::group([
     "middleware" => "auth:sanctum"
@@ -131,6 +134,7 @@ Route::group([
     
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
+    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
  
 
 });
