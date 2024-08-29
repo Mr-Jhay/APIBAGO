@@ -27,7 +27,7 @@ class tblclassController extends Controller
             'year_id' => 'required|exists:tblyear,id',
             'semester' => 'required|string|max:255',
             'class_desc' => 'nullable|string',
-            'image' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'gen_code' => 'required|string|max:255',
         ]);
     
@@ -49,6 +49,12 @@ class tblclassController extends Controller
             if ($existingClass) {
                 // If a class with the same details exists, return a conflict response
                 return response()->json(['message' => 'Class with these details already exists.'], 409);
+            }
+            
+            if ($request->hasFile('image')) {
+                $imageName = time().'.'.$request->image->extension();
+                $filePath = $request->image->storeAs('images', $imageName, 'public');
+                $validatedData['image'] = $filePath;
             }
     
             // Create the class entry
