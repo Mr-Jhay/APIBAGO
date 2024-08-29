@@ -130,6 +130,8 @@ Route::group([
 
     
     Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
+
+    Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
     
 

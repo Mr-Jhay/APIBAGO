@@ -213,7 +213,7 @@ public function listStudentsInClass(Request $request, $class_id)
                    ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                    ->where('joinclass.class_id', $class_id)
                    ->where('users.user_type', 'student') // Filter to include only students
-                   ->select('users.id', 'users.name', 'users.email')
+                   ->select('users.id','users.idnumber', 'users.fname', 'users.email')
                    ->get();
 
     // Return the list of students
