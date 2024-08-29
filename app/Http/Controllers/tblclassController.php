@@ -61,6 +61,56 @@ class tblclassController extends Controller
     }
     
 
+
+    public function viewAllClassDetails(Request $request)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Retrieve all classes created by this teacher with related data
+        $classes = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])  // Adjust the relations based on your models
+                           ->where('user_id', $user->id)
+                           ->get();
+
+        if ($classes->isNotEmpty()) {
+            return response()->json(['classes' => $classes], 200);
+        } else {
+            return response()->json(['message' => 'No classes found.'], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
+
+
+public function showClass(Request $request, $class_id)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Retrieve the class created by this teacher with related data
+        $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                         ->where('id', $class_id)
+                         ->where('user_id', $user->id)
+                         ->first();
+
+        if ($class) {
+            return response()->json(['class' => $class], 200);
+        } else {
+            // If the class is not found or doesn't belong to the teacher
+            return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
+
     public function getCurriculums()
     {
         $curriculums = manage_curiculum::with('subjects')->get(); // Eager load subjects
