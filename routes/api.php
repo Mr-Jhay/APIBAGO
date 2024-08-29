@@ -3,6 +3,8 @@
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\joinclassController;
 use App\Http\Controllers\manage_curiculumController;
+use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TeacherReportController;
 use App\Http\Controllers\strandcuriculumController;
 use App\Http\Controllers\tblclassController;
 use App\Http\Controllers\tblpositionController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\tblstrandController;
 use App\Http\Controllers\tblsubjectController;
 use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -97,6 +100,9 @@ Route::group([
     Route::delete('deletecuri/{id}', [strandcuriculumController::class,'deletecuri']);
     
     Route::post('updateStatus', [strandcuriculumController::class, 'updateStatus']);//change status
+
+    Route::post('generatePDF', [ReportController::class, 'generatePDF']);
+    Route::post('generateTeacherPDF', [TeacherReportController::class, 'generateTeacherPDF']);
 
 
  
