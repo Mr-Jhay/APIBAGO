@@ -348,24 +348,30 @@ class tblclassController extends Controller
     }
 
 
-    public function getStudentClassroomDetails2()//if the student click the room
+    public function getStudentClassroomDetails2(Request $request)
     {
         // Retrieve the authenticated user
         $user = auth()->user();
-
+    
         // Ensure the user is a student
         if ($user->usertype !== 'student') {
             return response()->json([
                 'error' => 'Unauthorized: Only students can view their classroom details.'
             ], 403); // HTTP Forbidden
         }
-
-        // Fetch the classes the student has joined where the status is approved (1)
-        $classrooms = \DB::table('joinclass')
+    
+        // Validate the incoming request to ensure class_id is provided
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id'
+        ]);
+    
+        // Fetch the specific class the student has joined where the status is approved (1)
+        $classroom = \DB::table('joinclass')
                         ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
                         ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
                         ->where('joinclass.user_id', $user->id)
                         ->where('joinclass.status', 1) // Ensure the status is approved
+                        ->where('tblclass.id', $request->class_id) // Filter by class_id
                         ->select(
                             'tblsubject.id as subject_id',
                             'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'name' field
@@ -375,24 +381,19 @@ class tblclassController extends Controller
                             'tblclass.gen_code as class_gen_code',
                             'joinclass.status as join_status'
                         )
-                        ->get();
-
-        // Group the classes by subject
-        $subjects = $classrooms->groupBy('subject_name')->map(function ($classes) {
-            return $classes->map(function ($class) {
-                return [
-                    'class_id' => $class->class_id,
-                    'class_name' => $class->class_name,
-                    'class_description' => $class->class_description,
-                    'class_gen_code' => $class->class_gen_code,
-                    'join_status' => $class->join_status
-                ];
-            });
-        });
-
-        // Return the detailed list of subjects with their associated classes
-        return response()->json($subjects, 200); // HTTP OK
+                        ->first(); // Get a single record
+    
+        // Check if the class is found
+        if (!$classroom) {
+            return response()->json([
+                'error' => 'Classroom not found or you do not have access to this classroom.'
+            ], 404); // HTTP Not Found
+        }
+    
+        // Return the classroom details
+        return response()->json($classroom, 200); // HTTP OK
     }
+    
 
 
 
