@@ -142,6 +142,8 @@ Route::group([
     Route::get('listStudentsInClass2', [joinclassController::class, 'listStudentsInClass2']);//list of Students In Class 1 accepted may previlage
     Route::get('listStudentsInClass3', [joinclassController::class, 'listStudentsInClass3']);//list of Students In Class 0 pending 
 
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);
+
 
    
     
@@ -154,7 +156,12 @@ Route::group([
     Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
 
     Route::get('getStudentClassrooms', [tblclassController::class, 'getStudentClassrooms']);
-   // getStudentClassrooms
+
+
+    Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
+    Route::get('getStudentClassroomDetails2', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
+   
+
 
  
 
