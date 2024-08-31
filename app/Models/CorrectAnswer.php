@@ -13,6 +13,7 @@ class CorrectAnswer extends Model
     protected $fillable = [
         'tblquestion_id',
         'addchoices_id',
-        'correct_answer'
+        'correct_answer',
+        'points',
     ];
 }
