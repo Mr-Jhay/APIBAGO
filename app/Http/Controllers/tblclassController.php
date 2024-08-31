@@ -347,4 +347,45 @@ public function getStudentClassroomDetails()
 }
 
 
+
+
+public function showClass2(Request $request)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Automatically determine the class ID
+        $class_id = $this->getClassIdForTeacher($user->id);
+
+        // Retrieve the class created by this teacher with related data
+        $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                         ->where('id', $class_id)
+                         ->where('user_id', $user->id)
+                         ->first();
+
+        if ($class) {
+            return response()->json(['class' => $class], 200);
+        } else {
+            // If the class is not found or doesn't belong to the teacher
+            return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
+
+private function getClassIdForTeacher($teacherId)
+{
+    // Fetch the most recently created class for the teacher
+    $class = tblclass::where('user_id', $teacherId)
+                     ->orderBy('created_at', 'desc') // Order by creation date
+                     ->first(); // Get the first result (most recent)
+
+    return $class->id ?? null; // Return the class ID or null if no class is found
+}
+
+
 }
