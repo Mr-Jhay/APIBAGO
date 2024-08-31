@@ -138,6 +138,8 @@ Route::group([
     Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
     Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);//accept the student in class
     Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
+    Route::get('listStudentsInClass2', [joinclassController::class, 'listStudentsInClass2']);//list of Students In Class 1 accepted may previlage
+    Route::get('listStudentsInClass3', [joinclassController::class, 'listStudentsInClass3']);//list of Students In Class 0 pending 
 
 
    

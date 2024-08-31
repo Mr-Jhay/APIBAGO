@@ -292,7 +292,77 @@ public function approveStudentJoinRequest(Request $request)
 
 
 
+public function listStudentsInClass2(Request $request, $class_id)
+{
+    // Validate the class_id
+    $request->validate([
+        'class_id' => 'required|exists:tblclass,id' // Ensure class_id exists in the tblclass table
+    ]);
 
+    // Retrieve the authenticated user
+    $user = $request->user();
+
+    // Ensure the user is authorized to view students in the class
+    if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+        return response()->json([
+            'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Retrieve students enrolled in the specified class with a join status of 1
+    $students = \DB::table('users') // Use the users table
+                   ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                   ->where('joinclass.class_id', $class_id)
+                   ->where('joinclass.status', 1) // Filter to include only students with a status of 1
+                   ->where('users.usertype', 'student') // Filter to include only students
+                   ->select(
+                       'users.id',
+                       'users.idnumber',
+                       'users.fname',
+                       'users.email',
+                       'joinclass.status' // Include the status of the join request
+                   )
+                   ->get();
+
+    // Return the list of students with their join request status
+    return response()->json($students, 200); // HTTP OK
+}
+
+public function listStudentsInClass3(Request $request, $class_id)
+{
+    // Validate the class_id
+    $request->validate([
+        'class_id' => 'required|exists:tblclass,id' // Ensure class_id exists in the tblclass table
+    ]);
+
+    // Retrieve the authenticated user
+    $user = $request->user();
+
+    // Ensure the user is authorized to view students in the class
+    if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+        return response()->json([
+            'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Retrieve students enrolled in the specified class with a join status of 1
+    $students = \DB::table('users') // Use the users table
+                   ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                   ->where('joinclass.class_id', $class_id)
+                   ->where('joinclass.status', 0) // Filter to include only students with a status of 1
+                   ->where('users.usertype', 'student') // Filter to include only students
+                   ->select(
+                       'users.id',
+                       'users.idnumber',
+                       'users.fname',
+                       'users.email',
+                       'joinclass.status' // Include the status of the join request
+                   )
+                   ->get();
+
+    // Return the list of students with their join request status
+    return response()->json($students, 200); // HTTP OK
+}
 
 
 
