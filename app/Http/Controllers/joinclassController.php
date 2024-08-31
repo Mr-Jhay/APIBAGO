@@ -143,53 +143,70 @@ class joinclassController extends Controller
 
 
     public function addStudentToClass(Request $request)
-{
-    // Validate the request
-    $request->validate([
-        'join_class_id' => 'required|exists:joinclass,id', // The ID of the joinClass record to approve or reject
-        'status' => 'required|in:0,1' // Status to set: 1 for approved, 2 for rejected
-    ]);
-
-    // Retrieve the authenticated user (teacher)
-    $user = auth()->user();
-
-    // Ensure the user is a teacher
-    if ($user->usertype !== 'teacher') {
+    {
+        // Validate the request
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id', // The ID of the class
+            'user_ids' => 'required|array', // Array of student IDs
+            'user_ids.*' => 'exists:users,id' // Validate that each user_id exists in the users table
+        ]);
+    
+        // Retrieve the authenticated user (teacher)
+        $user = auth()->user();
+    
+        // Ensure the user is a teacher
+        if ($user->usertype !== 'teacher') {
+            return response()->json([
+                'error' => 'Unauthorized: Only teachers can approve or reject class join requests.'
+            ], 403); // HTTP Forbidden
+        }
+    
+        // Fetch the class to ensure it exists and belongs to the teacher
+        $class = tblclass::find($request->input('class_id'));
+    
+        // Check if the class exists and belongs to the teacher
+        if (!$class || $class->user_id !== $user->id) {
+            return response()->json([
+                'error' => 'Unauthorized: You do not have permission to modify this class.'
+            ], 403); // HTTP Forbidden
+        }
+    
+        // Iterate over the student IDs and update their join requests
+        foreach ($request->input('user_ids') as $userId) {
+            // Fetch the student based on user_id
+            $student = \DB::table('users')->where('id', $userId)->first();
+    
+            // Ensure the user is a student
+            if (!$student || $student->usertype !== 'student') {
+                return response()->json([
+                    'error' => 'Invalid user: One or more provided user IDs do not belong to a student.'
+                ], 400); // HTTP Bad Request
+            }
+    
+            // Fetch or create the joinClass record
+            $joinClass = joinclass::firstOrNew([
+                'class_id' => $request->input('class_id'),
+                'user_id' => $userId
+            ]);
+    
+            // Check if the joinClass record already exists
+            if ($joinClass->exists) {
+                // If already exists, skip or update if needed
+                continue;
+            }
+    
+            // Create the joinClass record with status 1 (approved)
+            $joinClass->status = 1; // Status 1 for 'accepted'
+            $joinClass->save();
+        }
+    
+        // Return a response indicating the update
         return response()->json([
-            'error' => 'Unauthorized: Only teachers can approve or reject class join requests.'
-        ], 403); // HTTP Forbidden
+            'message' => 'Student requests status updated successfully.'
+        ], 200); // HTTP OK
     }
-
-    // Fetch the joinClass record to update
-    $joinClass = joinclass::find($request->input('join_class_id'));
-
-    // Check if the joinClass record exists
-    if (!$joinClass) {
-        return response()->json([
-            'error' => 'Join request not found.'
-        ], 404); // HTTP Not Found
-    }
-
-    // Fetch the class to ensure it belongs to the teacher
-    $class = tblclass::find($joinClass->class_id);
-
-    // Check if the class exists and belongs to the teacher
-    if (!$class || $class->user_id !== $user->id) {
-        return response()->json([
-            'error' => 'Unauthorized: You do not have permission to modify this class.'
-        ], 403); // HTTP Forbidden
-    }
-
-    // Update the status of the joinClass record
-    $joinClass->update([
-        'status' => $request->input('status') // Update status to approved (1) or rejected (2)
-    ]);
-
-    // Return a response indicating the update
-    return response()->json([
-        'message' => 'Student request status updated successfully.'
-    ], 200); // HTTP OK
-}
+    
+    
 
 public function listStudentsInClass(Request $request, $class_id)
 {
@@ -219,6 +236,65 @@ public function listStudentsInClass(Request $request, $class_id)
     // Return the list of students
     return response()->json($students, 200); // HTTP OK
 }
+
+public function approveStudentJoinRequest(Request $request)
+{
+    // Validate the request
+    $request->validate([
+        'class_id' => 'required|exists:tblclass,id', // Ensure class_id exists in the tblclass table
+        'user_id' => 'required|exists:users,id' // Ensure user_id exists in the users table
+    ]);
+
+    // Retrieve the authenticated user
+    $user = $request->user();
+
+    // Ensure the user is a teacher or admin
+    if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+        return response()->json([
+            'error' => 'Unauthorized: Only teachers and admins can approve join requests.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Fetch the joinClass record
+    $joinClass = \DB::table('joinclass')
+                    ->where('class_id', $request->input('class_id'))
+                    ->where('user_id', $request->input('user_id'))
+                    ->first();
+
+    // Check if the joinClass record exists
+    if (!$joinClass) {
+        return response()->json([
+            'error' => 'Join request not found.'
+        ], 404); // HTTP Not Found
+    }
+
+    // Fetch the class to ensure it belongs to the teacher
+    $class = tblclass::find($request->input('class_id'));
+
+    // Check if the class exists and belongs to the teacher
+    if (!$class || $class->user_id !== $user->id) {
+        return response()->json([
+            'error' => 'Unauthorized: You do not have permission to approve this join request.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Update the status of the joinClass record to 'approved'
+    \DB::table('joinclass')
+        ->where('class_id', $request->input('class_id'))
+        ->where('user_id', $request->input('user_id'))
+        ->update(['status' => 1]); // Status 1 for 'approved'
+
+    // Return a response indicating the update
+    return response()->json([
+        'message' => 'Student join request approved successfully.'
+    ], 200); // HTTP OK
+}
+
+
+
+
+
+
 
 
 }

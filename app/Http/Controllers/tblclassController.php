@@ -290,7 +290,61 @@ public function getAllStrandDetailsByCurriculum1($scuriculumId)
     ]);
 }
 
+public function getStudentClassrooms()
+{
+    // Retrieve the authenticated user
+    $user = auth()->user();
 
+    // Ensure the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can view their classroom list.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Fetch the classes the student has joined
+    $classrooms = \DB::table('joinclass')
+                    ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                    ->where('joinclass.user_id', $user->id)
+                    ->select('tblclass.id', 'tblclass.subject_id', 'tblclass.description', 'tblclass.gen_code', 'joinclass.status')
+                    ->get();
+
+    // Return the list of classrooms with a 200 status code
+    return response()->json($classrooms, 200); // HTTP OK
+}
+
+public function getStudentClassroomDetails()
+{
+    // Retrieve the authenticated user
+    $user = auth()->user();
+
+    // Ensure the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can view their classroom details.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Fetch the classes the student has joined along with detailed information
+    $classrooms = \DB::table('joinclass')
+                    ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->leftJoin('tblschedule', 'tblclass.schedule_id', '=', 'tblschedule.id') // Assuming tblclass has a foreign key to tblschedule
+                    ->where('joinclass.user_id', $user->id)
+                    ->select(
+                        'tblclass.id as class_id',
+                        'tblclass.name as class_name',
+                        'tblclass.description as class_description',
+                        'tblclass.gen_code as class_gen_code',
+                        'tblsubject.name as subject_name', // Assuming tblsubject has a 'name' field
+                        'tblschedule.time as schedule_time', // Assuming tblschedule has a 'time' field
+                        'joinclass.status as join_status'
+                    )
+                    ->get();
+
+    // Return the detailed list of classrooms with a 200 status code
+    return response()->json($classrooms, 200); // HTTP OK
+}
 
 
 }

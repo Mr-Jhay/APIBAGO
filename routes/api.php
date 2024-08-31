@@ -131,11 +131,17 @@ Route::group([
     Route::get('getAllStrandDetailsByCurriculum', [tblclassController::class, 'getAllStrandDetailsByCurriculum']);
     
 
-
+   
    // g'getCurriculumDetails{$id}'
 
     
-    Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
+    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);//accept the student in class
+    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
+
+
+   
+    
 
     Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
@@ -143,6 +149,10 @@ Route::group([
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
     Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
+
+    Route::get('getStudentClassrooms', [tblclassController::class, 'getStudentClassrooms']);
+   // getStudentClassrooms
+
  
 
 });
