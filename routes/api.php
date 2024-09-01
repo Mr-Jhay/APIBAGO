@@ -16,7 +16,7 @@ use App\Http\Controllers\tblsubjectController;
 use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MailController;
-
+use App\Http\Controllers\ExamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -115,6 +115,7 @@ Route::group([
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
     Route::get('class/{class_id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
+    Route::get('showClass2', [tblclassController::class, 'showClass2']);
     Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
 
     Route::get('viewcuriculum/{id}', [tblclassController::class, 'getCurriculumDetails']);
@@ -131,18 +132,40 @@ Route::group([
     Route::get('getAllStrandDetailsByCurriculum', [tblclassController::class, 'getAllStrandDetailsByCurriculum']);
     
 
-
+   
    // g'getCurriculumDetails{$id}'
 
     
-    Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
+    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
+    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
+
+    
+    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
+    Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
+   
+   
+    
 
     Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
     
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
-    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
+    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);// Student joins a class using gen_code
+
+    Route::get('getStudentClassrooms', [tblclassController::class, 'getStudentClassrooms']);
+
+
+    Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
+    Route::get('getStudentClassroomDetails2', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
+   
+    Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
+    Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
+   // submitExam8
+
  
 
 });

@@ -69,52 +69,52 @@ class tblclassController extends Controller
 
 
     public function viewAllClassDetails(Request $request)
-{
-    // Get the authenticated user
-    $user = $request->user();
+    {
+        // Get the authenticated user
+        $user = $request->user();
 
-    // Check if the user is authorized and is a teacher
-    if ($user && $user->usertype === 'teacher') {
-        // Retrieve all classes created by this teacher with related data
-        $classes = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])  // Adjust the relations based on your models
-                           ->where('user_id', $user->id)
-                           ->get();
+        // Check if the user is authorized and is a teacher
+        if ($user && $user->usertype === 'teacher') {
+            // Retrieve all classes created by this teacher with related data
+            $classes = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])  // Adjust the relations based on your models
+                            ->where('user_id', $user->id)
+                            ->get();
 
-        if ($classes->isNotEmpty()) {
-            return response()->json(['classes' => $classes], 200);
+            if ($classes->isNotEmpty()) {
+                return response()->json(['classes' => $classes], 200);
+            } else {
+                return response()->json(['message' => 'No classes found.'], 404);
+            }
         } else {
-            return response()->json(['message' => 'No classes found.'], 404);
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
-    } else {
-        return response()->json(['message' => 'Unauthorized'], 403);
     }
-}
 
 
 
-public function showClass(Request $request, $class_id)
-{
-    // Get the authenticated user
-    $user = $request->user();
+    public function showClass(Request $request, $class_id)
+    {
+        // Get the authenticated user
+        $user = $request->user();
 
-    // Check if the user is authorized and is a teacher
-    if ($user && $user->usertype === 'teacher') {
-        // Retrieve the class created by this teacher with related data
-        $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
-                         ->where('id', $class_id)
-                         ->where('user_id', $user->id)
-                         ->first();
+        // Check if the user is authorized and is a teacher
+        if ($user && $user->usertype === 'teacher') {
+            // Retrieve the class created by this teacher with related data
+            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                            ->where('id', $class_id)
+                            ->where('user_id', $user->id)
+                            ->first();
 
-        if ($class) {
-            return response()->json(['class' => $class], 200);
+            if ($class) {
+                return response()->json(['class' => $class], 200);
+            } else {
+                // If the class is not found or doesn't belong to the teacher
+                return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+            }
         } else {
-            // If the class is not found or doesn't belong to the teacher
-            return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+            return response()->json(['message' => 'Unauthorized'], 403);
         }
-    } else {
-        return response()->json(['message' => 'Unauthorized'], 403);
     }
-}
 
 
     public function getCurriculums()
@@ -137,64 +137,65 @@ public function showClass(Request $request, $class_id)
         return $curriculum;
     }
     public function getStrandIdAndValue($scuriculumId)
-{
-    $curriculum = manage_curriculum::where('scuriculum_id', $scuriculumId)->first();
-    if (!$curriculum) {
-        return response()->json(['error' => 'Curriculum not found'], 404);
+    {
+        $curriculum = manage_curriculum::where('scuriculum_id', $scuriculumId)->first();
+        if (!$curriculum) {
+            return response()->json(['error' => 'Curriculum not found'], 404);
+        }
+
+        $strandId = $curriculum->strand_id;
+        $strand = tblstrand::find($strandId); // Assuming you have a Strand model
+
+        if (!$strand) {
+            return response()->json(['error' => 'Strand not found'], 404);
+        }
+
+        return [
+            'strand_id' => $strandId,
+            'strand_value' => $strand->value // Assuming 'value' is a column in the Strand table
+        ];
     }
 
-    $strandId = $curriculum->strand_id;
-    $strand = tblstrand::find($strandId); // Assuming you have a Strand model
+    public function getAvailableSubjects($scuriculumId, $strandId)
+    {
+        $subjects = tblsubject::where('strand_id', $strandId)
+                        ->where('curriculum_id', $scuriculumId)
+                        ->get();
 
-    if (!$strand) {
-        return response()->json(['error' => 'Strand not found'], 404);
+        return $subjects;
     }
 
-    return [
-        'strand_id' => $strandId,
-        'strand_value' => $strand->value // Assuming 'value' is a column in the Strand table
-    ];
-}
-public function getAvailableSubjects($scuriculumId, $strandId)
-{
-    $subjects = tblsubject::where('strand_id', $strandId)
-                       ->where('curriculum_id', $scuriculumId)
-                       ->get();
+    public function getCurriculumDetails($id)
+    {
+        // Retrieve the Curriculum
+        $curriculum = manage_curiculum::find($id);
+        if (!$curriculum) {
+            return response()->json(['error' => 'Curriculum not found'], 404);
+        }
 
-    return $subjects;
-}
+        $scuriculumId = $curriculum->scuriculum_id;
 
-public function getCurriculumDetails($id)
-{
-    // Retrieve the Curriculum
-    $curriculum = manage_curiculum::find($id);
-    if (!$curriculum) {
-        return response()->json(['error' => 'Curriculum not found'], 404);
+        // Retrieve Strand ID and its details
+        $strandId = $curriculum->strand_id;
+        $strand = tblstrand::find($strandId); // Assuming you have a Strand model
+        if (!$strand) {
+            return response()->json(['error' => 'Strand not found'], 404);
+        }
+
+        // Retrieve Available Subjects
+        $subjects = tblsubject::where('strand_id', $strandId)
+                        ->where('curriculum_id', $scuriculumId)
+                        ->get();
+
+        return response()->json([
+            'curriculum_id' => $scuriculumId,
+            'namecuriculum' => $curriculum->namecuriculum, // Assuming 'namecuriculum' is a column in ManageCurriculum
+            'strand_id' => $strandId,
+            'strand' => $strand->strand, // Assuming 'strand' is a column in Strand
+            'grade_level' => $strand->grade_level, // Assuming 'grade_level' is a column in Strand
+            'subjects' => $subjects
+        ]);
     }
-
-    $scuriculumId = $curriculum->scuriculum_id;
-
-    // Retrieve Strand ID and its details
-    $strandId = $curriculum->strand_id;
-    $strand = tblstrand::find($strandId); // Assuming you have a Strand model
-    if (!$strand) {
-        return response()->json(['error' => 'Strand not found'], 404);
-    }
-
-    // Retrieve Available Subjects
-    $subjects = tblsubject::where('strand_id', $strandId)
-                       ->where('curriculum_id', $scuriculumId)
-                       ->get();
-
-    return response()->json([
-        'curriculum_id' => $scuriculumId,
-        'namecuriculum' => $curriculum->namecuriculum, // Assuming 'namecuriculum' is a column in ManageCurriculum
-        'strand_id' => $strandId,
-        'strand' => $strand->strand, // Assuming 'strand' is a column in Strand
-        'grade_level' => $strand->grade_level, // Assuming 'grade_level' is a column in Strand
-        'subjects' => $subjects
-    ]);
-}
 
      public function getCurriculumDetails2(Request $request)
     {
@@ -219,78 +220,222 @@ public function getCurriculumDetails($id)
 
 
     public function getAllCurriculums()
-{
-    $curriculums = manage_curiculum::all();
-    return response()->json($curriculums);
-}
-public function getStrandsByCurriculum($curriculumId)
-{
-    $strands = tblstrand::where('curriculum_id', $curriculumId)->get();
-    return response()->json($strands);
-}
-
-
-public function getAllCurriculums9()
-{
-    $curriculums = DB::table('manage_curiculum')
-        ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
-        ->select('manage_curiculum.scuriculum_id', 'strandcuriculum.Namecuriculum')
-        ->get();
-        
-    return response()->json($curriculums);
-}
-public function getAllStrandDetailsByCurriculum()
-{
-    $strandDetails = DB::table('manage_curiculum')
-        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
-       // ->where('manage_curiculum.strand_id', $scuriculumId)
-        ->select('tblstrand.addstrand', 'tblstrand.grade_level') // Adjust column names as needed
-        ->get();
-        
-    return response()->json($strandDetails);
-}
-public function getCurriculumsWithSameStrand($scuriculum_id)
-{
-    $strand_id = manage_curiculum::where('scuriculum_id', $scuriculum_id)->value('strand_id');
-
-    if ($strand_id) {
-        $curriculums = manage_curiculum::where('strand_id', $strand_id)->get();
+    {
+        $curriculums = manage_curiculum::all();
         return response()->json($curriculums);
-    } else {
-        return response()->json(['message' => 'Strand not found'], 404);
+    }
+
+    public function getStrandsByCurriculum($curriculumId)
+    {
+        $strands = tblstrand::where('curriculum_id', $curriculumId)->get();
+        return response()->json($strands);
     }
 
 
+    public function getAllCurriculums9()
+    {
+        $curriculums = DB::table('manage_curiculum')
+            ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+            ->select('manage_curiculum.scuriculum_id', 'strandcuriculum.Namecuriculum')
+            ->get();
+            
+        return response()->json($curriculums);
+    }
 
 
+    public function getAllStrandDetailsByCurriculum()
+    {
+        $strandDetails = DB::table('manage_curiculum')
+            ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        // ->where('manage_curiculum.strand_id', $scuriculumId)
+            ->select('tblstrand.addstrand', 'tblstrand.grade_level') // Adjust column names as needed
+            ->get();
+            
+        return response()->json($strandDetails);
+    }
+
+    public function getCurriculumsWithSameStrand($scuriculum_id)
+    {
+        $strand_id = manage_curiculum::where('scuriculum_id', $scuriculum_id)->value('strand_id');
+
+        if ($strand_id) {
+            $curriculums = manage_curiculum::where('strand_id', $strand_id)->get();
+            return response()->json($curriculums);
+        } else {
+            return response()->json(['message' => 'Strand not found'], 404);
+        }  
+    }
+
+    public function getAllStrandDetailsByCurriculum1($scuriculumId)
+    {
+        $strandDetails = DB::table('manage_curiculum')
+            ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
+            ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+            ->where('manage_curiculum.strand_id', $scuriculumId)
+            ->select('strandcuriculum.Namecuriculum', 'tblstrand.addstrand', 'tblstrand.grade_level')
+            ->get();
+
+        // If you need to group the results by curriculum name
+        $curriculum = $strandDetails->first(); // Get the first result to access curriculum name
+        $strands = $strandDetails->map(function($item) {
+            return [
+                'addstrand' => $item->addstrand,
+                'grade_level' => $item->grade_level
+            ];
+        });
+
+        return response()->json([
+            'Namecuriculum' => $curriculum,
+            'strands' => $strands
+        ]);
+    }
+
+
+    public function getStudentClassrooms()
+    {
+        // Retrieve the authenticated user
+        $user = auth()->user();
+
+        // Ensure the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json([
+                'error' => 'Unauthorized: Only students can view their classroom list.'
+            ], 403); // HTTP Forbidden
+        }
+
+        // Fetch the classes the student has joined
+        $classrooms = \DB::table('joinclass')
+                        ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                        ->where('joinclass.user_id', $user->id)
+                        ->select('tblclass.id', 'tblclass.subject_id', 'tblclass.description', 'tblclass.gen_code', 'joinclass.status')
+                        ->get();
+
+        // Return the list of classrooms with a 200 status code
+        return response()->json($classrooms, 200); // HTTP OK
+    }
+
+
+    public function getStudentClassroomDetails()//all the subject only
+    {
+        // Retrieve the authenticated user
+        $user = auth()->user();
+
+        // Ensure the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json([
+                'error' => 'Unauthorized: Only students can view their classroom details.'
+            ], 403); // HTTP Forbidden
+        }
+
+        // Fetch the classes the student has joined where the status is approved (1)
+        $classrooms = \DB::table('joinclass')
+                        ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                        ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                        ->where('joinclass.user_id', $user->id)
+                        ->where('joinclass.status', 1) // Ensure the status is approved
+                        ->select(
+                            'tblclass.id as class_id',
+                            'tblclass.name as class_name',
+                            'tblclass.description as class_description',
+                            'tblclass.gen_code as class_gen_code',
+                            'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'name' field
+                            'joinclass.status as join_status'
+                        )
+                        ->get();
+
+        // Return the detailed list of classrooms with a 200 status code
+        return response()->json($classrooms, 200); // HTTP OK
+    }
+
+
+    public function getStudentClassroomDetails2(Request $request)
+    {
+        // Retrieve the authenticated user
+        $user = auth()->user();
     
-}
+        // Ensure the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json([
+                'error' => 'Unauthorized: Only students can view their classroom details.'
+            ], 403); // HTTP Forbidden
+        }
+    
+        // Validate the incoming request to ensure class_id is provided
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id'
+        ]);
+    
+        // Fetch the specific class the student has joined where the status is approved (1)
+        $classroom = \DB::table('joinclass')
+                        ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                        ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                        ->where('joinclass.user_id', $user->id)
+                        ->where('joinclass.status', 1) // Ensure the status is approved
+                        ->where('tblclass.id', $request->class_id) // Filter by class_id
+                        ->select(
+                            'tblsubject.id as subject_id',
+                            'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'name' field
+                            'tblclass.id as class_id',
+                            'tblclass.name as class_name',
+                            'tblclass.description as class_description',
+                            'tblclass.gen_code as class_gen_code',
+                            'joinclass.status as join_status'
+                        )
+                        ->first(); // Get a single record
+    
+        // Check if the class is found
+        if (!$classroom) {
+            return response()->json([
+                'error' => 'Classroom not found or you do not have access to this classroom.'
+            ], 404); // HTTP Not Found
+        }
+    
+        // Return the classroom details
+        return response()->json($classroom, 200); // HTTP OK
+    }
+    
 
-public function getAllStrandDetailsByCurriculum1($scuriculumId)
-{
-    $strandDetails = DB::table('manage_curiculum')
-        ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
-        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
-        ->where('manage_curiculum.strand_id', $scuriculumId)
-        ->select('strandcuriculum.Namecuriculum', 'tblstrand.addstrand', 'tblstrand.grade_level')
-        ->get();
-
-    // If you need to group the results by curriculum name
-    $curriculum = $strandDetails->first(); // Get the first result to access curriculum name
-    $strands = $strandDetails->map(function($item) {
-        return [
-            'addstrand' => $item->addstrand,
-            'grade_level' => $item->grade_level
-        ];
-    });
-
-    return response()->json([
-        'Namecuriculum' => $curriculum,
-        'strands' => $strands
-    ]);
-}
 
 
+
+
+    public function showClass2(Request $request)
+    {
+        // Get the authenticated user
+        $user = $request->user();
+
+        // Check if the user is authorized and is a teacher
+        if ($user && $user->usertype === 'teacher') {
+            // Automatically determine the class ID
+            $class_id = $this->getClassIdForTeacher($user->id);
+
+            // Retrieve the class created by this teacher with related data
+            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                            ->where('id', $class_id)
+                            ->where('user_id', $user->id)
+                            ->first();
+
+            if ($class) {
+                return response()->json(['class' => $class], 200);
+            } else {
+                // If the class is not found or doesn't belong to the teacher
+                return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
+            }
+        } else {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+    }
+
+
+    private function getClassIdForTeacher($teacherId)
+    {
+        // Fetch the most recently created class for the teacher
+        $class = tblclass::where('user_id', $teacherId)
+                        ->orderBy('created_at', 'desc') // Order by creation date
+                        ->first(); // Get the first result (most recent)
+
+        return $class->id ?? null; // Return the class ID or null if no class is found
+    }
 
 
 }

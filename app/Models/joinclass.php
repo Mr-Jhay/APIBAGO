@@ -13,6 +13,7 @@ class joinclass extends Model
     protected $table = 'joinclass';
     protected $fillable = [
         'user_id',  
-        'class_id',                      
+        'class_id', 
+        'status'                     
     ]; 
 }
