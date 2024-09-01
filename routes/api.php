@@ -141,7 +141,7 @@ Route::group([
     Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
     Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
     Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
-
+   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
     
     Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
     Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
@@ -161,6 +161,8 @@ Route::group([
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
+    Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
+    
    // submitExam8
 
  

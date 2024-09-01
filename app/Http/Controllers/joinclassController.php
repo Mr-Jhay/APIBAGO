@@ -290,6 +290,53 @@ class joinclassController extends Controller
 }
 
 
+public function listStudentsInClass4(Request $request, $class_id)//student makikita lahat ng classmates
+{
+    // Validate the class_id
+    $request->validate([
+        'class_id' => 'required|exists:tblclass,id' // Ensure class_id exists in the tblclass table
+    ]);
 
+    // Retrieve the authenticated user
+    $user = $request->user();
+
+    // Ensure only students are authorized to view classmates
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can view classmates in a class.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Ensure the student is part of the class they want to view
+    $isEnrolled = \DB::table('joinclass')
+                    ->where('class_id', $class_id)
+                    ->where('user_id', $user->id)
+                    ->where('status', 1) // Ensure the student's join request is approved
+                    ->exists();
+
+    if (!$isEnrolled) {
+        return response()->json([
+            'error' => 'Unauthorized: You are not enrolled in this class.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Retrieve students enrolled in the specified class with a join status of 1
+    $students = \DB::table('users') // Use the users table
+                   ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                   ->where('joinclass.class_id', $class_id)
+                   ->where('joinclass.status', 1) // Filter to include only students with a status of 1
+                   ->where('users.usertype', 'student') // Filter to include only students
+                   ->select(
+                       'users.id',
+                       'users.idnumber',
+                       'users.fname',
+                       'users.email',
+                       'joinclass.status' // Include the status of the join request
+                   )
+                   ->get();
+
+    // Return the list of students with their join request status
+    return response()->json($students, 200); // HTTP OK
+}
 
 }
