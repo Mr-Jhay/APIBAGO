@@ -137,19 +137,25 @@ Route::group([
 
     
     Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
-    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
-    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
-    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
-    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
+    
+    // Teacher approves or rejects a join request
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);
+
+// List all students in a class (approved and pending)
+    Route::post('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);
+
+// Teacher fetches approved students in a class
+    Route::get('classes/{class_id}/students/approved', [joinclassController::class, 'listStudentsInClass2']);
+
+// Teacher fetches pending join requests for a class
+    Route::get('classes/{class_id}/students/pending', [joinclassController::class, 'listStudentsInClass3']);
+
 
     
     Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
     Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
    
    
-    
-
-    Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
     
 
