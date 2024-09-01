@@ -139,8 +139,8 @@ Route::group([
     Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
     Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
     Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
-    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
-    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
+    Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
+    Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
 
     
     Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
