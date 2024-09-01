@@ -6,16 +6,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('joinclass', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('class_id');
-            $table->tinyInteger('status')->default(0);//meaning active
+            $table->unsignedBigInteger('class_id');  // Add class_id here
+            $table->tinyInteger('status')->default(0); // 0 = Pending, 1 = Approved
             $table->timestamps();
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
@@ -23,9 +20,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     { 
         Schema::dropIfExists('joinclass');

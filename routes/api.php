@@ -141,16 +141,12 @@ Route::group([
     Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
     Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
     Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
-    
-    Route::get('listStudentsInClass_studentside/{class_id}', [joinclassController::class, 'listStudentsInClass_studentside']);//list StudentsInClass studentside/classmates
+
     
     Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
     Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
    
    
-    
-
-    Route::get('/classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass']);
     //STUDENTS
     
 
