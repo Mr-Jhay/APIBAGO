@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('strand_id'); // Foreign key for strands
             $table->unsignedBigInteger('section_id'); // Foreign key for sections
             $table->unsignedBigInteger('subject_id'); // Foreign key for subjects
-            $table->unsignedBigInteger('year_id'); // Foreign key for years
+            $table->unsignedBigInteger('year_id'); // Foreign key for years 
             $table->string('semester'); // Semester column
             $table->string('class_desc')->nullable();; // Description of the class
             $table->string('profile_img')->nullable();; // Path to the profile image
