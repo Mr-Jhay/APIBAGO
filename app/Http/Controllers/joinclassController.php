@@ -328,7 +328,7 @@ public function listStudentsInClass2(Request $request, $class_id)
     return response()->json($students, 200); // HTTP OK
 }
 
-public function listStudentsInClass3(Request $request, $class_id)
+public function listStudentsInClass3(Request $request, $class_id)//
 {
     // Validate the class_id
     $request->validate([

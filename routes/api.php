@@ -137,15 +137,15 @@ Route::group([
 
     
     Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
-    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);//accept the student in class
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
     Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
-    Route::get('listStudentsInClass2', [joinclassController::class, 'listStudentsInClass2']);//list of Students In Class 1 accepted may previlage
-    Route::get('listStudentsInClass3', [joinclassController::class, 'listStudentsInClass3']);//list of Students In Class 0 pending 
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
 
     
     Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
-
-
+    Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
+   
    
     
 
@@ -154,7 +154,7 @@ Route::group([
     
 
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
-    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);//join the student in class ITO NA LAST
+    Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);// Student joins a class using gen_code
 
     Route::get('getStudentClassrooms', [tblclassController::class, 'getStudentClassrooms']);
 
