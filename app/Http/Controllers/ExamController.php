@@ -571,4 +571,71 @@ class ExamController extends Controller
         'total_points' => $totalPoints // Include total points
     ], 200); // HTTP OK
 }
+
+
+
+public function addExam2(Request $request)
+{
+    $request->validate([
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+        'questions' => 'required|array',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:addchoices,id',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer'
+    ]);
+
+    // Create exam
+    $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+
+    $totalPoints = 0; // Initialize total points
+    $totalQuestions = 0; // Initialize total questions
+
+    foreach ($request->input('questions') as $qData) {
+        $totalQuestions++; // Increment total questions
+
+        $question = Question::create([
+            'tblschedule_id' => $exam->id,
+            'question_type' => $qData['question_type'],
+            'question' => $qData['question']
+        ]);
+
+        if (isset($qData['choices'])) {
+            foreach ($qData['choices'] as $choice) {
+                Choice::create([
+                    'tblquestion_id' => $question->id,
+                    'choices' => $choice
+                ]);
+            }
+        }
+
+        if (isset($qData['correct_answers'])) {
+            foreach ($qData['correct_answers'] as $ansData) {
+                $points = $ansData['points'] ?? 0;
+                $totalPoints += $points; // Add points to total
+
+                CorrectAnswer::create([
+                    'tblquestion_id' => $question->id,
+                    'addchoices_id' => $ansData['choice_id'] ?? null,
+                    'correct_answer' => $ansData['correct_answer'] ?? null,
+                    'points' => $points
+                ]);
+            }
+        }
+    }
+
+    return response()->json([
+        'message' => 'Exam created successfully',
+        'exam' => $exam,
+        'total_points' => $totalPoints, // Return the total points
+        'total_questions' => $totalQuestions // Return the total number of questions
+    ], 201); // HTTP Created
+}
 }

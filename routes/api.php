@@ -150,6 +150,7 @@ Route::group([
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
+   Route::post('addExam2', [ExamController::class, 'addExam2']);//pag add ng exam with total points and items
    Route::get('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
    Route::get('viewExamForTeacher2', [ExamController::class, 'viewExamForTeacher2']);////view exam in teacher side matic
   
