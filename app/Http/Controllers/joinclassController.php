@@ -284,4 +284,27 @@ class joinclassController extends Controller
 
         return response()->json($students, 200);
     }
+
+    public function viewAllApprovedStudents(Request $request)
+    {
+        // Get the authenticated user
+        $user = $request->user();
+
+        // Ensure the user is a teacher or has the correct permissions
+        if ($user->usertype !== 'teacher') {
+            return response()->json([
+                'error' => 'Unauthorized: Only teachers can view this list.'
+            ], 403);
+        }
+
+        // Fetch students who are approved (status = 1)
+        $approvedStudents = DB::table('joinclass')
+            ->join('users', 'joinclass.user_id', '=', 'users.id')
+            ->where('joinclass.class_id', $request->class_id)
+            ->where('joinclass.status', 1) // Status 1 means approved
+            ->select('users.id', 'users.email')
+            ->get();
+
+        return response()->json(['students' => $approvedStudents], 200);
+    }
 }
