@@ -3,67 +3,33 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
-
 
 class InvitationMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public array $details;
+
     /**
      * Create a new message instance.
-     */
-
-     public $class;
-     public $user;
-
-    public function __construct()
-    {
-        $this->class = $class;
-        $this->user = $user;
-    }
-
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
-    {
-        return new Envelope(
-            subject: 'Invitation Mail',
-        );
-    }
-
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            view: 'view.name',
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
      *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
+     * @param array $details
      */
-    public function attachments(): array
+    public function __construct(array $details)
     {
-        return [];
+        $this->details = $details;
     }
 
+    /**
+     * Build the message.
+     *
+     * @return \Illuminate\Mail\Mailables\Envelope
+     */
     public function build()
     {
-        return $this->subject('Class Invitation')
-                    ->view('emails.invitation')
-                    ->with([
-                        'className' => $this->class->name,
-                        'userName' => $this->user->name,
-                    ]);
+        return $this->view('emails.invitation') // Ensure the view path is correct
+                    ->with('details', $this->details);
     }
 }

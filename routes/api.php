@@ -19,6 +19,8 @@ use App\Http\Controllers\MailController;
 use App\Http\Controllers\ExamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EmailController;
+//use App\Http\Controllers\MailController;
 
 
 
@@ -31,8 +33,10 @@ Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
 Route::post('registerstudent', [UsersController::class, 'registerstudent']);
 
-Route::get('sent-email', [MailController::class, 'sendEmail']);
+Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
 
+Route::post('sendInvitation', [MailController::class, 'sendInvitation']);
+//EmailController
 Route::group([
     "middleware" => "auth:sanctum"
 ], function() {
