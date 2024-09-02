@@ -107,9 +107,10 @@ Route::group([
     Route::post('generatePDF', [ReportController::class, 'generatePDF']);
     Route::post('generateTeacherPDF', [TeacherReportController::class, 'generateTeacherPDF']);
 
-
- 
-   
+    Route::get('getCounts', [UsersController::class, 'getCounts']);
+    Route::get('getAllStudentsWithStrands', [UsersController::class, 'getAllStudentsWithStrands']);
+   // getCounts
+  // getAllStudentsWithStrands
     //TEACHER
 
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side

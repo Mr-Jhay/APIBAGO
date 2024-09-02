@@ -381,20 +381,21 @@ public function getCounts()
         }
 
         // Fetch all students along with their strand, grade level, section, and sex information
-        $students = User::select(
-                'users.id', 
-                'users.fname', 
-                'users.mname', 
-                'users.lname', 
-                'users.Mobile_no', 
-                'users.sex',
-                'tblstrand.addstrand as strand_name', 
-                'tblstrand.grade_level as grade_level', 
-                'tblsection.section as section_name'
-            )
-            ->join('tblstrand', 'users.strand_id', '=', 'tblstrand.id')
-            ->join('tblsection', 'users.section_id', '=', 'tblsection.id')
-            ->get();
+        $students = tblstudent::select(
+            'users.id', 
+            'users.fname', 
+            'users.mname', 
+            'users.lname', 
+            'users.sex', 
+            'tblstudent.Mobile_no', 
+            'tblstrand.addstrand as strand_name', 
+            'tblstrand.grade_level as grade_level', 
+            'tblsection.section as section_name'
+        )
+        ->join('users', 'tblstudent.user_id', '=', 'users.id') // Join the users table
+        ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id') // Join the tblstrand table
+        ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id') // Join the tblsection table
+        ->get();
 
         // Group students by strand and grade level, count males, females, and total students
         $groupedByStrandAndGradeLevel = $students->groupBy(['strand_name', 'grade_level'])->map(function ($groupByStrand) {
@@ -758,6 +759,41 @@ public function viewallusers()
     return response()->json($users);
 }
 
+public function getAllStudentsWithStrands()
+{
+    // Check if the authenticated user is an admin
+    $user = auth()->user();
+    if (!$user || $user->usertype !== 'admin') {
+        return response()->json([
+            'status' => false,
+            'message' => 'Unauthorized access',
+        ], 403);
+    }
+
+    // Fetch all students along with their strand and section information
+    $students = tblstudent::select(
+            'tblstudent.id', 
+            'tblstudent.fname', 
+            'tblstudent.mname', 
+            'tblstudent.lname', 
+            'tblstudent.Mobile_no', 
+            'tblstrand.addstrand as strand_name', 
+            'tblstrand.grade_level as grade_level', 
+            'tblsection.section as section_name'
+        )
+        ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+        ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
+        ->get();
+
+    // Group students by strand
+    $groupedByStrand = $students->groupBy('strand_name');
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Students grouped by strands',
+        'data' => $groupedByStrand,
+    ], 200);
+}
 
 
 }
