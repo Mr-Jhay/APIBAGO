@@ -72,25 +72,38 @@ class ExamController extends Controller
         ], 201); // HTTP Created
     }
 
-    public function viewExamForTeacher($exam_id)//teacherside
+    public function viewExamForTeacher($exam_id)
     {
         $user = auth()->user();
-
+    
         if ($user->usertype !== 'teacher') {
             return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403); // HTTP Forbidden
         }
-
+    
         // Optionally, check if the teacher has access to the exam
         // This can be based on class or any other criteria
-
+    
         $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
                     ->find($exam_id);
-
+    
         if (!$exam) {
             return response()->json(['error' => 'Exam not found.'], 404); // HTTP Not Found
         }
-
-        return response()->json($exam, 200); // HTTP OK
+    
+        $totalQuestions = $exam->questions->count(); // Count total questions
+        $totalPoints = 0;
+    
+        foreach ($exam->questions as $question) {
+            foreach ($question->correctAnswers as $correctAnswer) {
+                $totalPoints += $correctAnswer->points; // Sum up total points
+            }
+        }
+    
+        return response()->json([
+            'exam' => $exam,
+            'total_questions' => $totalQuestions, // Include total number of questions
+            'total_points' => $totalPoints // Include total points
+        ], 200); // HTTP OK
     }
 
     public function viewExam($exam_id)//View Exam for Students
