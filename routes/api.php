@@ -93,7 +93,7 @@ Route::group([
     Route::put('updateTeacher', [UsersController::class, 'updateTeacher']);
 
     Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);
-    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']);
+    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']); //
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
