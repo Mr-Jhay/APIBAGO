@@ -381,19 +381,19 @@ public function getCounts()
         }
 
         // Fetch all students along with their strand, grade level, section, and sex information
-        $students = tblstudent::select(
-                'tblstudent.id', 
-                'tblstudent.fname', 
-                'tblstudent.mname', 
-                'tblstudent.lname', 
-                'tblstudent.Mobile_no', 
-                'tblstudent.sex',
+        $students = User::select(
+                'users.id', 
+                'users.fname', 
+                'users.mname', 
+                'users.lname', 
+                'users.Mobile_no', 
+                'users.sex',
                 'tblstrand.addstrand as strand_name', 
                 'tblstrand.grade_level as grade_level', 
                 'tblsection.section as section_name'
             )
-            ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
-            ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
+            ->join('tblstrand', 'users.strand_id', '=', 'tblstrand.id')
+            ->join('tblsection', 'users.section_id', '=', 'tblsection.id')
             ->get();
 
         // Group students by strand and grade level, count males, females, and total students
