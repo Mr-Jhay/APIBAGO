@@ -478,7 +478,7 @@ public function viewAllTeachers()
     }
 }
 
-public function viewAllStudents()
+public function viewAllStudents2()
 {
     try {
         // Retrieve all students along with their user information, strand, and section
