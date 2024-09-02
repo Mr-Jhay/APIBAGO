@@ -12,6 +12,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\tblstudent;
 use App\Models\tblstrand;
+use App\Models\tblsubject;
 use App\Models\tblsection;
 use App\Models\tblposition;
 use App\Models\tblteacher;
@@ -367,9 +368,42 @@ public function logout()
         'data' => []
     ], 401);
 }
+public function getCounts()
+{
+    try {
+        // Count the number of teachers
+        $teacherCount = tblteacher::count();
+        
+        // Count the number of students
+        $studentCount = tblstudent::count();
+        
+        // Count the number of strands
+        $strandCount = tblstrand::count();
+        
+        // Count the number of subjects
+        $subjectCount = tblsubject::count();
+        
+        // Return a success response with the counts
+        return response()->json([
+            'message' => 'Counts retrieved successfully!',
+            'data' => [
+                'teacher_count' => $teacherCount,
+                'student_count' => $studentCount,
+                'strand_count' => $strandCount,
+                'subject_count' => $subjectCount,
+            ],
+        ], 200);
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        \Log::error('Failed to retrieve counts: ' . $e->getMessage());
 
-
-
+        // Return a response with error details
+        return response()->json([
+            'message' => 'Failed to retrieve counts',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
 public function viewAllTeachers()
@@ -382,10 +416,13 @@ public function viewAllTeachers()
                               ->orderBy('users.lname', 'asc')
                               ->select('tblteacher.*') // Ensure only tblteacher columns are selected
                               ->get();
+        // Count the number of teachers
+        $teacherCount = $teachers->count();
 
         // Return a success response with the list of teachers
         return response()->json([
             'message' => 'Teachers retrieved successfully!',
+            
             'teachers' => $teachers,
         ], 200);
 

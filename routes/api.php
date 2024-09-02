@@ -80,7 +80,7 @@ Route::group([
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']); // View all curriculum entries
     Route::put('updatecuriculum/{id}', [manage_curiculumController::class, 'updateCuriculum']); // Update curriculum
     Route::delete('deletecuriculum', [manage_curiculumController::class, 'deleteCuriculum']); // Delete curriculum
-
+    Route::get('/counts', [UsersController::class, 'getCounts']);
    
     Route::get('userprofile', [UsersController::class, 'userprofile']);
 
