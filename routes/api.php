@@ -136,28 +136,16 @@ Route::group([
    // g'getCurriculumDetails{$id}'
 
     
-   // Route for students to join a class using a gen_code
-Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);
+    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
+    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
+    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
+    Route::get('classes/{class_id}/students', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
 
-// Route to get the approved classes for a student
-Route::get('StudentApprovedClasses', [joinclassController::class, 'getStudentApprovedClasses']);
-
-
-
-// Route for teachers to approve student join requests
-Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);
-
-// Route to list all students in a specific class (approved)
-Route::get('classes/{class_id}/students/approved', [joinclassController::class, 'listStudentsInClass2']);
-
-// Route to list all students with pending join requests in a specific class
-Route::get('classes/{class_id}/students/pending', [joinclassController::class, 'listStudentsInClass3']);
-
-Route::get('viewAllStudents', [joinclassController::class, 'viewAllApprovedStudents']);
-
-// Additional routes for other operations
-Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);
-Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);
+    
+    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
+    Route::post('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
+   
    
     //STUDENTS
     
@@ -173,6 +161,8 @@ Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInCl
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
+    Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
+    
    // submitExam8
 
  

@@ -275,78 +275,13 @@ class joinclassController extends Controller
     
         // Fetch students with pending status
         $students = DB::table('users')
-            ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
-            ->where('joinclass.class_id', $class_id)
-            ->where('joinclass.status', 0) // 0 = Pending
-            ->where('users.usertype', 'student')
-            ->select('users.id', 'users.idnumber', 'users.fname', 'users.email', 'joinclass.status')
-            ->get();
-    
+                    ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                    ->where('joinclass.class_id', $class_id)
+                    ->where('joinclass.status', 0)
+                    ->where('users.usertype', 'student')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.email', 'joinclass.status')
+                    ->get();
+
         return response()->json($students, 200);
     }
-    public function listApprovedClassesForStudent(Request $request)
-{
-    $user = auth()->user();
-
-    if ($user->usertype !== 'student') {
-        return response()->json([
-            'error' => 'Unauthorized: Only students can view their approved classes.'
-        ], 403);
-    }
-
-    $classes = DB::table('tblclass')
-        ->join('joinclass', 'tblclass.id', '=', 'joinclass.class_id')
-        ->where('joinclass.user_id', $user->id)
-        ->where('joinclass.status', 1) // Status 1 means approved
-        ->select('tblclass.*')
-        ->get();
-
-    return response()->json(['classes' => $classes], 200);
-}
-public function getStudentApprovedClasses(Request $request)
-{
-    $user = $request->user();
-
-    if ($user->usertype !== 'student') {
-        return response()->json([
-            'error' => 'Unauthorized: Only students can view their enrolled subjects.'
-        ], 403);
-    }
-
-    $subjects = DB::table('tblclass')
-        ->join('joinclass', 'tblclass.id', '=', 'joinclass.class_id')
-        ->join('subjects', 'tblclass.subject_id', '=', 'subjects.id')
-        ->join('users', 'tblclass.teacher_id', '=', 'users.id')
-        ->where('joinclass.user_id', $user->id)
-        ->where('joinclass.status', 1) // 1 = Approved
-        ->select('tblclass.id', 'subjects.subject_name', 'subjects.imageUrl', 'users.fname as teacher_fname', 'users.lname as teacher_lname')
-        ->get();
-
-    return response()->json($subjects, 200);
-}
-
-public function viewAllApprovedStudents(Request $request)
-    {
-        // Get the authenticated user
-        $user = $request->user();
-
-        // Ensure the user is a teacher or has the correct permissions
-        if ($user->usertype !== 'teacher') {
-            return response()->json([
-                'error' => 'Unauthorized: Only teachers can view this list.'
-            ], 403);
-        }
-
-        // Fetch students who are approved (status = 1)
-        $approvedStudents = DB::table('joinclass')
-            ->join('users', 'joinclass.user_id', '=', 'users.id')
-            ->where('joinclass.class_id', $request->class_id)
-            ->where('joinclass.status', 1) // Status 1 means approved
-            ->select('users.id', 'users.email')
-            ->get();
-
-        return response()->json(['students' => $approvedStudents], 200);
-    }
-
-    
 }
