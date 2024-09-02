@@ -371,35 +371,75 @@ public function logout()
 public function getCounts()
 {
     try {
-        // Count the number of teachers
+        // Check if the authenticated user is an admin
+        $user = auth()->user();
+        if (!$user || $user->usertype !== 'admin') {
+            return response()->json([
+                'status' => false,
+                'message' => 'Unauthorized access',
+            ], 403);
+        }
+
+        // Fetch all students along with their strand, grade level, section, and sex information
+        $students = tblstudent::select(
+                'tblstudent.id', 
+                'tblstudent.fname', 
+                'tblstudent.mname', 
+                'tblstudent.lname', 
+                'tblstudent.Mobile_no', 
+                'tblstudent.sex',
+                'tblstrand.addstrand as strand_name', 
+                'tblstrand.grade_level as grade_level', 
+                'tblsection.section as section_name'
+            )
+            ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+            ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
+            ->get();
+
+        // Group students by strand and grade level, count males, females, and total students
+        $groupedByStrandAndGradeLevel = $students->groupBy(['strand_name', 'grade_level'])->map(function ($groupByStrand) {
+            return $groupByStrand->map(function ($groupByGradeLevel) {
+                $maleCount = $groupByGradeLevel->where('sex', 'Male')->count();
+                $femaleCount = $groupByGradeLevel->where('sex', 'Female')->count();
+                $totalCount = $groupByGradeLevel->count();
+                
+                return [
+                    'students' => $groupByGradeLevel,
+                    'male_count' => $maleCount,
+                    'female_count' => $femaleCount,
+                    'total_count' => $totalCount,
+                ];
+            });
+        });
+
+        // Count the number of teachers, students, strands, and subjects
         $teacherCount = tblteacher::count();
-        
-        // Count the number of students
         $studentCount = tblstudent::count();
-        
-        // Count the number of strands
         $strandCount = tblstrand::count();
-        
-        // Count the number of subjects
         $subjectCount = tblsubject::count();
-        
-        // Return a success response with the counts
+
+        // Return a success response with the counts and grouped student data
         return response()->json([
-            'message' => 'Counts retrieved successfully!',
+            'status' => true,
+            'message' => 'Data retrieved successfully!',
             'data' => [
-                'teacher_count' => $teacherCount,
-                'student_count' => $studentCount,
-                'strand_count' => $strandCount,
-                'subject_count' => $subjectCount,
-            ],
+                'students_grouped' => $groupedByStrandAndGradeLevel,
+                'counts' => [
+                    'teacher_count' => $teacherCount,
+                    'student_count' => $studentCount,
+                    'strand_count' => $strandCount,
+                    'subject_count' => $subjectCount,
+                ]
+            ]
         ], 200);
     } catch (\Exception $e) {
         // Log the error for debugging
-        \Log::error('Failed to retrieve counts: ' . $e->getMessage());
+        \Log::error('Failed to retrieve data: ' . $e->getMessage());
 
         // Return a response with error details
         return response()->json([
-            'message' => 'Failed to retrieve counts',
+            'status' => false,
+            'message' => 'Failed to retrieve data',
             'error' => $e->getMessage(),
         ], 500);
     }
