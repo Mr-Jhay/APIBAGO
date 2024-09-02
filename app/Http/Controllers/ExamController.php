@@ -14,6 +14,7 @@ use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Choice;
 use App\Models\CorrectAnswer;
+use App\Models\tblclass;
 
 class ExamController extends Controller
 {
@@ -526,4 +527,48 @@ class ExamController extends Controller
             'message' => 'Exam submitted successfully.'
         ], 200); // HTTP OK
     }
+
+
+
+    public function viewExamForTeacher2()
+{
+    $user = auth()->user();
+
+    if ($user->usertype !== 'teacher') {
+        return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403); // HTTP Forbidden
+    }
+
+    // Fetch the classroom associated with the teacher
+    // Assuming there's a relationship or method to get the teacher's classroom
+    $classroom = tblclass::where('user_id', $user->id)->first();
+
+    if (!$classroom) {
+        return response()->json(['error' => 'No classroom found for the teacher.'], 404); // HTTP Not Found
+    }
+
+    // Fetch the exam for the classroom
+    // Assuming there's a way to get the exam based on the classroom
+    $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+                ->where('classtable_id', $classroom->id)
+                ->first();
+
+    if (!$exam) {
+        return response()->json(['error' => 'Exam not found for the classroom.'], 404); // HTTP Not Found
+    }
+
+    $totalQuestions = $exam->questions->count(); // Count total questions
+    $totalPoints = 0;
+
+    foreach ($exam->questions as $question) {
+        foreach ($question->correctAnswers as $correctAnswer) {
+            $totalPoints += $correctAnswer->points; // Sum up total points
+        }
+    }
+
+    return response()->json([
+        'exam' => $exam,
+        'total_questions' => $totalQuestions, // Include total number of questions
+        'total_points' => $totalPoints // Include total points
+    ], 200); // HTTP OK
+}
 }
