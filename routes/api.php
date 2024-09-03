@@ -90,10 +90,10 @@ Route::group([
 
     
     Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);//admin view all teACHER
-    Route::put('updateTeacher', [UsersController::class, 'updateTeacher']);
+    Route::put('updateTeacher/{id}', [UsersController::class, 'updateTeacher']);
 
     Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);//admin view all student
-    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']); //admin update all students account
+    Route::put('updateStudentDetails/{id}', [UsersController::class, 'updateStudentDetails']); //admin update all students account
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
