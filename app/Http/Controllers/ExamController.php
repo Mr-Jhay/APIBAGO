@@ -582,7 +582,7 @@ class ExamController extends Controller
 public function viewExamDetails($classtable_id, $exam_id)
 {
     // Validate that the class exists
-    $class = TblClass::findOrFail($classtable_id);
+    $class = tblclass::findOrFail($classtable_id);
 
     // Retrieve the specified exam for the class, including questions, choices, and correct answers
     $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
@@ -604,7 +604,7 @@ public function viewExamDetails($classtable_id, $exam_id)
 public function viewAllExamsInClass($classtable_id)
 {
     // Validate that the class exists
-    $class = TblClass::findOrFail($classtable_id);
+    $class = tblclass::findOrFail($classtable_id);
 
     // Retrieve all exams for the specified class, including questions, choices, and correct answers
     $exams = Exam::with(['questions.choices', 'questions.correctAnswers'])
