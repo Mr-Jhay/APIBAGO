@@ -175,6 +175,15 @@ Route::get('viewAllStudents', [joinclassController::class, 'viewAllApprovedStude
 Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);
 Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);
 
+//ito raquel bago 
+
+//list of all created exam inside the classroom
+Route::get('tblclass/{classtable_id}/exams', [YourController::class, 'viewAllExamsInClass']);
+
+//if you click the view exam in the exam list ito view the specific exam
+Route::get('tblclass/{classtable_id}/exam/{exam_id}', [YourController::class, 'viewExamDetails']);
+
+
    
    
     //STUDENTS

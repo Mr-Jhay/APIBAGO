@@ -524,7 +524,7 @@ public function updateStudent(Request $request, $id)
         DB::beginTransaction();
 
         // Find the student record
-        $student = tblstudent::findOrFail($id);
+        $student = User::findOrFail($id);
 
         // Prepare the update data for user
         $userUpdateData = [];
