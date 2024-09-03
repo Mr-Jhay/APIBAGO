@@ -578,4 +578,49 @@ class ExamController extends Controller
         'total_questions' => $totalQuestions // Return the total number of questions
     ], 201); // HTTP Created
 }
+
+public function viewExamDetails($classtable_id, $exam_id)
+{
+    // Validate that the class exists
+    $class = TblClass::findOrFail($classtable_id);
+
+    // Retrieve the specified exam for the class, including questions, choices, and correct answers
+    $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+        ->where('classtable_id', $classtable_id)
+        ->where('id', $exam_id)
+        ->first();
+
+    if (!$exam) {
+        return response()->json([
+            'message' => 'Exam not found for this class'
+        ], 404); // HTTP Not Found
+    }
+
+    return response()->json([
+        'exam' => $exam
+    ], 200); // HTTP OK
+}
+
+public function viewAllExamsInClass($classtable_id)
+{
+    // Validate that the class exists
+    $class = TblClass::findOrFail($classtable_id);
+
+    // Retrieve all exams for the specified class, including questions, choices, and correct answers
+    $exams = Exam::with(['questions.choices', 'questions.correctAnswers'])
+        ->where('classtable_id', $classtable_id)
+        ->get(); // Use `get()` to retrieve all exams instead of just the first one
+
+    if ($exams->isEmpty()) {
+        return response()->json([
+            'message' => 'No exams found for this class'
+        ], 404); // HTTP Not Found
+    }
+
+    return response()->json([
+        'exams' => $exams
+    ], 200); // HTTP OK
+}
+
+
 }

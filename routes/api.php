@@ -179,10 +179,10 @@ Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInCl
 //ito raquel bago 
 
 //list of all created exam inside the classroom
-Route::get('tblclass/{classtable_id}/exams', [YourController::class, 'viewAllExamsInClass']);
+Route::get('tblclass/{classtable_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
 //if you click the view exam in the exam list ito view the specific exam
-Route::get('tblclass/{classtable_id}/exam/{exam_id}', [YourController::class, 'viewExamDetails']);
+Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'viewExamDetails']);
 
 
    
