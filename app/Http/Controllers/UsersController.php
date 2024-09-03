@@ -487,7 +487,7 @@ public function viewAllStudents2()
         $students = tblstudent::with(['user', 'strands', 'section'])
                             ->join('users', 'tblstudent.user_id', '=', 'users.id')
                             ->orderBy('users.lname', 'asc')
-                            ->select('tblstudent.*') // Ensure you select student fields
+                            ->select('tblstudent.*', 'users.id as user_id') // Select tblstudent fields and user_id from users
                             ->get();
 
         return response()->json([
