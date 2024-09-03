@@ -22,8 +22,8 @@ class Question extends Model
         return $this->hasMany(Choice::class, 'tblquestion_id');
     }
 
-    public function correctAnswer()
+    public function correctAnswers() // Change from correctAnswer to correctAnswers
     {
-        return $this->hasOne(CorrectAnswer::class, 'tblquestion_id');
+        return $this->hasMany(CorrectAnswer::class, 'tblquestion_id');
     }
 }

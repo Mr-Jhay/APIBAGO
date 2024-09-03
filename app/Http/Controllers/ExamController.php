@@ -3,21 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
-use App\Http\Resources;
-use App\Http\Resources\UserResource;
 use App\Models\Exam;
 use App\Models\Question;
 use App\Models\Choice;
 use App\Models\CorrectAnswer;
 use App\Models\tblclass;
+use App\Models\StudentExam;
+use App\Models\AnsweredQuestion;
 
 class ExamController extends Controller
 {
+    // Add Exam
     public function addExam(Request $request)
     {
         $request->validate([
@@ -31,21 +29,106 @@ class ExamController extends Controller
             'questions.*.question' => 'required|string',
             'questions.*.choices' => 'nullable|array',
             'questions.*.correct_answers' => 'nullable|array',
-            'questions.*.correct_answers.*.choice_id' => 'nullable|exists:addchoices,id',
             'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
             'questions.*.correct_answers.*.points' => 'nullable|integer'
         ]);
 
-        // Create exam
+        try {
+            // Create exam
+            DB::beginTransaction();
+
+            $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+
+            $totalPoints = 0;
+            $totalQuestions = 0;
+
+            foreach ($request->input('questions') as $qData) {
+                $totalQuestions++;
+
+                $question = Question::create([
+                    'tblschedule_id' => $exam->id,
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+
+                if (isset($qData['choices'])) {
+                    foreach ($qData['choices'] as $choice) {
+                        Choice::create([
+                            'tblquestion_id' => $question->id,
+                            'choices' => $choice
+                        ]);
+                    }
+                }
+
+                if (isset($qData['correct_answers'])) {
+                    foreach ($qData['correct_answers'] as $ansData) {
+                        $points = $ansData['points'] ?? 0;
+                        $totalPoints += $points;
+
+                        CorrectAnswer::create([
+                            'tblquestion_id' => $question->id,
+                            'addchoices_id' => $ansData['choice_id'] ?? null,
+                            'correct_answer' => $ansData['correct_answer'] ?? null,
+                            'points' => $points
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Exam created successfully',
+                'exam' => $exam,
+                'total_points' => $totalPoints,
+                'total_questions' => $totalQuestions
+            ], 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create exam: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create exam.'], 500);
+        }
+    }
+
+    public function addExam2(Request $request)
+{
+    $request->validate([
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+        'questions' => 'required|array',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer'
+    ]);
+
+    try {
+        // Begin database transaction
+        DB::beginTransaction();
+
+        // Create the exam
         $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
 
+        $totalPoints = 0;
+        $totalQuestions = 0;
+
+        // Iterate through the questions in the request
         foreach ($request->input('questions') as $qData) {
+            $totalQuestions++;
+
+            // Create each question
             $question = Question::create([
                 'tblschedule_id' => $exam->id,
                 'question_type' => $qData['question_type'],
                 'question' => $qData['question']
             ]);
 
+            // Create each choice if it exists
             if (isset($qData['choices'])) {
                 foreach ($qData['choices'] as $choice) {
                     Choice::create([
@@ -55,146 +138,109 @@ class ExamController extends Controller
                 }
             }
 
+            // Create each correct answer if it exists
             if (isset($qData['correct_answers'])) {
                 foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points;
+
                     CorrectAnswer::create([
                         'tblquestion_id' => $question->id,
                         'addchoices_id' => $ansData['choice_id'] ?? null,
                         'correct_answer' => $ansData['correct_answer'] ?? null,
-                        'points' => $ansData['points'] ?? 0
+                        'points' => $points
                     ]);
                 }
             }
         }
 
+        // Commit the transaction
+        DB::commit();
+
         return response()->json([
             'message' => 'Exam created successfully',
-            'exam' => $exam
-        ], 201); // HTTP Created
+            'exam' => $exam,
+            'total_points' => $totalPoints,
+            'total_questions' => $totalQuestions
+        ], 201);
+    } catch (\Exception $e) {
+        // Rollback the transaction if something goes wrong
+        DB::rollBack();
+        Log::error('Failed to create exam in addExam2: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to create exam.'], 500);
+    }
+}
+
+
+    // View All Exams for a Specific Class/Subject
+    public function viewAllExamsInClass($classtable_id)
+    {
+        try {
+            $class = tblclass::findOrFail($classtable_id);
+            $exams = Exam::with(['questions'])
+                ->where('classtable_id', $classtable_id)
+                ->get();
+
+            if ($exams->isEmpty()) {
+                return response()->json(['message' => 'No exams found for this class'], 404);
+            }
+
+            return response()->json(['exams' => $exams], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exams: ' . $e->getMessage());
+            return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
+        }
     }
 
-    
+    // View Exam Details for Teachers
     public function viewExamForTeacher($exam_id)
     {
         try {
-            // Ensure relationships are properly defined in your models
-            $exam = Exam::with(['questions.choices', 'class'])->findOrFail($exam_id);
-    
-            return response()->json([
-                'exam' => $exam,
-            ], 200); // HTTP OK
+            $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+                ->findOrFail($exam_id);
+            return response()->json(['exam' => $exam], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Exam not found: ' . $e->getMessage());
+            return response()->json(['error' => 'Exam not found.'], 404);
         } catch (\Exception $e) {
-            // Log the error for debugging purposes
-            Log::error('Error fetching exam details: ' . $e->getMessage());
+            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam details.'], 500);
+        }
+    }
     
-            // Return a more user-friendly error message
+
+
+    // View Exam Details for Students
+    public function viewExam($exam_id)
+    {
+        $user = auth()->user();
+    
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+        }
+    
+        $isEnrolled = StudentExam::where('user_id', $user->id)
+                                 ->where('tblschedule_id', $exam_id)
+                                 ->exists();
+    
+        if (!$isEnrolled) {
+            return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+        }
+    
+        try {
+            $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+                        ->findOrFail($exam_id);
+    
+            return response()->json(['exam' => $exam], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
     }
     
-    
-    public function viewExam($exam_id)//View Exam for Students
-    {
-        $user = auth()->user();
 
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can view exams.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Check if the student is enrolled in the exam
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-                                 ->where('tblschedule_id', $exam_id)
-                                 ->exists();
-
-        if (!$isEnrolled) {
-            return response()->json([
-                'error' => 'Unauthorized: You are not enrolled in this exam.'
-            ], 403); // HTTP Forbidden
-        }
-
-        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-                    ->find($exam_id);
-
-        if (!$exam) {
-            return response()->json([
-                'error' => 'Exam not found.'
-            ], 404); // HTTP Not Found
-        }
-
-        return response()->json($exam, 200); // HTTP OK
-    }
-
-
-    public function viewExam2($exam_id)//View Exam for Students with logic
-    {
-        $user = auth()->user();
-
-        // Ensure only students can view exams
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can view exams.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Check if the student is enrolled in the exam
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-                                 ->where('tblschedule_id', $exam_id)
-                                 ->exists();
-
-        if (!$isEnrolled) {
-            return response()->json([
-                'error' => 'Unauthorized: You are not enrolled in this exam.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Fetch exam details
-        $exam = Exam::with([
-            'questions' => function ($query) {
-                $query->with(['choices', 'correctAnswers']);
-            }
-        ])->find($exam_id);
-
-        if (!$exam) {
-            return response()->json([
-                'error' => 'Exam not found.'
-            ], 404); // HTTP Not Found
-        }
-
-        // Prepare exam data with additional details
-        $examData = [
-            'id' => $exam->id,
-            'title' => $exam->title,
-            'quarter' => $exam->quarter,
-            'start' => $exam->start,
-            'end' => $exam->end,
-            'questions' => $exam->questions->map(function ($question) {
-                return [
-                    'id' => $question->id,
-                    'question' => $question->question,
-                    'question_type' => $question->question_type,
-                    'choices' => $question->choices->map(function ($choice) {
-                        return [
-                            'id' => $choice->id,
-                            'choice' => $choice->choices
-                        ];
-                    }),
-                    'correct_answers' => $question->correctAnswers->map(function ($correctAnswer) {
-                        return [
-                            'choice_id' => $correctAnswer->addchoices_id,
-                            'correct_answer' => $correctAnswer->correct_answer,
-                            'points' => $correctAnswer->points
-                        ];
-                    })
-                ];
-            })
-        ];
-
-        return response()->json($examData, 200); // HTTP OK
-    }
-
-    public function submitExam8(Request $request, $exam_id)//pag submit ng exam sa student
+    // Submit Exam Answers (For Students)
+    public function submitExam(Request $request, $exam_id)
     {
         $user = auth()->user();
 
@@ -212,39 +258,59 @@ class ExamController extends Controller
 
         $request->validate([
             'answers' => 'required|array',
-            'answers.*' => 'required|integer|exists:addchoices,id' // Validate each answer ID
+            'answers.*.question_id' => 'required|exists:tblquestion,id',
+            'answers.*.correctanswer_id' => 'required|exists:correctanswer,id'
         ]);
 
-        foreach ($request->input('answers') as $question_id => $choice_id) {
-            $correctAnswer = CorrectAnswer::where('tblquestion_id', $question_id)
-                                          ->where('addchoices_id', $choice_id)
-                                          ->first();
+        try {
+            foreach ($request->input('answers') as $answer) {
+                AnsweredQuestion::updateOrCreate(
+                    [
+                        'tblquestion_id' => $answer['question_id'],
+                        'tblstudent_id' => $user->id
+                    ],
+                    [
+                        'correctanswer_id' => $answer['correctanswer_id']
+                    ]
+                );
+            }
 
-            $answeredQuestion = new AnsweredQuestion([
-                'users_id' => $user->id,
-                'tblquestion_id' => $question_id,
-                'correctanswer_id' => $correctAnswer ? $correctAnswer->id : null
-            ]);
-
-            $answeredQuestion->save();
+            return response()->json(['message' => 'Exam submitted successfully.'], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to submit exam answers: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
         }
-
-        return response()->json(['message' => 'Exam submitted successfully.'], 200);
     }
 
-    public function getExam($id)
+    // Get Exam Results (For Students)
+    public function getResults(Request $request, $examId)
     {
-        $exam = Exam::with(['questions.choices', 'questions.correctAnswer'])
-            ->find($id);
+        $user = auth()->user();
 
-        if (!$exam) {
-            return response()->json(['error' => 'Exam not found'], 404);
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
         }
 
-        return response()->json($exam, 200);
+        try {
+            $results = AnsweredQuestion::where('users_id', $user->id)
+                ->whereHas('question', function ($query) use ($examId) {
+                    $query->where('tblschedule_id', $examId);
+                })
+                ->with('question', 'correctAnswer')
+                ->get();
+
+            $score = $results->filter(function ($result) {
+                return $result->correctAnswer->addchoices_id === $result->correctanswer_id;
+            })->count();
+
+            return response()->json(['results' => $results, 'score' => $score], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+        }
     }
 
-    // Update an existing exam
+    // Update an Existing Exam
     public function updateExam(Request $request, $id)
     {
         $request->validate([
@@ -254,373 +320,127 @@ class ExamController extends Controller
             'end' => 'required|date'
         ]);
 
-        $exam = Exam::find($id);
+        try {
+            $exam = Exam::findOrFail($id);
 
-        if (!$exam) {
-            return response()->json(['error' => 'Exam not found'], 404);
+            $exam->update([
+                'title' => $request->title,
+                'quarter' => $request->quarter,
+                'start' => $request->start,
+                'end' => $request->end
+            ]);
+
+            return response()->json(['message' => 'Exam updated successfully'], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to update exam: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to update exam. Please try again later.'], 500);
         }
-
-        $exam->update([
-            'title' => $request->title,
-            'quarter' => $request->quarter,
-            'start' => $request->start,
-            'end' => $request->end
-        ]);
-
-        return response()->json(['message' => 'Exam updated successfully'], 200);
     }
 
-    // Delete an exam
+    // Delete an Exam
     public function deleteExam($id)
     {
-        $exam = Exam::find($id);
+        try {
+            $exam = Exam::findOrFail($id);
+            $exam->delete();
 
-        if (!$exam) {
-            return response()->json(['error' => 'Exam not found'], 404);
+            return response()->json(['message' => 'Exam deleted successfully'], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to delete exam: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to delete exam. Please try again later.'], 500);
         }
-
-        // Optional: Handle related records (questions, choices) deletion if needed
-        $exam->delete();
-
-        return response()->json(['message' => 'Exam deleted successfully'], 200);
     }
 
-    //strat of exam
-
+    // Start an Exam (For Students)
     public function startExam(Request $request, $examId)
     {
-        // Validate request
         $request->validate([
             'user_id' => 'required|exists:users,id',
         ]);
 
         $user = auth()->user();
 
-        // Ensure the user is a student
         if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can start exams.'
-            ], 403); // HTTP Forbidden
+            return response()->json(['error' => 'Unauthorized: Only students can start exams.'], 403);
         }
 
-        // Check if the student has already started the exam
         $existingExam = StudentExam::where('user_id', $user->id)
             ->where('tblschedule_id', $examId)
             ->first();
 
         if ($existingExam) {
-            return response()->json([
-                'message' => 'Exam already started.'
-            ], 200);
+            return response()->json(['message' => 'Exam already started.'], 200);
         }
 
-        // Register the student's attempt
-        $studentExam = StudentExam::create([
-            'user_id' => $user->id,
-            'tblschedule_id' => $examId,
-        ]);
-
-        return response()->json([
-            'message' => 'Exam started successfully.',
-            'student_exam_id' => $studentExam->id
-        ], 201);
-    }
-
-    public function submitAnswers(Request $request)
-    {
-        // Validate request
-        $request->validate([
-            'student_exam_id' => 'required|exists:studentexam,id',
-            'answers' => 'required|array',
-            'answers.*.question_id' => 'required|exists:tblquestion,id',
-            'answers.*.correctanswer_id' => 'required|exists:addchoices,id',
-        ]);
-
-        $user = auth()->user();
-
-        // Ensure the user is a student
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can submit answers.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Validate that the student is attempting an exam
-        $studentExam = StudentExam::find($request->student_exam_id);
-
-        if (!$studentExam || $studentExam->user_id !== $user->id) {
-            return response()->json([
-                'error' => 'Invalid exam attempt.'
-            ], 400); // HTTP Bad Request
-        }
-
-        // Save answers
-        foreach ($request->answers as $answer) {
-            AnsweredQuestion::create([
-                'users_id' => $user->id,
-                'tblquestion_id' => $answer['question_id'],
-                'correctanswer_id' => $answer['correctanswer_id']
+        try {
+            $studentExam = StudentExam::create([
+                'user_id' => $user->id,
+                'tblschedule_id' => $examId,
             ]);
-        }
 
-        return response()->json([
-            'message' => 'Answers submitted successfully.'
-        ], 200);
+            return response()->json(['message' => 'Exam started successfully.', 'student_exam_id' => $studentExam->id], 201);
+        } catch (\Exception $e) {
+            Log::error('Failed to start exam: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to start exam. Please try again later.'], 500);
+        }
     }
 
-    public function getResults(Request $request, $examId)
-    {
-        $user = auth()->user();
-
-        // Ensure the user is a student
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can view results.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Retrieve the student's answers
-        $results = AnsweredQuestion::where('users_id', $user->id)
-            ->whereHas('question', function ($query) use ($examId) {
-                $query->where('tblschedule_id', $examId);
-            })
-            ->with('question', 'correctAnswer')
-            ->get();
-
-        // Calculate the score
-        $score = $results->filter(function ($result) {
-            return $result->correctAnswer->addchoices_id === $result->correctanswer_id;
-        })->count();
-
-        return response()->json([
-            'results' => $results,
-            'score' => $score
-        ], 200);
-    }
-
+    // View All Exams the Student is Enrolled In
     public function getStudentExams()
     {
-        // Retrieve the authenticated user
         $user = auth()->user();
 
-        // Ensure the user is a student
         if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can view their exams.'
-            ], 403); // HTTP Forbidden
+            return response()->json(['error' => 'Unauthorized: Only students can view their exams.'], 403);
         }
 
-        // Fetch the exams that the student is enrolled in
-        $exams = StudentExam::with('exam')
-                            ->where('user_id', $user->id)
-                            ->get()
-                            ->map(function ($studentExam) {
-                                return [
-                                    'exam_id' => $studentExam->exam->id,
-                                    'title' => $studentExam->exam->title,
-                                    'quarter' => $studentExam->exam->quarter,
-                                    'start' => $studentExam->exam->start,
-                                    'end' => $studentExam->exam->end
-                                ];
-                            });
+        try {
+            $exams = StudentExam::with('exam')
+                                ->where('user_id', $user->id)
+                                ->get()
+                                ->map(function ($studentExam) {
+                                    return [
+                                        'exam_id' => $studentExam->exam->id,
+                                        'title' => $studentExam->exam->title,
+                                        'quarter' => $studentExam->exam->quarter,
+                                        'start' => $studentExam->exam->start,
+                                        'end' => $studentExam->exam->end
+                                    ];
+                                });
 
-        // Return the list of exams with a 200 status code
-        return response()->json($exams, 200); // HTTP OK
+            return response()->json($exams, 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve student exams: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve student exams. Please try again later.'], 500);
+        }
     }
 
-        public function getExamDetails($exam_id)
+    // View Specific Exam Details for Students
+    public function getExamDetails($exam_id)
     {
-        // Retrieve the authenticated user
         $user = auth()->user();
 
-        // Ensure the user is a student
         if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can view exam details.'
-            ], 403); // HTTP Forbidden
+            return response()->json(['error' => 'Unauthorized: Only students can view exam details.'], 403);
         }
 
-        // Fetch the exam details
-        $exam = Exam::with('questions.choices')
-                    ->where('id', $exam_id)
-                    ->first();
+        try {
+            $exam = Exam::with('questions.choices')
+                        ->where('id', $exam_id)
+                        ->firstOrFail();
 
-        if (!$exam) {
-            return response()->json([
-                'error' => 'Exam not found.'
-            ], 404); // HTTP Not Found
-        }
+            $isEnrolled = StudentExam::where('user_id', $user->id)
+                                     ->where('tblschedule_id', $exam_id)
+                                     ->exists();
 
-        // Check if the student is enrolled in the exam
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-                                ->where('tblschedule_id', $exam_id)
-                                ->exists();
-
-        if (!$isEnrolled) {
-            return response()->json([
-                'error' => 'Unauthorized: You are not enrolled in this exam.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Return the exam details with a 200 status code
-        return response()->json($exam, 200); // HTTP OK
-    }
-        public function submitExam(Request $request, $exam_id)
-    {
-        // Retrieve the authenticated user
-        $user = auth()->user();
-
-        // Ensure the user is a student
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can submit answers.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Validate the request
-        $request->validate([
-            'answers' => 'required|array',
-            'answers.*.question_id' => 'required|exists:tblquestion,id',
-            'answers.*.correctanswer_id' => 'required|exists:correctanswer,id'
-        ]);
-
-        // Check if the exam exists and the student is enrolled
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-                                ->where('tblschedule_id', $exam_id)
-                                ->exists();
-
-        if (!$isEnrolled) {
-            return response()->json([
-                'error' => 'Unauthorized: You are not enrolled in this exam.'
-            ], 403); // HTTP Forbidden
-        }
-
-        // Process and store the submitted answers
-        foreach ($request->input('answers') as $answer) {
-            AnsweredQuestion::updateOrCreate(
-                [
-                    'tblquestion_id' => $answer['question_id'],
-                    'tblstudent_id' => $user->id
-                ],
-                [
-                    'correctanswer_id' => $answer['correctanswer_id']
-                ]
-            );
-        }
-
-        // Return a response indicating the submission was successful
-        return response()->json([
-            'message' => 'Exam submitted successfully.'
-        ], 200); // HTTP OK
-    }
-
-    public function addExam2(Request $request)
-    {
-        $request->validate([
-            'classtable_id' => 'required|exists:tblclass,id',
-            'title' => 'required|string',
-            'quarter' => 'required|string',
-            'start' => 'required|date_format:Y-m-d H:i:s',
-            'end' => 'required|date_format:Y-m-d H:i:s',
-            'questions' => 'required|array',
-            'questions.*.question_type' => 'required|string',
-            'questions.*.question' => 'required|string',
-            'questions.*.choices' => 'nullable|array',
-            'questions.*.correct_answers' => 'nullable|array',
-            'questions.*.correct_answers.*.choice_id' => 'nullable|exists:addchoices,id',
-            'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
-            'questions.*.correct_answers.*.points' => 'nullable|integer'
-        ]);
-
-        // Create exam
-        $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
-
-        $totalPoints = 0; // Initialize total points
-        $totalQuestions = 0; // Initialize total questions
-
-        foreach ($request->input('questions') as $qData) {
-            $totalQuestions++; // Increment total questions
-
-            $question = Question::create([
-                'tblschedule_id' => $exam->id,
-                'question_type' => $qData['question_type'],
-                'question' => $qData['question']
-            ]);
-
-            if (isset($qData['choices'])) {
-                foreach ($qData['choices'] as $choice) {
-                    Choice::create([
-                        'tblquestion_id' => $question->id,
-                        'choices' => $choice
-                    ]);
-                }
+            if (!$isEnrolled) {
+                return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
             }
 
-            if (isset($qData['correct_answers'])) {
-                foreach ($qData['correct_answers'] as $ansData) {
-                    $points = $ansData['points'] ?? 0;
-                    $totalPoints += $points; // Add points to total
-
-                    CorrectAnswer::create([
-                        'tblquestion_id' => $question->id,
-                        'addchoices_id' => $ansData['choice_id'] ?? null,
-                        'correct_answer' => $ansData['correct_answer'] ?? null,
-                        'points' => $points
-                    ]);
-                }
-            }
+            return response()->json($exam, 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
-
-    return response()->json([
-        'message' => 'Exam created successfully',
-        'exam' => $exam,
-        'total_points' => $totalPoints, // Return the total points
-        'total_questions' => $totalQuestions // Return the total number of questions
-    ], 201); // HTTP Created
-}
-
-public function viewExamDetails($classtable_id, $exam_id)
-{
-    // Validate that the class exists
-    $class = tblclass::findOrFail($classtable_id);
-
-    // Retrieve the specified exam for the class, including questions, choices, and correct answers
-    $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-        ->where('classtable_id', $classtable_id)
-        ->where('id', $exam_id)
-        ->first();
-
-    if (!$exam) {
-        return response()->json([
-            'message' => 'Exam not found for this class'
-        ], 404); // HTTP Not Found
     }
-
-    return response()->json([
-        'exam' => $exam
-    ], 200); // HTTP OK
-}
-
-public function viewAllExamsInClass($classtable_id)
-{
-    // Validate that the class exists
-    $class = tblclass::findOrFail($classtable_id);
-
-    // Retrieve all exams for the specified class, including questions, choices, and correct answers
-    $exams = Exam::with(['questions.choices', 'questions.correctAnswers'])
-        ->where('classtable_id', $classtable_id)
-        ->get(); // Use `get()` to retrieve all exams instead of just the first one
-
-    if ($exams->isEmpty()) {
-        return response()->json([
-            'message' => 'No exams found for this class'
-        ], 404); // HTTP Not Found
-    }
-
-    return response()->json([
-        'exams' => $exams
-    ], 200); // HTTP OK
-}
-
-
 }

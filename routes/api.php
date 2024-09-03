@@ -150,11 +150,62 @@ Route::group([
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
-   Route::post('addExam2', [ExamController::class, 'addExam2']); // Add exam with total points and items
-   Route::get('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']); // View exam in teacher side
-   Route::get('viewExamForTeacher2', [ExamController::class, 'viewExamForTeacher2']); // View exam with total points
-   Route::post('publishExam/{exam_id}', [ExamController::class, 'publishExam']);
+// Fetch all exams for a specific class
+Route::get('/tblclass/{class_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
+
+// Create a new exam
+Route::post('/addExam2', [ExamController::class, 'addExam2']);
+
+// View details of a specific exam (for students)
+Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewExam']);
+
+// View details of a specific exam (for teachers)
+Route::get('/exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);
+
+// Start an exam (for students)
+Route::post('/startExam/{examId}', [ExamController::class, 'startExam']);
+
+// Submit answers for an exam (for students)
+Route::post('/submitExam/{exam_id}', [ExamController::class, 'submitExam']);
+
+// Get exam results (for students)
+Route::get('/exam/{exam_id}/results', [ExamController::class, 'getResults']);
+
+// Update an existing exam
+Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
+
+// Delete an exam
+Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
+
   
+
+
+   // Fetch all exams for a specific class
+   Route::get('/tblclass/{class_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
+
+   // Create a new exam
+   Route::post('/addExam2', [ExamController::class, 'addExam2']);
+
+   // View details of a specific exam (for students)
+   Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewExam']);
+
+   // View details of a specific exam (for teachers)
+   Route::get('/exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);
+
+   // Start an exam (for students)
+   Route::post('/startExam/{examId}', [ExamController::class, 'startExam']);
+
+   // Submit answers for an exam (for students)
+   Route::post('/submitExam/{exam_id}', [ExamController::class, 'submitExam']);
+
+   // Get exam results (for students)
+   Route::get('/exam/{exam_id}/results', [ExamController::class, 'getResults']);
+
+   // Update an existing exam
+   Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
+
+   // Delete an exam
+   Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
 // Route to get the approved classes for a student
 Route::get('StudentApprovedClasses', [joinclassController::class, 'getStudentApprovedClasses']);
@@ -177,15 +228,11 @@ Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass
 Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);
 
 //ito raquel bago 
-Route::get('tblclass/{classtable_id}/exams', [YourController::class, 'viewAllExamsInClass']);//view all exam inside the classrom
-Route::get('tblclass/{classtable_id}/exam/{exam_id}', [YourController::class, 'viewExamDetails']);//if the choose one of the exam you will see all the questions
+Route::get('tblclass/{classtable_id}/exams', [ExamController::class, 'viewAllExamsInClass']);//view all exam inside the classrom
+Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'viewExamDetails']);//if the choose one of the exam you will see all the questions
 
 
-//list of all created exam inside the classroom
-Route::get('tblclass/{classtable_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
-//if you click the view exam in the exam list ito view the specific exam
-Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'viewExamDetails']);
 
 
    
