@@ -12,7 +12,7 @@ class Exam extends Model
     protected $table = 'tblschedule';
 
     protected $fillable = [
-        'classtable_id',
+        'classtable_id', 
         'title',
         'quarter',
         'start',

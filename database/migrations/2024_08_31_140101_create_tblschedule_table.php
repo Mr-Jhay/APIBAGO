@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('quarter');
             $table->timestamp('start')->nullable();
             $table->timestamp('end')->nullable();
-            $table->timestamps();
+            $table->timestamps(); 
 
             // Add foreign key constraint
             $table->foreign('classtable_id')

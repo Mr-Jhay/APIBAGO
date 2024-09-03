@@ -84,16 +84,16 @@ Route::group([
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']); // View all curriculum entries
     Route::put('updatecuriculum/{id}', [manage_curiculumController::class, 'updateCuriculum']); // Update curriculum
     Route::delete('deletecuriculum', [manage_curiculumController::class, 'deleteCuriculum']); // Delete curriculum
-    Route::get('/counts', [UsersController::class, 'getCounts']);
+    Route::get('/counts', [UsersController::class, 'getCounts']); ///////dashboard statistics
    
     Route::get('userprofile', [UsersController::class, 'userprofile']);
 
     
-    Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);
+    Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);//admin view all teACHER
     Route::put('updateTeacher', [UsersController::class, 'updateTeacher']);
 
-    Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);
-    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']);
+    Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);//admin view all student
+    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']); //admin update all students account
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
@@ -150,9 +150,10 @@ Route::group([
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
-   Route::post('addExam2', [ExamController::class, 'addExam2']);//pag add ng exam with total points and items
-   Route::get('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);//view exam in teacher side
-   Route::get('viewExamForTeacher2', [ExamController::class, 'viewExamForTeacher2']);////view exam in teacher side matic
+   Route::post('addExam2', [ExamController::class, 'addExam2']); // Add exam with total points and items
+   Route::get('view-exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']); // View exam in teacher side
+   Route::get('viewExamForTeacher2', [ExamController::class, 'viewExamForTeacher2']); // View exam with total points
+   Route::post('publishExam/{exam_id}', [ExamController::class, 'publishExam']);
   
 
 // Route to get the approved classes for a student

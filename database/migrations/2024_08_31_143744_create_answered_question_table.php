@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreign('correctanswer_id')->references('id')->on('correctanswer');
             $table->timestamps();
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.

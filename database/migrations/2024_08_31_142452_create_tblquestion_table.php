@@ -19,7 +19,7 @@ return new class extends Migration
             $table->foreign('tblschedule_id')->references('id')->on('tblschedule')->onDelete('cascade');
             $table->timestamps();
         });
-    }
+    } 
 
     /**
      * Reverse the migrations.
