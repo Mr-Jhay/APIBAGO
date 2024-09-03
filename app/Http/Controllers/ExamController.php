@@ -73,40 +73,26 @@ class ExamController extends Controller
         ], 201); // HTTP Created
     }
 
+    
     public function viewExamForTeacher($exam_id)
     {
-        $user = auth()->user();
+        try {
+            // Ensure relationships are properly defined in your models
+            $exam = Exam::with(['questions.choices', 'class'])->findOrFail($exam_id);
     
-        if ($user->usertype !== 'teacher') {
-            return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403); // HTTP Forbidden
+            return response()->json([
+                'exam' => $exam,
+            ], 200); // HTTP OK
+        } catch (\Exception $e) {
+            // Log the error for debugging purposes
+            Log::error('Error fetching exam details: ' . $e->getMessage());
+    
+            // Return a more user-friendly error message
+            return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
-    
-        // Optionally, check if the teacher has access to the exam
-        // This can be based on class or any other criteria
-    
-        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-                    ->find($exam_id);
-    
-        if (!$exam) {
-            return response()->json(['error' => 'Exam not found.'], 404); // HTTP Not Found
-        }
-    
-        $totalQuestions = $exam->questions->count(); // Count total questions
-        $totalPoints = 0;
-    
-        foreach ($exam->questions as $question) {
-            foreach ($question->correctAnswers as $correctAnswer) {
-                $totalPoints += $correctAnswer->points; // Sum up total points
-            }
-        }
-    
-        return response()->json([
-            'exam' => $exam,
-            'total_questions' => $totalQuestions, // Include total number of questions
-            'total_points' => $totalPoints // Include total points
-        ], 200); // HTTP OK
     }
-
+    
+    
     public function viewExam($exam_id)//View Exam for Students
     {
         $user = auth()->user();
@@ -528,113 +514,118 @@ class ExamController extends Controller
         ], 200); // HTTP OK
     }
 
+    public function addExam2(Request $request)
+    {
+        $request->validate([
+            'classtable_id' => 'required|exists:tblclass,id',
+            'title' => 'required|string',
+            'quarter' => 'required|string',
+            'start' => 'required|date_format:Y-m-d H:i:s',
+            'end' => 'required|date_format:Y-m-d H:i:s',
+            'questions' => 'required|array',
+            'questions.*.question_type' => 'required|string',
+            'questions.*.question' => 'required|string',
+            'questions.*.choices' => 'nullable|array',
+            'questions.*.correct_answers' => 'nullable|array',
+            'questions.*.correct_answers.*.choice_id' => 'nullable|exists:addchoices,id',
+            'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+            'questions.*.correct_answers.*.points' => 'nullable|integer'
+        ]);
+
+        // Create exam
+        $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+
+        $totalPoints = 0; // Initialize total points
+        $totalQuestions = 0; // Initialize total questions
+
+        foreach ($request->input('questions') as $qData) {
+            $totalQuestions++; // Increment total questions
+
+            $question = Question::create([
+                'tblschedule_id' => $exam->id,
+                'question_type' => $qData['question_type'],
+                'question' => $qData['question']
+            ]);
+
+            if (isset($qData['choices'])) {
+                foreach ($qData['choices'] as $choice) {
+                    Choice::create([
+                        'tblquestion_id' => $question->id,
+                        'choices' => $choice
+                    ]);
+                }
+            }
+
+            if (isset($qData['correct_answers'])) {
+                foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points; // Add points to total
+
+                    CorrectAnswer::create([
+                        'tblquestion_id' => $question->id,
+                        'addchoices_id' => $ansData['choice_id'] ?? null,
+                        'correct_answer' => $ansData['correct_answer'] ?? null,
+                        'points' => $points
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'message' => 'Exam created successfully',
+            'exam' => $exam,
+            'total_points' => $totalPoints, // Return the total points
+            'total_questions' => $totalQuestions // Return the total number of questions
+        ], 201); // HTTP Created
+    }
 
     public function viewExamForTeacher2()
-    {
+{
+    try {
         $user = auth()->user();
-    
+
         if ($user->usertype !== 'teacher') {
             return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403);
         }
-    
+
         // Fetch the classroom associated with the teacher
         $classroom = tblclass::where('user_id', $user->id)->first();
-    
+
         if (!$classroom) {
             return response()->json(['error' => 'No classroom found for the teacher.'], 404);
         }
-    
+
         // Fetch the exam for the classroom
         $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
                     ->where('classtable_id', $classroom->id)
                     ->first();
-    
+
         if (!$exam) {
             return response()->json(['error' => 'Exam not found for the classroom.'], 404);
         }
-    
+
         $totalQuestions = $exam->questions->count(); // Count total questions
         $totalPoints = 0;
-    
+
         foreach ($exam->questions as $question) {
             foreach ($question->correctAnswers as $correctAnswer) {
                 $totalPoints += $correctAnswer->points; // Sum up total points
             }
         }
-    
+
         return response()->json([
             'exam' => $exam,
             'total_questions' => $totalQuestions, // Include total number of questions
             'total_points' => $totalPoints // Include total points
         ], 200); // HTTP OK
+    } catch (\Exception $e) {
+        Log::error('Error fetching exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
     }
-    
-
-public function addExam2(Request $request)
-{
-    $request->validate([
-        'classtable_id' => 'required|exists:tblclass,id',
-        'title' => 'required|string',
-        'quarter' => 'required|string',
-        'start' => 'required|date_format:Y-m-d H:i:s',
-        'end' => 'required|date_format:Y-m-d H:i:s',
-        'questions' => 'required|array',
-        'questions.*.question_type' => 'required|string',
-        'questions.*.question' => 'required|string',
-        'questions.*.choices' => 'nullable|array',
-        'questions.*.correct_answers' => 'nullable|array',
-        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:addchoices,id',
-        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
-        'questions.*.correct_answers.*.points' => 'nullable|integer'
-    ]);
-
-    // Create exam
-    $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
-
-    $totalPoints = 0; // Initialize total points
-    $totalQuestions = 0; // Initialize total questions
-
-    foreach ($request->input('questions') as $qData) {
-        $totalQuestions++; // Increment total questions
-
-        $question = Question::create([
-            'tblschedule_id' => $exam->id,
-            'question_type' => $qData['question_type'],
-            'question' => $qData['question']
-        ]);
-
-        if (isset($qData['choices'])) {
-            foreach ($qData['choices'] as $choice) {
-                Choice::create([
-                    'tblquestion_id' => $question->id,
-                    'choices' => $choice
-                ]);
-            }
-        }
-
-        if (isset($qData['correct_answers'])) {
-            foreach ($qData['correct_answers'] as $ansData) {
-                $points = $ansData['points'] ?? 0;
-                $totalPoints += $points; // Add points to total
-
-                CorrectAnswer::create([
-                    'tblquestion_id' => $question->id,
-                    'addchoices_id' => $ansData['choice_id'] ?? null,
-                    'correct_answer' => $ansData['correct_answer'] ?? null,
-                    'points' => $points
-                ]);
-            }
-        }
-    }
-
-    return response()->json([
-        'message' => 'Exam created successfully',
-        'exam' => $exam,
-        'total_points' => $totalPoints, // Return the total points
-        'total_questions' => $totalQuestions // Return the total number of questions
-    ], 201); // HTTP Created
 }
-public function publishExam(Request $request, $exam_id)
+
+    
+       public function publishExam(Request $request, $exam_id)
 {
     $user = auth()->user();
 
