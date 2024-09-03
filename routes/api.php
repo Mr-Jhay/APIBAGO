@@ -84,16 +84,16 @@ Route::group([
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']); // View all curriculum entries
     Route::put('updatecuriculum/{id}', [manage_curiculumController::class, 'updateCuriculum']); // Update curriculum
     Route::delete('deletecuriculum', [manage_curiculumController::class, 'deleteCuriculum']); // Delete curriculum
-    Route::get('/counts', [UsersController::class, 'getCounts']);
+    Route::get('/counts', [UsersController::class, 'getCounts']); ///////dashboard statistics
    
     Route::get('userprofile', [UsersController::class, 'userprofile']);
 
     
-    Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);
+    Route::get('viewAllTeachers', [UsersController::class, 'viewAllTeachers']);//admin view all teACHER
     Route::put('updateTeacher', [UsersController::class, 'updateTeacher']);
 
-    Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);
-    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']); //
+    Route::get('viewAllStudents2', [UsersController::class, 'viewAllStudents2']);//admin view all student
+    Route::put('updateStudent/{id}', [UsersController::class, 'updateStudent']); //admin update all students account
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
