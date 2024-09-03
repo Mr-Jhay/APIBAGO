@@ -529,50 +529,46 @@ class ExamController extends Controller
     }
 
 
-
     public function viewExamForTeacher2()
-{
-    $user = auth()->user();
-
-    if ($user->usertype !== 'teacher') {
-        return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403); // HTTP Forbidden
-    }
-
-    // Fetch the classroom associated with the teacher
-    // Assuming there's a relationship or method to get the teacher's classroom
-    $classroom = tblclass::where('user_id', $user->id)->first();
-
-    if (!$classroom) {
-        return response()->json(['error' => 'No classroom found for the teacher.'], 404); // HTTP Not Found
-    }
-
-    // Fetch the exam for the classroom
-    // Assuming there's a way to get the exam based on the classroom
-    $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-                ->where('classtable_id', $classroom->id)
-                ->first();
-
-    if (!$exam) {
-        return response()->json(['error' => 'Exam not found for the classroom.'], 404); // HTTP Not Found
-    }
-
-    $totalQuestions = $exam->questions->count(); // Count total questions
-    $totalPoints = 0;
-
-    foreach ($exam->questions as $question) {
-        foreach ($question->correctAnswers as $correctAnswer) {
-            $totalPoints += $correctAnswer->points; // Sum up total points
+    {
+        $user = auth()->user();
+    
+        if ($user->usertype !== 'teacher') {
+            return response()->json(['error' => 'Unauthorized: Only teachers can view this exam.'], 403);
         }
+    
+        // Fetch the classroom associated with the teacher
+        $classroom = tblclass::where('user_id', $user->id)->first();
+    
+        if (!$classroom) {
+            return response()->json(['error' => 'No classroom found for the teacher.'], 404);
+        }
+    
+        // Fetch the exam for the classroom
+        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+                    ->where('classtable_id', $classroom->id)
+                    ->first();
+    
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found for the classroom.'], 404);
+        }
+    
+        $totalQuestions = $exam->questions->count(); // Count total questions
+        $totalPoints = 0;
+    
+        foreach ($exam->questions as $question) {
+            foreach ($question->correctAnswers as $correctAnswer) {
+                $totalPoints += $correctAnswer->points; // Sum up total points
+            }
+        }
+    
+        return response()->json([
+            'exam' => $exam,
+            'total_questions' => $totalQuestions, // Include total number of questions
+            'total_points' => $totalPoints // Include total points
+        ], 200); // HTTP OK
     }
-
-    return response()->json([
-        'exam' => $exam,
-        'total_questions' => $totalQuestions, // Include total number of questions
-        'total_points' => $totalPoints // Include total points
-    ], 200); // HTTP OK
-}
-
-
+    
 
 public function addExam2(Request $request)
 {
@@ -638,4 +634,24 @@ public function addExam2(Request $request)
         'total_questions' => $totalQuestions // Return the total number of questions
     ], 201); // HTTP Created
 }
+public function publishExam(Request $request, $exam_id)
+{
+    $user = auth()->user();
+
+    if ($user->usertype !== 'teacher') {
+        return response()->json(['error' => 'Unauthorized: Only teachers can publish exams.'], 403);
+    }
+
+    $exam = Exam::find($exam_id);
+
+    if (!$exam) {
+        return response()->json(['error' => 'Exam not found.'], 404);
+    }
+
+    // Assuming there's a 'status' column in the exams table
+    $exam->update(['status' => 'published']);
+
+    return response()->json(['message' => 'Exam published successfully.'], 200);
+}
+
 }

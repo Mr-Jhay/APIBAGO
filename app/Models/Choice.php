@@ -15,3 +15,4 @@ class Choice extends Model
         'choices'
     ];
 }
+ 
