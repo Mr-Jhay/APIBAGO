@@ -208,6 +208,10 @@ Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
    // Delete an exam
    Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
+   // Archive an exam
+Route::delete('/exam/{exam_id}', [ExamController::class, 'archiveExam']);
+
+
 // Route to get the approved classes for a student
 Route::get('StudentApprovedClasses', [joinclassController::class, 'getStudentApprovedClasses']);
 

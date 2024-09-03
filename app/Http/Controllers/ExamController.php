@@ -115,12 +115,10 @@ class ExamController extends Controller
         $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
 
         $totalPoints = 0;
-        $totalQuestions = 0;
+        $totalQuestions = count($request->input('questions'));
 
         // Iterate through the questions in the request
         foreach ($request->input('questions') as $qData) {
-            $totalQuestions++;
-
             // Create each question
             $question = Question::create([
                 'tblschedule_id' => $exam->id,
@@ -142,7 +140,7 @@ class ExamController extends Controller
             if (isset($qData['correct_answers'])) {
                 foreach ($qData['correct_answers'] as $ansData) {
                     $points = $ansData['points'] ?? 0;
-                    $totalPoints += $points;
+                    $totalPoints += $points; // Accumulate the total points
 
                     CorrectAnswer::create([
                         'tblquestion_id' => $question->id,
@@ -160,8 +158,8 @@ class ExamController extends Controller
         return response()->json([
             'message' => 'Exam created successfully',
             'exam' => $exam,
-            'total_points' => $totalPoints,
-            'total_questions' => $totalQuestions
+            'total_points' => $totalPoints,      // Ensure these are included
+            'total_questions' => $totalQuestions // Ensure these are included
         ], 201);
     } catch (\Exception $e) {
         // Rollback the transaction if something goes wrong
@@ -170,7 +168,6 @@ class ExamController extends Controller
         return response()->json(['error' => 'Failed to create exam.'], 500);
     }
 }
-
 
     // View All Exams for a Specific Class/Subject
     public function viewAllExamsInClass($classtable_id)
@@ -212,56 +209,57 @@ class ExamController extends Controller
 
     // View Exam Details for Students
     public function viewExam($exam_id)
-    {
-        $user = auth()->user();
-    
-        if ($user->usertype !== 'student') {
-            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
-        }
-    
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-                                 ->where('tblschedule_id', $exam_id)
-                                 ->exists();
-    
-        if (!$isEnrolled) {
-            return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-        }
-    
-        try {
-            $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-                        ->findOrFail($exam_id);
-    
-            return response()->json(['exam' => $exam], 200);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
-        }
+{
+    $user = auth()->user();
+
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
     }
+
+    $isEnrolled = StudentExam::where('user_id', $user->id)
+                             ->where('tblschedule_id', $exam_id)
+                             ->exists();
+
+    if (!$isEnrolled) {
+        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+    }
+
+    try {
+        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+                    ->findOrFail($exam_id);
+
+        return response()->json(['exam' => $exam], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
+
     
 
     // Submit Exam Answers (For Students)
     public function submitExam(Request $request, $exam_id)
     {
         $user = auth()->user();
-
+    
         if ($user->usertype !== 'student') {
             return response()->json(['error' => 'Unauthorized: Only students can submit exams.'], 403);
         }
-
+    
         $isEnrolled = StudentExam::where('user_id', $user->id)
                                  ->where('tblschedule_id', $exam_id)
                                  ->exists();
-
+    
         if (!$isEnrolled) {
             return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
         }
-
+    
         $request->validate([
             'answers' => 'required|array',
             'answers.*.question_id' => 'required|exists:tblquestion,id',
             'answers.*.correctanswer_id' => 'required|exists:correctanswer,id'
         ]);
-
+    
         try {
             foreach ($request->input('answers') as $answer) {
                 AnsweredQuestion::updateOrCreate(
@@ -274,13 +272,14 @@ class ExamController extends Controller
                     ]
                 );
             }
-
+    
             return response()->json(['message' => 'Exam submitted successfully.'], 200);
         } catch (\Exception $e) {
             Log::error('Failed to submit exam answers: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
         }
     }
+    
 
     // Get Exam Results (For Students)
     public function getResults(Request $request, $examId)
@@ -443,4 +442,20 @@ class ExamController extends Controller
             return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
     }
+
+    // ExamController.php
+
+// Archive an Exam (soft delete)
+public function archiveExam($id)
+{
+    try {
+        $exam = Exam::findOrFail($id);
+        $exam->delete(); // Assuming soft deletes are enabled
+        return response()->json(['message' => 'Exam archived successfully'], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to archive exam: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to archive exam. Please try again later.'], 500);
+    }
+}
+
 }
