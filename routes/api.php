@@ -205,11 +205,16 @@ Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
    // Update an existing exam
    Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
 
-   // Delete an exam
-   Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
-   // Archive an exam
-Route::delete('/exam/{exam_id}', [ExamController::class, 'archiveExam']);
+
+// Archive an exam
+Route::patch('/exam/{exam_id}/archive', [ExamController::class, 'archiveExam']);
+
+// Other existing routes
+Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
+
+
+
 
 
 // Route to get the approved classes for a student
@@ -257,6 +262,11 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
     Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
+
+    Route::patch('/exam/{exam_id}/publish', [ExamController::class, 'publishExam']);
+Route::get('/student/exams', [ExamController::class, 'getPublishedExams']);
+Route::get('/exam/{exam_id}', [ExamController::class, 'getExamDetails']);
+Route::post('/exam/{exam_id}/submit', [ExamController::class, 'submitExam']);
     
    // submitExam8
 
