@@ -22,6 +22,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EmailController;
 //use App\Http\Controllers\MailController;
+use App\Http\Controllers\FeedbackController;
 
 
 
@@ -263,6 +264,19 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     
    // submitExam8
 
- 
+
+
+   // Store feedback question (accessible by teachers)
+   Route::post('/feedback-question', [FeedbackController::class, 'storeFeedbackQuestion'])->middleware('auth', 'teacher');
+   
+   // Store feedback options (accessible by teachers)
+   Route::post('/feedback-options', [FeedbackController::class, 'storeFeedbackOptions'])->middleware('auth', 'teacher');
+   
+   // Store user feedback (rating and comment)
+   Route::post('/feedback', [FeedbackController::class, 'storeFeedback'])->middleware('auth');
+   
+   // Get feedbacks for a specific feedback question
+   Route::get('/feedbacks/{feedbackQuestionId}', [FeedbackController::class, 'getFeedbacks']);
+   
 
 });
