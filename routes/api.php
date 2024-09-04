@@ -17,6 +17,7 @@ use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\ExamController;
+use App\Http\Controllers\AnnouncementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EmailController;
@@ -36,6 +37,8 @@ Route::post('registerstudent', [UsersController::class, 'registerstudent']);
 Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
 
 Route::post('sendInvitation', [MailController::class, 'sendInvitation']);
+
+Route::post('store99', [AnnouncementController::class, 'store99']);
 //EmailController
 Route::group([
     "middleware" => "auth:sanctum"
