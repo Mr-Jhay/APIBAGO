@@ -522,7 +522,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-        'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+        // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
@@ -591,12 +591,12 @@ public function updateTeacher(Request $request, $id)
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
         'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
-        'password' => [
-            'sometimes',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
+        // 'password' => [
+        //     'sometimes',
+        //     'string',
+        //     'min:8',
+        //     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        // ],
         'position_id' => 'sometimes|exists:tblposition,id',
         'strand_id' => 'nullable|array',
         'strand_id.*' => 'exists:tblstrand,id',
@@ -618,7 +618,7 @@ public function updateTeacher(Request $request, $id)
             'lname' => $data['lname'] ?? $user->lname,
             'sex' => $data['sex'] ?? $user->sex,
             'email' => $data['email'] ?? $user->email,
-            'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
+            // 'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
         ]);
 
         // Update the teacher record

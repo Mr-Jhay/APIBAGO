@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('tblfeedback_id');
             $table->tinyInteger('rate'); // Assuming rate is between 1 and 5
+            $table->text('description')->nullable(); 
 
             $table->timestamps();
 
