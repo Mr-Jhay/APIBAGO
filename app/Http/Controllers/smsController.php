@@ -41,7 +41,7 @@ $guzzleClient = new \GuzzleHttp\Client([
         $twilio = new Client($sid, $token);
 
         $message = $twilio->messages->create(
-            "+63 993 582 9400", // to
+          //  "+63 993 582 9400", // to
             //"+63 364 000 3963",
             "+63 936 400 3963",
             [
@@ -50,7 +50,7 @@ $guzzleClient = new \GuzzleHttp\Client([
                 "from" => $sendernumber,
             ]
         );
-        return response()->json(['message' => 'SMS sent successfully']);
+       // return response()->json(['message' => 'SMS sent successfully']);
     }
 
 

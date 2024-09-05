@@ -10,7 +10,10 @@
         "laravel/framework": "^11.9",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "nyholm/psr7": "^1.8",
+        "railsware/mailtrap-php": "^2.0",
         "setasign/fpdf": "^1.8",
+        "symfony/http-client": "^7.1",
         "twilio/sdk": "^8.2",
         "vonage/client": "^4.0"
     },

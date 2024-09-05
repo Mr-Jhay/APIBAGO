@@ -8,6 +8,7 @@ use App\Mail\InvitationMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\TestMail;
+use App\Mail\WelcomeMail;
 
 
 class MailController extends Controller
@@ -44,5 +45,21 @@ class MailController extends Controller
            // Return an error response
            return response()->json(['message' => 'Failed to send email.'], 500);
        }
+   }
+
+   public function sendWelcomeMail(Request $request)
+   {
+       $request->validate([
+           'name' => 'required|string',
+           'email' => 'required|email',
+       ]);
+
+       $name = $request->input('name');
+       $email = $request->input('email');
+
+       // Send the email
+       Mail::to($email)->send(new WelcomeMail($name));
+
+       return response()->json(['message' => 'Welcome email sent successfully']);
    }
 }
