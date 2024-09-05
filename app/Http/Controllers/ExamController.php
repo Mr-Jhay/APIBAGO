@@ -12,6 +12,13 @@ use App\Models\CorrectAnswer;
 use App\Models\tblclass;
 use App\Models\StudentExam;
 use App\Models\AnsweredQuestion;
+use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\Controller;
+use App\Mail\InvitationMail;
+
+
+use App\Mail\TestMail;
+use App\Mail\WelcomeMail;
 
 class ExamController extends Controller
 {
@@ -103,8 +110,25 @@ class ExamController extends Controller
             $exam->status = 1;
             $exam->save();
     
+            // Retrieve class_id from the exam
+            $class_id = $exam->classtable_id;
+    
+            // Get students enrolled in the class
+            $students = DB::table('users')
+                ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                ->where('joinclass.class_id', $class_id)
+                ->where('joinclass.status', 1)
+                ->where('users.usertype', 'student')
+                ->select('users.id', 'users.fname', 'users.email')
+                ->get();
+    
+            // Send welcome email to each student
+            foreach ($students as $student) {
+                Mail::to($student->email)->send(new WelcomeMail($student->fname));
+            }
+    
             // Return success response
-            return response()->json(['message' => 'Exam published successfully'], 200);
+            return response()->json(['message' => 'Exam published and welcome emails sent successfully'], 200);
     
         } catch (\Exception $e) {
             // Log the error for debugging
@@ -114,6 +138,7 @@ class ExamController extends Controller
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
+    
     
     // View all exams for a specific class
     public function viewAllExamsInClass($classtable_id)
