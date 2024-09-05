@@ -550,7 +550,7 @@ public function updateStudentDetails(Request $request, $user_id)
         $student->update(array_filter([
             'strand_id' => $validated['strand_id'] ?? $student->strand_id,
             'section_id' => $validated['section_id'] ?? $student->section_id,
-            // 'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
         ]));
 
         // Commit the transaction
