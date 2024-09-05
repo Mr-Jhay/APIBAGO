@@ -89,10 +89,10 @@ class ExamController extends Controller
     }
 
     // Publish Exam
-    public function publish($id) {
+    public function publish($exam_id) {
         try {
             // Find the exam by ID
-            $exam = Exam::find($id);
+            $exam = Exam::find($exam_id);
     
             // If exam doesn't exist, return a 404 error
             if (!$exam) {
