@@ -100,7 +100,7 @@ class ExamController extends Controller
             }
     
             // Publish the exam
-            $exam->is_published = true;
+            $exam->status = 1;
             $exam->save();
     
             // Return success response
@@ -141,6 +141,7 @@ class ExamController extends Controller
                     'quarter' => $exam->quarter,
                     'start' => $exam->start,
                     'end' => $exam->end,
+                    'status' => $exam->status,
                     'total_points' => $totalPoints,
                     'total_questions' => $totalQuestions
                 ];
