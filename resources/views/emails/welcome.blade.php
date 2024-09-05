@@ -5,6 +5,6 @@
 </head>
 <body>
     <p>Hi {{ $name }},</p>
-    <p>Welcome to our application!</p>
+    <p>EXAM DAY TODAY</p>
 </body>
 </html>
