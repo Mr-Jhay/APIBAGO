@@ -170,7 +170,7 @@ class ExamController extends Controller
 }
 
     // View All Exams for a Specific Class/Subject
-    public function viewAllExamsInClass($classtable_id)
+   public  function viewAllExamsInClass($classtable_id)
     {
         try {
             $class = tblclass::findOrFail($classtable_id);
@@ -457,5 +457,31 @@ public function archiveExam($id)
         return response()->json(['error' => 'Failed to archive exam. Please try again later.'], 500);
     }
 }
+
+     // Publish Exam
+     public function publishExam($examId)
+     {
+         try {
+             $exam = Exam::findOrFail($examId);
+             
+             // Check if the exam is already published
+             if ($exam->is_published) {
+                 return response()->json(['message' => 'Exam is already published.'], 200);
+             }
+ 
+             // Publish the exam
+             $exam->is_published = true;
+             $exam->save();
+ 
+             return response()->json(['message' => 'Exam published successfully'], 200);
+         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+             Log::error('Exam not found: ' . $e->getMessage());
+             return response()->json(['error' => 'Exam not found.'], 404);
+         } catch (\Exception $e) {
+             Log::error('Failed to publish exam: ' . $e->getMessage());
+             return response()->json(['error' => 'Failed to publish exam.'], 500);
+         }
+     }
+
 
 }
