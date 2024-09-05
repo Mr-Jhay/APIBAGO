@@ -156,31 +156,38 @@ class ExamController extends Controller
 
     // View exam details for students
     public function viewExam($exam_id)
-    {
-        $user = auth()->user();
+{
+    $user = auth()->user();
 
-        if ($user->usertype !== 'student') {
-            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
-        }
-
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-            ->where('tblschedule_id', $exam_id)
-            ->exists();
-
-        if (!$isEnrolled) {
-            return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-        }
-
-        try {
-            $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
-                ->findOrFail($exam_id);
-
-            return response()->json(['exam' => $exam], 200);
-        } catch (\Exception $e) {
-            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
-        }
+    // Ensure only students can view exams
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
     }
+
+    // Check if the student is enrolled in the exam
+    $isEnrolled = StudentExam::where('user_id', $user->id)
+        ->where('tblschedule_id', $exam_id)
+        ->exists();
+
+    if (!$isEnrolled) {
+        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+    }
+
+    try {
+        // Retrieve the exam with questions and choices, but exclude correct answers
+        $exam = Exam::with(['questions.choices'])
+            ->where('id', $exam_id)
+            ->where('status', 1) // Check if the exam is published
+            ->firstOrFail();
+
+        return response()->json(['exam' => $exam], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
+
+    
 
     // Submit exam answers (for students)
     public function submitExam(Request $request, $exam_id)
