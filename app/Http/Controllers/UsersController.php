@@ -591,12 +591,12 @@ public function updateTeacher(Request $request, $id)
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
         'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
-        'password' => [
-            'sometimes',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
+        // 'password' => [
+        //     'sometimes',
+        //     'string',
+        //     'min:8',
+        //     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        // ],
         'position_id' => 'sometimes|exists:tblposition,id',
         'strand_id' => 'nullable|array',
         'strand_id.*' => 'exists:tblstrand,id',
@@ -618,7 +618,7 @@ public function updateTeacher(Request $request, $id)
             'lname' => $data['lname'] ?? $user->lname,
             'sex' => $data['sex'] ?? $user->sex,
             'email' => $data['email'] ?? $user->email,
-            'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
+            // 'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
         ]);
 
         // Update the teacher record
