@@ -19,7 +19,7 @@ use App\Http\Controllers\MailController;
 use App\Http\Controllers\ExamController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\EmailController;
+use App\Http\Controllers\smsController;
 //use App\Http\Controllers\MailController;
 use App\Http\Controllers\FeedbackController;
 
@@ -39,6 +39,13 @@ Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
 Route::post('sendInvitation', [MailController::class, 'sendInvitation']);
 
 Route::post('store99', [AnnouncementController::class, 'store99']);
+
+Route::post('sendSms2', [smsController::class, 'sendSms2']);
+
+
+Route::post('/send-welcome-mail', [MailController::class, 'sendWelcomeMail']);
+
+
 //EmailController
 Route::group([
     "middleware" => "auth:sanctum"
