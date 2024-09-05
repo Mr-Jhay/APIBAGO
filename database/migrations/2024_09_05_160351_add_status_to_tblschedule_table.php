@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tblschedule', function (Blueprint $table) {
-            $table->boolean('is_published')->default(false)->after('end');
+            $table->string('status')->default('0')->after('end');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tblschedule', function (Blueprint $table) {
-            $table->dropColumn('is_published');
+            $table->dropColumn('status');
         });
     }
 };

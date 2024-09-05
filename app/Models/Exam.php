@@ -16,7 +16,8 @@ class Exam extends Model
         'title',
         'quarter',
         'start',
-        'end'
+        'end',
+        'status'
     ];
 
     public function questions()
