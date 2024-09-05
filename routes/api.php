@@ -17,12 +17,10 @@ use App\Http\Controllers\tblyearController;
 use App\Http\Controllers\UsersController;
 use App\Http\Controllers\MailController;
 use App\Http\Controllers\ExamController;
-use App\Http\Controllers\AnnouncementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EmailController;
 //use App\Http\Controllers\MailController;
-use App\Http\Controllers\FeedbackController;
 
 
 
@@ -38,8 +36,6 @@ Route::post('registerstudent', [UsersController::class, 'registerstudent']);
 Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
 
 Route::post('sendInvitation', [MailController::class, 'sendInvitation']);
-
-Route::post('store99', [AnnouncementController::class, 'store99']);
 //EmailController
 Route::group([
     "middleware" => "auth:sanctum"
@@ -209,16 +205,11 @@ Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
    // Update an existing exam
    Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
 
+   // Delete an exam
+   Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
-
-// Archive an exam
-Route::patch('/exam/{exam_id}/archive', [ExamController::class, 'archiveExam']);
-
-// Other existing routes
-Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
-
-
-
+   // Archive an exam
+Route::delete('/exam/{exam_id}', [ExamController::class, 'archiveExam']);
 
 
 // Route to get the approved classes for a student
@@ -266,27 +257,9 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
     Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
-
-    Route::patch('/exam/{exam_id}/publish', [ExamController::class, 'publishExam']);
-Route::get('/student/exams', [ExamController::class, 'getPublishedExams']);
-Route::get('/exam/{exam_id}', [ExamController::class, 'getExamDetails']);
-Route::post('/exam/{exam_id}/submit', [ExamController::class, 'submitExam']);
     
    // submitExam8
 
-
-
-   // Store feedback question (accessible by teachers)
-   Route::post('/feedback-question', [FeedbackController::class, 'storeFeedbackQuestion'])->middleware('auth', 'teacher');
-   
-   // Store feedback options (accessible by teachers)
-   Route::post('/feedback-options', [FeedbackController::class, 'storeFeedbackOptions'])->middleware('auth', 'teacher');
-   
-   // Store user feedback (rating and comment)
-   Route::post('/feedback', [FeedbackController::class, 'storeFeedback'])->middleware('auth');
-   
-   // Get feedbacks for a specific feedback question
-   Route::get('/feedbacks/{feedbackQuestionId}', [FeedbackController::class, 'getFeedbacks']);
-   
+ 
 
 });
