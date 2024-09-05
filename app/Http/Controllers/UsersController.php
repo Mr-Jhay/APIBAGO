@@ -522,7 +522,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-      //  'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+        // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
@@ -550,7 +550,7 @@ public function updateStudentDetails(Request $request, $user_id)
         $student->update(array_filter([
             'strand_id' => $validated['strand_id'] ?? $student->strand_id,
             'section_id' => $validated['section_id'] ?? $student->section_id,
-          //  'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
         ]));
 
         // Commit the transaction
