@@ -437,4 +437,42 @@ class tblclassController extends Controller
     }
 
 
+    //TOTAL SUBJECTS HANDLE BY TEACHER
+    public function showClasstotal(Request $request)
+{
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized and is a teacher
+    if ($user && $user->usertype === 'teacher') {
+        // Automatically determine the class ID
+        $class_id = $this->getClassIdForTeacher($user->id);
+
+        // Retrieve the class created by this teacher with related data
+        $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+                        ->where('id', $class_id)
+                        ->where('user_id', $user->id)
+                        ->first();
+
+        // Count the number of classes handled by the teacher
+        $classCount = tblclass::where('user_id', $user->id)->count();
+
+        if ($class) {
+            return response()->json([
+                'class' => $class,
+                'class_count' => $classCount
+            ], 200);
+        } else {
+            // If the class is not found or doesn't belong to the teacher
+            return response()->json([
+                'message' => 'Class not found or you are not authorized to view this class.',
+                'class_count' => $classCount
+            ], 404);
+        }
+    } else {
+        return response()->json(['message' => 'Unauthorized'], 403);
+    }
+}
+
+
 }

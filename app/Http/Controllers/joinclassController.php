@@ -236,21 +236,22 @@ class joinclassController extends Controller
         ], 200);
     }
 
-    // Method to list all students with approved join requests in a class
+    // Method to list all students with approved join requests in a class WITH total_students , MALE FEMALE
     public function listStudentsInClass2(Request $request, $class_id)
     {
         $request->validate([
             'class_id' => 'required|exists:tblclass,id'
         ]);
-
+    
         $user = $request->user();
-
+    
         if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
             return response()->json([
                 'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
             ], 403);
         }
-
+    
+        // Retrieve the list of students in the class
         $students = DB::table('users')
                     ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                     ->where('joinclass.class_id', $class_id)
@@ -258,9 +259,39 @@ class joinclassController extends Controller
                     ->where('users.usertype', 'student')
                     ->select('users.id', 'users.idnumber', 'users.fname', 'users.email', 'joinclass.status')
                     ->get();
-
-        return response()->json($students, 200);
+    
+        // Count total students
+        $totalStudents = $students->count();
+    
+        // Count male students
+        $maleCount = DB::table('users')
+                    ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                    ->where('joinclass.class_id', $class_id)
+                    ->where('joinclass.status', 1)
+                    ->where('users.usertype', 'student')
+                    ->where('users.gender', 'male') // Adjust 'gender' field as necessary
+                    ->count();
+    
+        // Count female students
+        $femaleCount = DB::table('users')
+                    ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                    ->where('joinclass.class_id', $class_id)
+                    ->where('joinclass.status', 1)
+                    ->where('users.usertype', 'student')
+                    ->where('users.gender', 'female') // Adjust 'gender' field as necessary
+                    ->count();
+    
+        // Prepare response with counts and students list
+        $response = [
+            'total_students' => $totalStudents,
+            'male_count' => $maleCount,
+            'female_count' => $femaleCount,
+            'students' => $students
+        ];
+    
+        return response()->json($response, 200);
     }
+    
 
     // Method to list all students with pending join requests in a class
     public function listStudentsInClass3(Request $request, $class_id)

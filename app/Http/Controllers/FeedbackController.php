@@ -7,6 +7,7 @@ use App\Models\FeedbackQuestion; // Model for feedback questions
 use App\Models\FeedbackOption; // Model for feedback options
 use App\Models\UserFeedback; // Model for user feedback
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class FeedbackController extends Controller
 {
@@ -16,50 +17,67 @@ class FeedbackController extends Controller
      * @param \Illuminate\Http\Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function storeFeedbackQuestion(Request $request)
+
+    public function storeFeedbackWithOptions(Request $request)
     {
+        // Validate request
         $request->validate([
             'class_id' => 'required|exists:tblclass,id',
             'question' => 'required|string',
+            'options' => 'required|array',
+            'options.*.rating' => 'required|integer|min:1|max:5',
+            'options.*.description' => 'nullable|string',
         ]);
 
-        $feedbackQuestion = FeedbackQuestion::create([
-            'class_id' => $request->class_id,
-            'question' => $request->question,
-        ]);
+        try {
+            // Store the feedback question
+            $feedbackQuestion = FeedbackQuestion::create([
+                'class_id' => $request->class_id,
+                'question' => $request->question,
+            ]);
 
-        return response()->json([
-            'message' => 'Feedback question created successfully!',
-            'feedbackQuestion' => $feedbackQuestion
-        ], 201);
+            // Store the rating options
+            foreach ($request->input('options') as $option) {
+                FeedbackOption::create([
+                    'tblfeedback_id' => $feedbackQuestion->id,
+                    'rating' => $option['rating'],
+                    'description' => $option['description'],
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Feedback question and options created successfully!',
+                'feedbackQuestion' => $feedbackQuestion
+            ], 201);
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Failed to create feedback question and options: ' . $e->getMessage());
+
+            // Return a 500 Internal Server Error
+            return response()->json(['error' => 'Failed to create feedback question and options. Please try again later.'], 500);
+        }
     }
-
-    /**
-     * Store rating options for a feedback question.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function storeFeedbackOptions(Request $request)
+    public function getFeedbackQuestionsWithOptions($class_id)
     {
+        // Validate the class_id
         $request->validate([
-            'tblfeedback_id' => 'required|exists:feedback_questions,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'description' => 'nullable|string',
+            'class_id' => 'required|exists:tblclass,id',
         ]);
 
-        $feedbackOption = FeedbackOption::create([
-            'tblfeedback_id' => $request->feedback_question_id,
-            'rating' => $request->rating,
-            'description' => $request->description,
-        ]);
+        try {
+            // Retrieve feedback questions with their options
+            $feedbackQuestions = FeedbackQuestion::with('options')
+                ->where('class_id', $class_id)
+                ->get();
 
-        return response()->json([
-            'message' => 'Feedback option created successfully!',
-            'feedbackOption' => $feedbackOption
-        ], 201);
+            return response()->json([
+                'feedbackQuestions' => $feedbackQuestions
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Failed to retrieve feedback questions and options: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve feedback questions and options. Please try again later.'], 500);
+        }
     }
-
     /**
      * Store a new recommendation or suggestion.
      *
@@ -67,16 +85,19 @@ class FeedbackController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
     public function storeFeedback(Request $request)
-    {
-        $request->validate([
-            'tblfeedback_id' => 'required|exists:feedback_questions,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string',
-        ]);
+{
+    // Validate the incoming request
+    $request->validate([
+        'tblfeedback_id' => 'required|exists:feedback_questions,id',
+        'rating' => 'required|integer|min:1|max:5',
+        'comment' => 'nullable|string',
+    ]);
 
+    // Store the feedback in the database
+    try {
         $feedback = UserFeedback::create([
             'user_id' => Auth::id(),
-            'tblfeedback_id' => $request->feedback_question_id,
+            'tblfeedback_id' => $request->tblfeedback_id, // Ensure this matches your field name
             'rating' => $request->rating,
             'comment' => $request->comment,
         ]);
@@ -85,7 +106,15 @@ class FeedbackController extends Controller
             'message' => 'Feedback submitted successfully!',
             'feedback' => $feedback
         ], 201);
+    } catch (\Exception $e) {
+        \Log::error('Failed to submit feedback: ' . $e->getMessage());
+
+        return response()->json([
+            'error' => 'Failed to submit feedback. Please try again later.'
+        ], 500);
     }
+}
+
 
     /**
      * Retrieve feedbacks for a specific feedback question.

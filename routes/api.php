@@ -126,6 +126,8 @@ Route::group([
     Route::get('getAllStudentsWithStrands', [UsersController::class, 'getAllStudentsWithStrands']);
    // getCounts
   // getAllStudentsWithStrands
+
+
     //TEACHER
 
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
@@ -156,7 +158,10 @@ Route::group([
    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
-   Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class
+
+
+    // Method to list all students with approved join requests in a class WITH total_students , MALE FEMALE
+   Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class 
    Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
@@ -250,6 +255,8 @@ Route::get('tblclass/{classtable_id}/exams', [ExamController::class, 'viewAllExa
 Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'viewExamDetails']);//if the choose one of the exam you will see all the questions
 
 
+//HOW HOW MAN CLASS THAN TEACHE HANDLE
+ Route::get('showClasstotal', [tblclassController::class, 'showClasstotal']);
 
 
 
