@@ -11,6 +11,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
         "setasign/fpdf": "^1.8",
+        "twilio/sdk": "^8.2",
         "vonage/client": "^4.0"
     },
     "require-dev": {
