@@ -227,6 +227,34 @@ class ExamController extends Controller
         }
     }
 
+    
+    public function publish2($exam_id)
+    {
+        try {
+            // Find the exam by ID
+            $exam = Exam::find($exam_id);
+
+            // If exam doesn't exist, return a 404 error
+            if (!$exam) {
+                return response()->json(['error' => 'Exam not found'], 404);
+            }
+
+            // Publish the exam
+            $exam->status = 1;
+            $exam->save();
+
+            // Return success response
+            return response()->json(['message' => 'Exam published successfully'], 200);
+
+        } catch (\Exception $e) {
+            // Log the error for debugging
+            \Log::error('Failed to publish exam: ' . $e->getMessage());
+
+            // Return a 500 Internal Server Error
+            return response()->json(['error' => 'Internal Server Error'], 500);
+        }
+    }
+
     // View all exams for a specific class
     public function viewAllExamsInClass($classtable_id)
     {
