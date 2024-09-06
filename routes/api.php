@@ -202,6 +202,9 @@ Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
 // Delete an exam
 Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
+//publish exam to students
+Route::post('/exams/publish/{exam_id}', [ExamController::class, 'publish']);
+
 
 Route::patch('exam/{examId}/publish', [ExamController::class, 'publish']);
 
