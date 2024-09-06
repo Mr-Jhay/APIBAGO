@@ -132,7 +132,7 @@ Route::group([
 
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
-    Route::get('class/{class_id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
+    Route::get('class/{id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
     Route::get('showClass2', [tblclassController::class, 'showClass2']);
     Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
 
