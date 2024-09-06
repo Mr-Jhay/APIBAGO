@@ -15,8 +15,6 @@ use App\Models\AnsweredQuestion;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Mail\InvitationMail;
-
-
 use App\Mail\TestMail;
 use App\Mail\WelcomeMail;
 
@@ -95,6 +93,96 @@ class ExamController extends Controller
         }
     }
 
+      // Create an exam with additional logic - addExam2
+      public function addExam2(Request $request)
+      {
+          $request->validate([
+              'classtable_id' => 'required|exists:tblclass,id',
+              'title' => 'required|string',
+              'quarter' => 'required|string',
+              'start' => 'required|date_format:Y-m-d H:i:s',
+              'end' => 'required|date_format:Y-m-d H:i:s',
+              'questions' => 'required|array',
+              'questions.*.question_type' => 'required|string',
+              'questions.*.question' => 'required|string',
+              'questions.*.choices' => 'nullable|array',
+              'questions.*.correct_answers' => 'nullable|array',
+              'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+              'questions.*.correct_answers.*.points' => 'nullable|integer',
+              'notify_students' => 'nullable|boolean',  // Example of extra logic
+          ]);
+  
+          try {
+              DB::beginTransaction();
+  
+              $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+              $totalPoints = 0;
+              $totalQuestions = 0;
+  
+              // Create questions and correct answers
+              foreach ($request->input('questions') as $qData) {
+                  $totalQuestions++;
+                  $question = Question::create([
+                      'tblschedule_id' => $exam->id,
+                      'question_type' => $qData['question_type'],
+                      'question' => $qData['question']
+                  ]);
+  
+                  if (isset($qData['choices'])) {
+                      foreach ($qData['choices'] as $choice) {
+                          Choice::create([
+                              'tblquestion_id' => $question->id,
+                              'choices' => $choice
+                          ]);
+                      }
+                  }
+  
+                  if (isset($qData['correct_answers'])) {
+                      foreach ($qData['correct_answers'] as $ansData) {
+                          $points = $ansData['points'] ?? 0;
+                          $totalPoints += $points;
+  
+                          CorrectAnswer::create([
+                              'tblquestion_id' => $question->id,
+                              'addchoices_id' => $ansData['choice_id'] ?? null,
+                              'correct_answer' => $ansData['correct_answer'] ?? null,
+                              'points' => $points
+                          ]);
+                      }
+                  }
+              }
+  
+              // Notify students if required (Extra logic for addExam2)
+              if ($request->input('notify_students', false)) {
+                  $class = tblclass::find($exam->classtable_id);
+                  $students = DB::table('users')
+                      ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                      ->where('joinclass.class_id', $class->id)
+                      ->where('joinclass.status', 1)
+                      ->where('users.usertype', 'student')
+                      ->select('users.email')
+                      ->get();
+  
+                  foreach ($students as $student) {
+                      Mail::to($student->email)->send(new WelcomeMail($student->email));
+                  }
+              }
+  
+              DB::commit();
+  
+              return response()->json([
+                  'message' => 'Exam created successfully',
+                  'exam' => $exam,
+                  'total_points' => $totalPoints,
+                  'total_questions' => $totalQuestions
+              ], 201);
+          } catch (\Exception $e) {
+              DB::rollBack();
+              Log::error('Failed to create exam (addExam2): ' . $e->getMessage());
+              return response()->json(['error' => 'Failed to create exam.'], 500);
+          }
+      }
+  
     // Publish Exam
     public function publish($exam_id) {
         try {
@@ -138,8 +226,7 @@ class ExamController extends Controller
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
-    
-    
+
     // View all exams for a specific class
     public function viewAllExamsInClass($classtable_id)
     {
@@ -181,38 +268,36 @@ class ExamController extends Controller
 
     // View exam details for students
     public function viewExam($exam_id)
-{
-    $user = auth()->user();
+    {
+        $user = auth()->user();
 
-    // Ensure only students can view exams
-    if ($user->usertype !== 'student') {
-        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+        // Ensure only students can view exams
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+        }
+
+        // Check if the student is enrolled in the exam
+        $isEnrolled = StudentExam::where('user_id', $user->id)
+            ->where('tblschedule_id', $exam_id)
+            ->exists();
+
+        if (!$isEnrolled) {
+            return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+        }
+
+        try {
+            // Retrieve the exam with questions and choices, but exclude correct answers
+            $exam = Exam::with(['questions.choices'])
+                ->where('id', $exam_id)
+                ->where('status', 1) // Check if the exam is published
+                ->firstOrFail();
+
+            return response()->json(['exam' => $exam], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+        }
     }
-
-    // Check if the student is enrolled in the exam
-    $isEnrolled = StudentExam::where('user_id', $user->id)
-        ->where('tblschedule_id', $exam_id)
-        ->exists();
-
-    if (!$isEnrolled) {
-        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-    }
-
-    try {
-        // Retrieve the exam with questions and choices, but exclude correct answers
-        $exam = Exam::with(['questions.choices'])
-            ->where('id', $exam_id)
-            ->where('status', 1) // Check if the exam is published
-            ->firstOrFail();
-
-        return response()->json(['exam' => $exam], 200);
-    } catch (\Exception $e) {
-        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
-    }
-}
-
-    
 
     // Submit exam answers (for students)
     public function submitExam(Request $request, $exam_id)
@@ -283,5 +368,45 @@ class ExamController extends Controller
             Log::error('Failed to retrieve exam results: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
         }
+    }
+
+    // Fetch all exams for a specific class
+    public function getExams($class_id)
+    {
+        $exams = Exam::where('class_id', $class_id)->get();
+        return response()->json(['exams' => $exams]);
+    }
+
+    // Publish an exam
+    public function publishExam($exam_id)
+    {
+        $exam = Exam::findOrFail($exam_id);
+        $exam->is_published = true;
+        $exam->save();
+
+        // Optionally, notify students via email
+        // Code for notification goes here
+
+        return response()->json(['message' => 'Exam published successfully']);
+    }
+
+    // Fetch only published exams for a specific class (for students)
+    public function getPublishedExams($class_id)
+    {
+        $exams = Exam::where('class_id', $class_id)
+                     ->where('is_published', true)
+                     ->get();
+
+        return response()->json(['exams' => $exams]);
+    }
+
+    // Archive an exam
+    public function archiveExam($exam_id)
+    {
+        $exam = Exam::findOrFail($exam_id);
+        $exam->is_archived = true;
+        $exam->save();
+
+        return response()->json(['message' => 'Exam archived successfully']);
     }
 }

@@ -338,4 +338,38 @@ class joinclassController extends Controller
 
         return response()->json(['students' => $approvedStudents], 200);
     }
+
+    public function getStudentClassroomDetails(Request $request, $class_id)
+    {
+        // Authenticate the user and get the user instance
+        $user = auth()->user();
+
+        // Check if the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can access this class.'], 403);
+        }
+
+        // Get the class details for the provided class_id
+        $class = DB::table('tblclass')->where('id', $class_id)->first();
+
+        // Check if the class exists
+        if (!$class) {
+            return response()->json(['error' => 'Class not found.'], 404);
+        }
+
+        // Fetch the student’s joinclass data to ensure they are enrolled
+        $joinClass = DB::table('joinclass')
+            ->where('class_id', $class_id)
+            ->where('user_id', $user->id)
+            ->where('status', 1) // Status 1 means the student is approved
+            ->first();
+
+        // If the student is not part of the class, return an error
+        if (!$joinClass) {
+            return response()->json(['error' => 'You are not enrolled in this class or approval is pending.'], 403);
+        }
+
+        // Return class details to the frontend
+        return response()->json($class, 200);
+    }
 }
