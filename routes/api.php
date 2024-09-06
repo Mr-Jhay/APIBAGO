@@ -143,7 +143,7 @@ Route::group([
 
 
     //enter the class_id
-    Route::get('/student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);
+    Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);
 
 
     //getStudentClassroomDetails2
