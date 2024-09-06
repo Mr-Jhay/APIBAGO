@@ -140,7 +140,13 @@ Route::group([
 
     Route::get('viewcuriculum3', [manage_curiculumController::class, 'viewCurriculum3']); 
     Route::get('getCurriculumDetails/{id}', [tblclassController::class, 'getCurriculumDetails']);
-    Route::get('getCurriculumDetails2', [tblclassController::class, 'getCurriculumDetails2']);
+
+
+    //enter the class_id
+    Route::get('/student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);
+
+
+    //getStudentClassroomDetails2
 
     Route::get('getAllCurriculums', [tblclassController::class, 'getAllCurriculums']);
     Route::get('getStrandsByCurriculum/{id}', [tblclassController::class, 'getStrandsByCurriculum']);
@@ -158,6 +164,7 @@ Route::group([
    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
+   
 
 
     // Method to list all students with approved join requests in a class WITH total_students , MALE FEMALE
@@ -165,6 +172,8 @@ Route::group([
    Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
+
+ // getStudentClassroomDetails2
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
 // Fetch all exams for a specific class
 Route::get('/tblclass/{class_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
