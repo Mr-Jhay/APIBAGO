@@ -143,7 +143,7 @@ Route::group([
 
 
     //enter the class_id
-    Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);
+    //Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);
 
 
     //getStudentClassroomDetails2
@@ -283,10 +283,12 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('getStudentClassrooms', [tblclassController::class, 'getStudentClassrooms']);
 
 
-   Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
+   
    // Route::get('class/{class_id}', [tblclassController::class, 'getStudentClassroomDetails']); // Ensure the route is protected
    Route::get('class/{class_id}', [tblclassController::class, 'getStudentClassroomDetails']); 
-    Route::get('getStudentClassroomDetails2', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
+
+    Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
+    Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
 
     Route::get('/class/{class_id}/published-exams', [ExamController::class, 'getPublishedExams']);
    
