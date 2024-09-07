@@ -188,8 +188,10 @@ Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewE
 // View details of a specific exam (for teachers)
 //Route::get('/exams/{exam_id}/details', 'ExamController@viewExamDetails');
 
-
+//view the details of exam 
 Route::get('/exams/{id}/details', [ExamController::class, 'viewExamDetails']);
+////view the details of exam  with points and total item
+Route::get('/exams/{id}/details2', [ExamController::class, 'viewExamDetails2']);
 
 
 Route::get('/exam/{id}', [ExamController::class, 'viewExamForTeacher']);
@@ -303,8 +305,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('/class/{id}/published-exams', [ExamController::class, 'getPublishedExams']);
 
    
-    //pag view ng available exam inside of the classroom
-    Route::get('/exams/{id}', [ExamController::class, 'viewAllExams2']);
+    Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
