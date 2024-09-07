@@ -13,7 +13,10 @@ class AnsweredQuestion extends Model
     protected $fillable = [
         'users_id',
         'tblquestion_id',
-        'correctanswer_id'
+       // 'correctanswer_id'
+      'addchoices_id',
+      'Student_answer',
+
     ];
 
 

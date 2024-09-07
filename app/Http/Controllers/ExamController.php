@@ -476,67 +476,69 @@ public function viewExamDetails2($exam_id)
     }
 
     public function submitExam2(Request $request, $exam_id)
-{
-    $user = auth()->user();
-
-    // Ensure only students can submit exams
-    if ($user->usertype !== 'student') {
-        return response()->json(['error' => 'Unauthorized: Only students can submit exams.'], 403);
-    }
-
-    // Check if the student is enrolled in the exam
-    $isEnrolled = joinclass::where('user_id', $user->id)
-       // ->where('tblschedule_id', $exam_id)
-        ->exists();
-
-    if (!$isEnrolled) {
-        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-    }
-
-    // Check if the student has already submitted the exam
-    $hasSubmitted = AnsweredQuestion::where('user_id', $user->id)
-        ->whereHas('question', function ($query) use ($exam_id) {
-            $query->where('tblschedule_id', $exam_id);
-        })
-        ->exists();
-
-    if ($hasSubmitted) {
-        return response()->json(['error' => 'You have already submitted this exam.'], 403);
-    }
-
-    // Validate input
-    $request->validate([
-        'answers' => 'required|array',
-        'answers.*.question_id' => 'required|exists:tblquestion,id',
-        'answers.*.correctanswer_id' => 'required|exists:correctanswer,id',
-    ]);
-
-    try {
-        DB::beginTransaction(); // Start transaction
-
-        // Loop through each answer and save/update it
-        foreach ($request->input('answers') as $answer) {
-            AnsweredQuestion::updateOrCreate(
-                [
-                    'user_id' => $user->id,
-                    'tblquestion_id' => $answer['question_id']
-                    //'user_id' => $user->id
-                ],
-                [
-                    'correctanswer_id' => $answer['correctanswer_id']
-                ]
-            );
+    {
+        $user = auth()->user();
+    
+        // Ensure only students can submit exams
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can submit exams.'], 403);
         }
-
-        DB::commit(); // Commit transaction
-
-        return response()->json(['message' => 'Exam submitted successfully.'], 200);
-    } catch (\Exception $e) {
-        DB::rollBack(); // Rollback transaction if there's an error
-        Log::error('Failed to submit exam answers: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
+    
+        // Check if the student is enrolled in the exam
+        $isEnrolled = joinclass::where('user_id', $user->id)
+            ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
+            ->exists();
+    
+        if (!$isEnrolled) {
+            return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+        }
+    
+        // Check if the student has already submitted the exam
+        $hasSubmitted = AnsweredQuestion::where('user_id', $user->id)
+            ->whereHas('question', function ($query) use ($exam_id) {
+                $query->where('tblschedule_id', $exam_id);
+            })
+            ->exists();
+    
+        if ($hasSubmitted) {
+            return response()->json(['error' => 'You have already submitted this exam.'], 403);
+        }
+    
+        // Validate input
+        $request->validate([
+            'answers' => 'required|array',
+            'answers.*.question_id' => 'required|exists:tblquestion,id',
+            'answers.*.addchoices_id' => 'nullable|exists:addchoices,id',
+            'answers.*.Student_answer' => 'nullable|string', // Use 'string' instead of 'text' for validation
+        ]);
+    
+        try {
+            DB::beginTransaction(); // Start transaction
+    
+            // Loop through each answer and save/update it
+            foreach ($request->input('answers') as $answer) {
+                AnsweredQuestion::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'tblquestion_id' => $answer['question_id'],
+                        'addchoices_id' => $answer['addchoices_id'],
+                    ],
+                    [
+                        'Student_answer' => $answer['Student_answer'], // Assuming this is the correct field for student answers
+                    ]
+                );
+            }
+    
+            DB::commit(); // Commit transaction
+    
+            return response()->json(['message' => 'Exam submitted successfully.'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack(); // Rollback transaction if there's an error
+            Log::error('Failed to submit exam answers: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
+        }
     }
-}
+    
 
     // Get exam results (for students)
     public function getResults(Request $request, $examId)
