@@ -186,6 +186,12 @@ Route::post('/addExam2', [ExamController::class, 'addExam2']);
 Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewExam']);
 
 // View details of a specific exam (for teachers)
+//Route::get('/exams/{exam_id}/details', 'ExamController@viewExamDetails');
+
+
+Route::get('/exams/{id}/details', [ExamController::class, 'viewExamDetails']);
+
+
 Route::get('/exam/{id}', [ExamController::class, 'viewExamForTeacher']);
 
 // Start an exam (for students)
@@ -204,7 +210,7 @@ Route::put('/exam/{exam_id}', [ExamController::class, 'updateExam']);
 Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 
 //publish exam to students
-Route::post('/exams/publish2/{exam_id}', [ExamController::class, 'publish2']);
+Route::post('/exams/publish2/{id}', [ExamController::class, 'publish2']);
 
 
 Route::patch('exam/{examId}/publish', [ExamController::class, 'publish']);
@@ -295,6 +301,10 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     
  
     Route::get('/class/{id}/published-exams', [ExamController::class, 'getPublishedExams']);
+
+   
+    //pag view ng available exam inside of the classroom
+    Route::get('/exams/{id}', [ExamController::class, 'viewAllExams']);
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);

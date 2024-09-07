@@ -411,7 +411,9 @@ public function getSingleClassroomDetails($class_id)
     // Fetch the specific class the student has joined where the status is approved (1)
     $classroom = \DB::table('joinclass')
                     ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id')
+                   // ->leftJoin('semester', 'tblclass.subject_id', '=', 'semester.id')
+                    ->leftJoin('tblyear', 'tblclass.year_id', '=', 'tblyear.id') // Assuming tblclass has a foreign key to tblsubject
                     ->where('joinclass.user_id', $user->id)
                     ->where('joinclass.class_id', $class_id) // Ensure it matches the specific class ID
                     ->where('joinclass.status', 1) // Ensure the status is approved
@@ -419,6 +421,8 @@ public function getSingleClassroomDetails($class_id)
                         'tblclass.id as class_id',
                         'tblclass.class_desc as class_description',
                         'tblclass.gen_code as class_gen_code',
+                        'tblclass.semester as class_semester',
+                        'tblyear.addyear as class_addyear',
                         'tblsubject.subjectname as subject_name' // Assuming tblsubject has a 'subjectname' field
                     )
                     ->first(); // Fetch only one record

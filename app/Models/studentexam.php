@@ -14,6 +14,6 @@ class studentexam extends Model
     protected $fillable = [
         'user_id',
         'question_type',
-        'tblschedule'
+        'tblschedule_id'
     ];
 }
