@@ -309,11 +309,15 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
    //pag view ng mga exams sa student
     Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
-    Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
-    Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
+    Route::get('viewExam2/{id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
+    Route::post('submitExam2/{id}', [ExamController::class, 'submitExam2']);//pag submit ng exam
+    Route::get('getResults/{id}', [ExamController::class, 'getResults']);//pag view ng sagot
+   // getResults
+    //submitExam2
     Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
     
-   // submitExam8
+ 
+   
 
  
 
