@@ -637,14 +637,18 @@ public function viewAllExams2($class_id)
         return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
     }
 
+    // Check if class ID is valid
+    if (!$class_id || !is_numeric($class_id)) {
+        return response()->json(['error' => 'Invalid class ID.'], 400); // Return 400 Bad Request for invalid class ID
+    }
+
     try {
-        // Retrieve all exams that the student is enrolled in, are published, and belong to the specified class
+        // Fetch schedules (exams) based on the class ID and student enrollment
         $exams = \DB::table('tblschedule')
-            ->join('studentexam', 'tblschedule.id', '=', 'studentexam.tblschedule_id')
-            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id')
-            ->where('studentexam.tblstudent_id', $user->id)
-            ->where('tblclass.id', $class_id) // Filter exams by class ID
-            ->where('tblschedule.status', 1) // Check if the exam is published
+            ->join('studentexam', 'tblschedule.id', '=', 'studentexam.tblschedule')  // Correct table name and foreign key
+            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id')  // Join with tblclass
+            ->where('studentexam.user_id', $user->id)  // Filter by student
+            ->where('tblclass.id', $class_id)  // Filter by class ID
             ->select('tblschedule.id', 'tblschedule.title', 'tblschedule.quarter', 'tblschedule.start', 'tblschedule.end')
             ->get();
 
@@ -657,10 +661,14 @@ public function viewAllExams2($class_id)
         return response()->json(['exams' => $exams], 200);
 
     } catch (\Exception $e) {
-        Log::error('Failed to retrieve exams: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
+        // Log the exact error message with context
+        \Log::error('Error fetching exams for class ID: ' . $class_id . ' and user ID: ' . $user->id . '. Error: ' . $e->getMessage());
+
+        // Return a generic error message for frontend
+        return response()->json(['error' => 'An error occurred while fetching exams. Please try again later.'], 500);  // Internal Server Error
     }
 }
+
 
 
 }
