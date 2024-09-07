@@ -24,7 +24,7 @@ class tblclass extends Model
       //  'gen_code',
        // 'semester', // Added semester
        // 'year',     // Added year
-
+ 
         'curiculum_id',
         'strand_id',
         'section_id',
