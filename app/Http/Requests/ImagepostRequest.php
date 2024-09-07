@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
+
 class ImagepostRequest extends FormRequest
 {
     /**
@@ -23,15 +24,34 @@ class ImagepostRequest extends FormRequest
     {
         if(request()->isMethod('post')) {
             return [
-                'name' => 'required|string|max:258',
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'description' => 'required|string'
+              //  'name' => 'required|string|max:5',
+               // 'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                //'description' => 'required|string'
+
+                'curiculum_id' => 'required|exists:strandcuriculum,id',
+                'strand_id' => 'required|exists:tblstrand,id',
+                'section_id' => 'required|exists:tblsection,id',
+                'subject_id' => 'required|exists:tblsubject,id',
+                'year_id' => 'required|exists:tblyear,id',
+                'semester' => 'required|string|max:255',
+                'class_desc' => 'nullable|string',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'gen_code' => 'required|string|max:255',
             ];
         } else {
             return [
-                'name' => 'required|string|max:258',
-                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'description' => 'required|string'
+                //'name' => 'required|string|max:258',
+               // 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+              //  'description' => 'required|string'
+              'curiculum_id' => 'required|exists:strandcuriculum,id',
+              'strand_id' => 'required|exists:tblstrand,id',
+              'section_id' => 'required|exists:tblsection,id',
+              'subject_id' => 'required|exists:tblsubject,id',
+              'year_id' => 'required|exists:tblyear,id',
+              'semester' => 'required|string|max:255',
+              'class_desc' => 'nullable|string',
+              'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+              'gen_code' => 'required|string|max:255',
             ];
         }
     }

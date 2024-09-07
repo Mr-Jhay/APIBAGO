@@ -3,10 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\ImagepostRequest;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use App\Models\tblclass;
+use App\Models\manage_curiculum;
+
+use App\Models\strandcuriculum;
+use App\Models\tblsubject;
+use App\Models\tblstrand;
+use App\Models\tblsection;
+use App\Models\tblyear;
+use Illuminate\Support\Facades\DB;
 
 class ImageComtroller extends Controller
 {
-    public function store(PostStoreRequest $request)
+    public function store(ImagepostRequest $request)
     {
         try {
             $imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
@@ -34,7 +46,7 @@ class ImageComtroller extends Controller
     }
 
 
-    public function addclass(Request $request)
+    public function addclass100(Request $request)
     {
 
         $imageName = Str::random(32).".".$request->image->getClientOriginalExtension();
