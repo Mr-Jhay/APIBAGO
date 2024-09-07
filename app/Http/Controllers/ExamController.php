@@ -425,8 +425,8 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Unauthorized: Only students can submit exams.'], 403);
         }
 
-        $isEnrolled = StudentExam::where('user_id', $user->id)
-            ->where('tblschedule_id', $exam_id)
+        $isEnrolled = joinclass::where('user_id', $user->id)
+           // ->where('tblschedule_id', $exam_id)
             ->exists();
 
         if (!$isEnrolled) {
@@ -469,8 +469,8 @@ public function viewExamDetails2($exam_id)
     }
 
     // Check if the student is enrolled in the exam
-    $isEnrolled = StudentExam::where('tblstudent_id', $user->id)
-        ->where('tblschedule_id', $exam_id)
+    $isEnrolled = StudentExam::where('user_id', $user->id)
+       // ->where('tblschedule_id', $exam_id)
         ->exists();
 
     if (!$isEnrolled) {
@@ -478,7 +478,7 @@ public function viewExamDetails2($exam_id)
     }
 
     // Check if the student has already submitted the exam
-    $hasSubmitted = AnsweredQuestion::where('tblstudent_id', $user->id)
+    $hasSubmitted = AnsweredQuestion::where('user_id', $user->id)
         ->whereHas('question', function ($query) use ($exam_id) {
             $query->where('tblschedule_id', $exam_id);
         })
@@ -503,7 +503,7 @@ public function viewExamDetails2($exam_id)
             AnsweredQuestion::updateOrCreate(
                 [
                     'tblquestion_id' => $answer['question_id'],
-                    'tblstudent_id' => $user->id
+                    'user_id' => $user->id
                 ],
                 [
                     'correctanswer_id' => $answer['correctanswer_id']
