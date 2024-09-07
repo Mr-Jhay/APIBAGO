@@ -96,25 +96,25 @@ class tblclassController extends Controller
     {
         // Get the authenticated user
         $user = $request->user();
-
+    
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve the class created by this teacher with related data
             $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
                             ->where('id', $class_id)
-                            ->where('id', $user->id)
+                            ->where('user_id', $user->id) // Ensure class belongs to the teacher
                             ->first();
-
+    
             if ($class) {
                 return response()->json(['class' => $class], 200);
             } else {
-                // If the class is not found or doesn't belong to the teacher
                 return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
             }
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
     }
+    
 
 
     public function getCurriculums()
