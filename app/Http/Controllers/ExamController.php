@@ -442,7 +442,6 @@ public function viewExamDetails2($exam_id)
         }
 
         $isEnrolled = joinclass::where('user_id', $user->id)
-           // ->where('tblschedule_id', $exam_id)
             ->exists();
 
         if (!$isEnrolled) {
@@ -486,7 +485,7 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-            ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
+           // ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
             ->exists();
     
         if (!$isEnrolled) {
