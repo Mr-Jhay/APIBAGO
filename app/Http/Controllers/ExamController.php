@@ -637,13 +637,13 @@ public function viewAllExams2($class_id)
 
     try {
         // Retrieve all exams that the student is enrolled in, are published, and belong to the specified class
-        $exams = \DB::table('exams')
-            ->join('studentexam', 'exams.id', '=', 'studentexam.tblschedule_id')
-            ->join('tblclass', 'exams.classtable_id', '=', 'tblclass.id')
+        $exams = \DB::table('tblschedule')
+            ->join('studentexam', 'tblschedule.id', '=', 'studentexam.tblschedule_id')
+            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id')
             ->where('studentexam.tblstudent_id', $user->id)
             ->where('tblclass.id', $class_id) // Filter exams by class ID
-            ->where('exams.status', 1) // Check if the exam is published
-            ->select('exams.id', 'exams.title', 'exams.quarter', 'exams.start', 'exams.end')
+            ->where('tblschedule.status', 1) // Check if the exam is published
+            ->select('tblschedule.id', 'tblschedule.title', 'tblschedule.quarter', 'tblschedule.start', 'tblschedule.end')
             ->get();
 
         if ($exams->isEmpty()) {
@@ -653,7 +653,7 @@ public function viewAllExams2($class_id)
         return response()->json(['exams' => $exams], 200);
 
     } catch (\Exception $e) {
-        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        Log::error('Failed to retrieve Exam: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
     }
 }
