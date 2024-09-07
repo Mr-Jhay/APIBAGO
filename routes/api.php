@@ -176,9 +176,11 @@ Route::group([
 
  // getStudentClassroomDetails2
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
-// Fetch all exams for a specific class
+
 Route::get('/tblclass/{id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
+// Fetch all exams for a specific class
+Route::get('/tblclass/{id}/exams2', [ExamController::class, 'viewAllExamsInClass2']);
 // Create a new exam
 Route::post('/addExam2', [ExamController::class, 'addExam2']);
 

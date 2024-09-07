@@ -645,10 +645,11 @@ public function viewAllExams2($class_id)
     try {
         // Fetch schedules (exams) based on the class ID and student enrollment
         $exams = \DB::table('tblschedule')
-            ->join('studentexam', 'tblschedule.id', '=', 'studentexam.tblschedule')  // Correct table name and foreign key
-            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id')  // Join with tblclass
-            ->where('studentexam.user_id', $user->id)  // Filter by student
-            ->where('tblclass.id', $class_id)  // Filter by class ID
+            ->join('studentexam', 'tblschedule.id', '=', 'studentexam.tblschedule_id')
+            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id')
+            ->where('studentexam.tblstudent_id', $user->id)
+            ->where('tblclass.id', $class_id) // Filter exams by class ID
+            ->where('tblschedule.status', 1) // Check if the exam is published
             ->select('tblschedule.id', 'tblschedule.title', 'tblschedule.quarter', 'tblschedule.start', 'tblschedule.end')
             ->get();
 
@@ -661,10 +662,58 @@ public function viewAllExams2($class_id)
         return response()->json(['exams' => $exams], 200);
 
     } catch (\Exception $e) {
-        Log::error('Failed to retrieve exams: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
+        // Log the exact error message with context
+        \Log::error('Error fetching exams for class ID: ' . $class_id . ' and user ID: ' . $user->id . '. Error: ' . $e->getMessage());
+
+        // Return a generic error message for frontend
+        return response()->json(['error' => 'An error occurred while fetching exams. Please try again later.'], 500);  // Internal Server Error
     }
 }
 
+
+
+public function viewAllExamsInClass2($classtable_id)
+{
+    try {
+        // Ensure the class exists
+        $class = tblclass::findOrFail($classtable_id);
+
+        // Retrieve exams that are published (status = 1) and belong to the specified class
+        $exams = Exam::with(['questions.correctAnswers'])
+            ->where('classtable_id', $classtable_id)
+            ->where('status', 1) // Ensure only published exams are shown
+            ->get();
+
+        // Check if no exams are found
+        if ($exams->isEmpty()) {
+            return response()->json(['message' => 'No published exams found for this class'], 404);
+        }
+
+        // Process the exams to include total points and total questions
+        $examsWithDetails = $exams->map(function ($exam) {
+            $totalPoints = $exam->questions->reduce(function ($carry, $question) {
+                return $carry + $question->correctAnswers->sum('points');
+            }, 0);
+
+            $totalQuestions = $exam->questions->count();
+
+            return [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'quarter' => $exam->quarter,
+                'start' => $exam->start,
+                'end' => $exam->end,
+                'status' => $exam->status,
+                'total_points' => $totalPoints,
+                'total_questions' => $totalQuestions
+            ];
+        });
+
+        return response()->json(['exams' => $examsWithDetails], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
+    }
+}
 
 }
