@@ -347,55 +347,54 @@ class tblclassController extends Controller
 
 
 
-public function getStudentClassroomDetails2(Request $request, $class_id)
-{
-    // Retrieve the authenticated user
-    $user = auth()->user();
-
-    // Ensure the user is a student
-    if ($user->usertype !== 'student') {
-        return response()->json([
-            'error' => 'Unauthorized: Only students can view their classroom details.'
-        ], 403); // HTTP Forbidden
+    public function getStudentClassroomDetails2(Request $request)
+    {
+        // Retrieve the authenticated user
+        $user = auth()->user();
+    
+        // Ensure the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json([
+                'error' => 'Unauthorized: Only students can view their classroom details.'
+            ], 403); // HTTP Forbidden
+        }
+    
+        // Validate the incoming request to ensure class_id is provided
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id'
+        ]);
+    
+        // Fetch the specific class the student has joined where the status is approved (1)
+        $classroom = \DB::table('joinclass')
+                        ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                        ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                        ->where('joinclass.user_id', $user->id)
+                        ->where('joinclass.status', 1) // Ensure the status is approved
+                        ->where('tblclass.id', $request->class_id) // Filter by class_id
+                        ->select(
+                            'tblsubject.id as subject_id',
+                            'tblsubject.subjectname as subject_name',
+                            'tblclass.id as class_id',
+                            'tblclass.name as class_name',
+                            'tblclass.description as class_description',
+                            'tblclass.gen_code as class_gen_code',
+                            'tblclass.semester',  // Ensure semester is included
+                            'tblclass.school_year',  // Ensure school year is included
+                            'joinclass.status as join_status'
+                        )
+                        ->first(); // Get a single record
+    
+        // Check if the class is found
+        if (!$classroom) {
+            return response()->json([
+                'error' => 'Classroom not found or you do not have access to this classroom.'
+            ], 404); // HTTP Not Found
+        }
+    
+        // Return the classroom details
+        return response()->json($classroom, 200); // HTTP OK
     }
-
-    // Validate that the provided class_id exists in the tblclass table
-    $validated = \DB::table('tblclass')->where('id', $class_id)->exists();
-
-    if (!$validated) {
-        return response()->json([
-            'error' => 'Class ID does not exist.'
-        ], 404); // HTTP Not Found
-    }
-
-    // Fetch the specific class the student has joined where the status is approved (1)
-    $classroom = \DB::table('joinclass')
-                    ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
-                    ->where('joinclass.user_id', $user->id)
-                    ->where('joinclass.status', 1) // Ensure the status is approved
-                    ->where('tblclass.id', $class_id) // Filter by class_id
-                    ->select(
-                        'tblsubject.id as subject_id',
-                        'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'name' field
-                        'tblclass.id as class_id',
-                        //'tblclass.name as class_name',
-                        'tblclass.description as class_description',
-                        'tblclass.gen_code as class_gen_code',
-                        'joinclass.status as join_status'
-                    )
-                    ->first(); // Get a single record
-
-    // Check if the class is found
-    if (!$classroom) {
-        return response()->json([
-            'error' => 'Classroom not found or you do not have access to this classroom.'
-        ], 404); // HTTP Not Found
-    }
-
-    // Return the classroom details
-    return response()->json($classroom, 200); // HTTP OK
-}
+    
 
 
 
