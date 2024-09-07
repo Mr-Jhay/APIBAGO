@@ -558,4 +558,70 @@ class ExamController extends Controller
 
         return response()->json(['message' => 'Exam archived successfully']);
     }
+
+
+    // View all available exams for a student
+public function viewAllExams()
+{
+    $user = auth()->user();
+
+    // Ensure only students can view exams
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+    }
+
+    try {
+        // Retrieve all exams that the student is enrolled in and are published
+        $exams = Exam::join('studentexam', 'exams.id', '=', 'studentexam.tblschedule_id')
+            ->where('studentexam.user_id', $user->id)
+            ->where('exams.status', 1) // Check if the exam is published
+            ->select('exams.id', 'exams.title', 'exams.quarter', 'exams.start', 'exams.end')
+            ->get();
+
+        if ($exams->isEmpty()) {
+            return response()->json(['message' => 'No exams available for you.'], 200);
+        }
+
+        return response()->json(['exams' => $exams], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
+    }
+}
+
+
+//inside the class
+public function viewAllExams2($class_id)
+{
+    $user = auth()->user();
+
+    // Ensure only students can view exams
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+    }
+
+    try {
+        // Retrieve all exams that the student is enrolled in, are published, and belong to the specified class
+        $exams = \DB::table('exams')
+            ->join('studentexam', 'exams.id', '=', 'studentexam.tblschedule_id')
+            ->join('tblclass', 'exams.classtable_id', '=', 'tblclass.id')
+            ->where('studentexam.tblstudent_id', $user->id)
+            ->where('tblclass.id', $class_id) // Filter exams by class ID
+            ->where('exams.status', 1) // Check if the exam is published
+            ->select('exams.id', 'exams.title', 'exams.quarter', 'exams.start', 'exams.end')
+            ->get();
+
+        if ($exams->isEmpty()) {
+            return response()->json(['message' => 'No exams available for you in this class.'], 200);
+        }
+
+        return response()->json(['exams' => $exams], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
+    }
+}
+
 }
