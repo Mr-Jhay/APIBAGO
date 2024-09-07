@@ -661,14 +661,10 @@ public function viewAllExams2($class_id)
         return response()->json(['exams' => $exams], 200);
 
     } catch (\Exception $e) {
-        // Log the exact error message with context
-        \Log::error('Error fetching exams for class ID: ' . $class_id . ' and user ID: ' . $user->id . '. Error: ' . $e->getMessage());
-
-        // Return a generic error message for frontend
-        return response()->json(['error' => 'An error occurred while fetching exams. Please try again later.'], 500);  // Internal Server Error
+        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exams. Please try again later.'], 500);
     }
 }
-
 
 
 }
