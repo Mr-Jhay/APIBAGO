@@ -15,4 +15,11 @@ class AnsweredQuestion extends Model
         'tblquestion_id',
         'correctanswer_id'
     ];
+
+
+    // Add this relationship to link AnsweredQuestion with Question
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'tblquestion_id');
+    }
 }

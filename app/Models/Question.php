@@ -26,4 +26,5 @@ class Question extends Model
     {
         return $this->hasMany(CorrectAnswer::class, 'tblquestion_id');
     }
+    
 }
