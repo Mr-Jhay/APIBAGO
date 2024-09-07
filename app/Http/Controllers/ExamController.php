@@ -376,7 +376,6 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
     }
-
     public function viewExam2($exam_id)
     {
         $user = auth()->user();
