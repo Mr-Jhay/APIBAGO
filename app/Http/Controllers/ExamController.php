@@ -294,6 +294,26 @@ class ExamController extends Controller
         }
     }
 
+    // View exam details for teacher
+    public function viewExamDetails($exam_id)
+{
+    try {
+        // Retrieve the exam with its related questions, choices, and correct answers
+        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+            ->where('id', $exam_id)
+            ->firstOrFail();
+
+        return response()->json([
+            'exam' => $exam,
+        ], 200); // HTTP OK
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
+
+
+
     // View exam details for students
     public function viewExam($exam_id)
     {

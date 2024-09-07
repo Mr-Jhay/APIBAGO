@@ -186,6 +186,12 @@ Route::post('/addExam2', [ExamController::class, 'addExam2']);
 Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewExam']);
 
 // View details of a specific exam (for teachers)
+//Route::get('/exams/{exam_id}/details', 'ExamController@viewExamDetails');
+
+
+Route::get('/exams/{id}/details', [ExamController::class, 'viewExamDetails']);
+
+
 Route::get('/exam/{id}', [ExamController::class, 'viewExamForTeacher']);
 
 // Start an exam (for students)
