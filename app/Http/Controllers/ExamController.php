@@ -220,7 +220,7 @@ class ExamController extends Controller
     
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Log::error('Failed to publish exam: ' . $e->getMessage());
+            \Log::error('Failed to publish exam: ' . $e->getMessage());  
     
             // Return a 500 Internal Server Error
             return response()->json(['error' => 'Internal Server Error'], 500);
@@ -254,6 +254,8 @@ class ExamController extends Controller
             return response()->json(['error' => 'Internal Server Error'], 500);
         }
     }
+
+    
 
     // View all exams for a specific class
     public function viewAllExamsInClass($classtable_id)
@@ -520,14 +522,19 @@ class ExamController extends Controller
     }
 
     // Fetch only published exams for a specific class (for students)
-    public function getPublishedExams($class_id)
-    {
-        $exams = Exam::where('class_id', $class_id)
+
+public function getPublishedExams($class_id) {
+    try {
+        $exams = Exam::where('classtable_id', $class_id)
                      ->where('is_published', true)
                      ->get();
 
-        return response()->json(['exams' => $exams]);
+        return response()->json(['exams' => $exams], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve published exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exams.'], 500);
     }
+}
 
     // Archive an exam
     public function archiveExam($exam_id)
