@@ -289,9 +289,9 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
    Route::get('class/{class_id}', [tblclassController::class, 'getStudentClassroomDetails']); 
 
     Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
-    Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
+    Route::get('student/classroom-details/{id}', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
 
-    Route::get('/class/{class_id}/published-exams', [ExamController::class, 'getPublishedExams']);
+    Route::get('/class/{id}/published-exams', [ExamController::class, 'getPublishedExams']);
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
