@@ -306,7 +306,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
    
     //pag view ng available exam inside of the classroom
-    Route::get('/exams/{id}', [ExamController::class, 'viewAllExams']);
+    Route::get('/exams/{id}', [ExamController::class, 'viewAllExams2']);
    
     Route::get('viewExam2/{exam_id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
     Route::post('submitExam8/{exam_id}', [ExamController::class, 'submitExam8']);
