@@ -106,7 +106,7 @@ Route::group([
     Route::put('updateStudentDetails/{id}', [UsersController::class, 'updateStudentDetails']); //admin update all students account
 
     
-    Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    
+    Route::put('/user/{id}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student    
     Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
     
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
@@ -133,7 +133,6 @@ Route::group([
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
     Route::get('class/{class_id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
-
     Route::get('showClass2', [tblclassController::class, 'showClass2']);
     Route::get('curriculums', [tblclassController::class, 'getCurriculums']);
 
@@ -169,15 +168,15 @@ Route::group([
 
 
     // Method to list all students with approved join requests in a class WITH total_students , MALE FEMALE
-   Route::get('listStudentsInClass2/{class_id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class 
-   Route::get('listStudentsInClass3/{class_id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
+   Route::get('listStudentsInClass2/{id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class 
+   Route::get('listStudentsInClass3/{id}', [joinclassController::class, 'listStudentsInClass3']);// Teacher fetches pending join requests for a class
   // Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
    
 
  // getStudentClassroomDetails2
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
 // Fetch all exams for a specific class
-Route::get('/tblclass/{class_id}/exams', [ExamController::class, 'viewAllExamsInClass']);
+Route::get('/tblclass/{id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
 // Create a new exam
 Route::post('/addExam2', [ExamController::class, 'addExam2']);
@@ -186,10 +185,10 @@ Route::post('/addExam2', [ExamController::class, 'addExam2']);
 Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewExam']);
 
 // View details of a specific exam (for teachers)
-Route::get('/exam/{exam_id}', [ExamController::class, 'viewExamForTeacher']);
+Route::get('/exam/{id}', [ExamController::class, 'viewExamForTeacher']);
 
 // Start an exam (for students)
-Route::post('/startExam/{examId}', [ExamController::class, 'startExam']);
+Route::post('/startExam/{id}', [ExamController::class, 'startExam']);
 
 // Submit answers for an exam (for students)
 Route::post('/submitExam/{exam_id}', [ExamController::class, 'submitExam']);
