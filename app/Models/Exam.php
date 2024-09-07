@@ -25,6 +25,11 @@ class Exam extends Model
         return $this->hasMany(Question::class, 'tblschedule_id');
     }
 
+    public function choices()
+    {
+        return $this->hasMany(Question::class, 'addchoices');
+    }
+
 
 
 
