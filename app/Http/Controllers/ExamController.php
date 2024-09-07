@@ -387,7 +387,7 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-            ->where('exam_id', $exam_id) // Ensure correct exam ID is checked
+        //    ->where('exam_id', $exam_id) // Ensure correct exam ID is checked
             ->exists();
     
         if (!$isEnrolled) {
