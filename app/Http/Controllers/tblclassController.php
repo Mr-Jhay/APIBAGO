@@ -397,7 +397,43 @@ public function getStudentClassroomDetails2(Request $request, $class_id)
     return response()->json($classroom, 200); // HTTP OK
 }
 
+public function getSingleClassroomDetails($class_id)
+{
+    // Retrieve the authenticated user
+    $user = auth()->user();
 
+    // Ensure the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can view their classroom details.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Fetch the specific class the student has joined where the status is approved (1)
+    $classroom = \DB::table('joinclass')
+                    ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
+                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->where('joinclass.user_id', $user->id)
+                    ->where('joinclass.class_id', $class_id) // Ensure it matches the specific class ID
+                    ->where('joinclass.status', 1) // Ensure the status is approved
+                    ->select(
+                        'tblclass.id as class_id',
+                        'tblclass.class_desc as class_description',
+                        'tblclass.gen_code as class_gen_code',
+                        'tblsubject.subjectname as subject_name' // Assuming tblsubject has a 'subjectname' field
+                    )
+                    ->first(); // Fetch only one record
+
+    // If the class is not found or the user is not enrolled, return an error
+    if (!$classroom) {
+        return response()->json([
+            'error' => 'Unauthorized: You are not enrolled in this class or the class does not exist.'
+        ], 403); // HTTP Forbidden
+    }
+
+    // Return the detailed information about the classroom with a 200 status code
+    return response()->json($classroom, 200); // HTTP OK
+}
 
 
 

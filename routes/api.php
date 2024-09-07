@@ -106,7 +106,7 @@ Route::group([
     Route::put('updateStudentDetails/{id}', [UsersController::class, 'updateStudentDetails']); //admin update all students account
 
     
-    Route::put('user/{user_id}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student
+    Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student
     Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
     
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
@@ -290,6 +290,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
     Route::get('getStudentClassroomDetails', [tblclassController::class, 'getStudentClassroomDetails']); //all the subject only
     Route::get('student/classroom-details/{id}', [tblclassController::class, 'getStudentClassroomDetails2']);//daitails of each subject
+    Route::get('/classroom/{id}', [tblclassController::class, 'getSingleClassroomDetails']);
 
     Route::get('/class/{id}/published-exams', [ExamController::class, 'getPublishedExams']);
    
