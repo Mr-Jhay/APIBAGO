@@ -68,7 +68,7 @@ class tblclassController extends Controller
     
 
 
-    public function viewAllClassDetails(Request $request)
+     public function viewAllClassDetails(Request $request)
     {
         // Get the authenticated user
         $user = $request->user();
@@ -91,30 +91,48 @@ class tblclassController extends Controller
     }
 
 
-
     public function showClass(Request $request, $class_id)
     {
-        // Get the authenticated user
+        // Retrieve the authenticated user
         $user = $request->user();
-
-        // Check if the user is authorized and is a teacher
+    
+        // Log user and request details for debugging
+        \Log::info('User trying to access class:', [
+            'user_id' => $user->id ?? null,
+            'usertype' => $user->usertype ?? null,
+            'class_id' => $class_id
+        ]);
+    
+        // Ensure the user is authenticated and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve the class created by this teacher with related data
-            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])
                             ->where('id', $class_id)
-                            ->where('user_id', $user->id)
+                            ->where('user_id', $user->id) // Ensure the class belongs to the logged-in teacher
                             ->first();
-
+    
             if ($class) {
-                return response()->json(['class' => $class], 200);
+                // Log success
+                \Log::info('Class found and returned for teacher', ['class_id' => $class->id]);
+    
+                return response()->json([
+                    'class' => [
+                        'subject' => ['subjectname' => $class->subject->subjectname],
+                        'semester' => $class->semester,
+                        'year' => ['addyear' => $class->year->addyear]
+                    ]
+                ], 200);
             } else {
-                // If the class is not found or doesn't belong to the teacher
+                \Log::warning('Class not found or unauthorized access attempt.', ['class_id' => $class_id, 'user_id' => $user->id]);
                 return response()->json(['message' => 'Class not found or you are not authorized to view this class.'], 404);
             }
         } else {
+            // Unauthorized access attempt, log the issue
+            \Log::warning('Unauthorized access attempt.', ['user_id' => $user->id ?? null]);
             return response()->json(['message' => 'Unauthorized'], 403);
         }
     }
+    
 
 
     public function getCurriculums()
@@ -356,43 +374,48 @@ public function getStudentClassroomDetails2($class_id)
     if ($user->usertype !== 'student') {
         return response()->json([
             'error' => 'Unauthorized: Only students can view their classroom details.'
-        ], 403); // HTTP Forbidden
+        ], 403);
     }
 
     // Validate the class_id to ensure it exists in tblclass
     if (!\DB::table('tblclass')->where('id', $class_id)->exists()) {
         return response()->json([
             'error' => 'Invalid class_id provided.'
-        ], 400); // HTTP Bad Request
+        ], 400);
     }
 
-    // Fetch the specific class the student has joined where the status is approved (1)
+    // Fetch the specific class the student has joined
     $classroom = \DB::table('joinclass')
                     ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id')
                     ->where('joinclass.user_id', $user->id)
-                    ->where('joinclass.status', 1) // Ensure the status is approved
-                    ->where('tblclass.id', $class_id) // Filter by class_id from the route parameter
+                    ->where('joinclass.status', 1)
+                    ->where('tblclass.id', $class_id)
                     ->select(
                         'tblsubject.id as subject_id',
-                        'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'subjectname' field
-                        'tblclass.id as class_id',
+                        'tblsubject.subjectname as subject_name',
+                        'tblclass.semester as semester',
                         'tblclass.class_desc as class_description',
                         'tblclass.gen_code as class_gen_code',
-                        'joinclass.status as join_status'
+                        'tblclass.school_year as school_year'
                     )
-                    ->first(); // Get a single record
+                    ->first();
 
     // Check if the class is found
     if (!$classroom) {
         return response()->json([
             'error' => 'Classroom not found or you do not have access to this classroom.'
-        ], 404); // HTTP Not Found
+        ], 404);
     }
 
-    // Return the classroom details with a 200 status code
-    return response()->json($classroom, 200); // HTTP OK
+    // Return the classroom details with the expected structure
+    return response()->json([
+        'subject_name' => $classroom->subject_name,
+        'semester' => $classroom->semester,
+        'school_year' => $classroom->school_year
+    ], 200);
 }
+
     
 
 
