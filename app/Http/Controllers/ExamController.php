@@ -6,11 +6,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
+use App\Models\joinclass;
 use App\Models\Question;
 use App\Models\Choice;
 use App\Models\CorrectAnswer;
 use App\Models\tblclass;
-use App\Models\StudentExam;
+use App\Models\studentexam;
 use App\Models\AnsweredQuestion;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
@@ -386,13 +387,13 @@ public function viewExamDetails2($exam_id)
     }
 
     // Check if the student is enrolled in the exam
-    $isEnrolled = StudentExam::where('tblstudent_id', $user->id)
-        ->where('tblschedule_id', $exam_id)
-        ->exists();
+    $isEnrolled = joinclass::where('user_id', $user->id)
+       // ->where('user_id', $exam_id)
+       ->exists();
 
-    if (!$isEnrolled) {
-        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-    }
+   if (!$isEnrolled) {
+       return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+   }
 
     try {
         // Retrieve the exam with questions and choices, but exclude correct answers
