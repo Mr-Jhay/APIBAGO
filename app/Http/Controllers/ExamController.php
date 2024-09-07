@@ -518,8 +518,9 @@ public function viewExamDetails2($exam_id)
         foreach ($request->input('answers') as $answer) {
             AnsweredQuestion::updateOrCreate(
                 [
-                    'tblquestion_id' => $answer['question_id'],
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
+                    'tblquestion_id' => $answer['question_id']
+                    //'user_id' => $user->id
                 ],
                 [
                     'correctanswer_id' => $answer['correctanswer_id']
