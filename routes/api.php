@@ -188,8 +188,10 @@ Route::get('/tblclass/{class_id}/exam/{exam_id}', [ExamController::class, 'viewE
 // View details of a specific exam (for teachers)
 //Route::get('/exams/{exam_id}/details', 'ExamController@viewExamDetails');
 
-
+//view the details of exam 
 Route::get('/exams/{id}/details', [ExamController::class, 'viewExamDetails']);
+////view the details of exam  with points and total item
+Route::get('/exams/{id}/details2', [ExamController::class, 'viewExamDetails2']);
 
 
 Route::get('/exam/{id}', [ExamController::class, 'viewExamForTeacher']);

@@ -312,6 +312,33 @@ class ExamController extends Controller
     }
 }
 
+public function viewExamDetails2($exam_id)
+{
+    try {
+        // Retrieve the exam with its related questions, choices, and correct answers
+        $exam = Exam::with(['questions.choices', 'questions.correctAnswers'])
+            ->where('id', $exam_id)
+            ->firstOrFail();
+
+        // Calculate the total number of questions (items)
+        $totalItems = $exam->questions->count();
+
+        // Calculate the total points (assuming each question has a specific point value)
+        // If you have a 'points' field in your 'questions' table, sum it up:
+        $totalPoints = $exam->questions->sum('points');
+
+        return response()->json([
+            'exam' => $exam,
+            'total_items' => $totalItems,
+            'total_points' => $totalPoints,
+        ], 200); // HTTP OK
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
+
+
 
 
     // View exam details for students
