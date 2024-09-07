@@ -30,6 +30,14 @@ return [
 
     'disks' => [
 
+
+        'custom' => [
+            'driver' => 'local',
+            'root' => storage_path('app/custom_path'), // Files will be stored in storage/app/custom_path
+            'url' => env('APP_URL') . '/custom_storage', // Files will be accessible at http://yourdomain.com/custom_storage
+            'visibility' => 'public',
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app'),
