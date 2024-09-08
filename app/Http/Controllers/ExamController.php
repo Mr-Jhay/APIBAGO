@@ -493,15 +493,15 @@ public function viewExamDetails2($exam_id)
         }
     
         // Check if the student has already submitted the exam
-        $hasSubmitted = AnsweredQuestion::where('tblstudent_id', $user->id)
-            ->whereHas('question', function ($query) use ($exam_id) {
-                $query->where('tblschedule_id', $exam_id);
-            })
-            ->exists();
+      //  $hasSubmitted = answeredQuestion::where('user_id', $user->id)
+       //     ->whereHas('question', function ($query) use ($exam_id) {
+        //        $query->where('tblschedule_id', $exam_id);
+        //    })
+       //     ->exists();
     
-        if ($hasSubmitted) {
-            return response()->json(['error' => 'You have already submitted this exam.'], 403);
-        }
+      //  if ($hasSubmitted) {
+       //     return response()->json(['error' => 'You have already submitted this exam.'], 403);
+      //  }
     
         // Validate input
         $request->validate([
@@ -518,12 +518,12 @@ public function viewExamDetails2($exam_id)
             foreach ($request->input('answers') as $answer) {
                 AnsweredQuestion::updateOrCreate(
                     [
-                        'tblstudent_id' => $user->id,  // Use tblstudent_id instead of user_id
-                        'tblquestion_id' => $answer['question_id'],
+                        'users_id' => $user->id,  // Use tblstudent_id instead of user_id
+                        'tblquestion_id' => $answer['question_id']
                     ],
                     [
                         'addchoices_id' => $answer['addchoices_id'],  // Optional: Update the answer
-                        'Student_answer' => $answer['Student_answer'], // Assuming this is the correct field for student answers
+                        'Student_answer' => $answer['Student_answer'] // Assuming this is the correct field for student answers
                     ]
                 );
             }
@@ -534,7 +534,7 @@ public function viewExamDetails2($exam_id)
         } catch (\Exception $e) {
             DB::rollBack(); // Rollback transaction if there's an error
             Log::error('Failed to submit exam answers: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
+            return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'. $e->getMessage()], 500);
         }
     }
     
