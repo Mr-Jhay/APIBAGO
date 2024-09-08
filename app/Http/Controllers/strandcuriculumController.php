@@ -11,23 +11,34 @@ use Illuminate\Support\Facades\Auth;
 class strandcuriculumController extends Controller
 { 
     public function addcuri(Request $request)
-    {
-        // Validate the incoming request data
-        $validatedData = $request->validate([
-            'Namecuriculum' => 'required|string|max:255',
-        ]);
+{
+    // Validate the incoming request data
+    $validatedData = $request->validate([
+        'Namecuriculum' => 'required|string|max:255',
+    ]);
 
-        // Create a new StrandCuriculum record
-        $strandCuriculum = strandcuriculum::create([
-            'Namecuriculum' => $validatedData['Namecuriculum'],
-        ]);
+    // Check if a curriculum with the same name already exists
+    $existingCurriculum = strandcuriculum::where('Namecuriculum', $validatedData['Namecuriculum'])->first();
 
-        // Return a JSON response with the created record
+    if ($existingCurriculum) {
+        // If the curriculum already exists, return a conflict response (409 status)
         return response()->json([
-            'message' => 'Strand Curriculum created successfully!',
-            'data' => $strandCuriculum
-        ], 201);
+            'message' => 'A Strand Curriculum with this name already exists!'
+        ], 409);
     }
+
+    // Create a new StrandCuriculum record
+    $strandCuriculum = strandcuriculum::create([
+        'Namecuriculum' => $validatedData['Namecuriculum'],
+    ]);
+
+    // Return a JSON response with the created record
+    return response()->json([
+        'message' => 'Strand Curriculum created successfully!',
+        'data' => $strandCuriculum
+    ], 201);
+}
+
 
     public function viewcuri()
     {
