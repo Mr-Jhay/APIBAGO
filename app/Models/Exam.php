@@ -17,6 +17,7 @@ class Exam extends Model
         'quarter',
         'start',
         'end',
+        'Direction',
         'status'
     ];
 
