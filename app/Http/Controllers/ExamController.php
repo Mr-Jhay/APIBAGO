@@ -485,7 +485,7 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-           // ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
+            ->where('tblschedule_id', $exam_id) // Ensure this line is uncommented to check enrollment
             ->exists();
     
         if (!$isEnrolled) {
@@ -493,9 +493,9 @@ public function viewExamDetails2($exam_id)
         }
     
         // Check if the student has already submitted the exam
-        $hasSubmitted = AnsweredQuestion::where('user_id', $user->id)
-            ->whereHas('questions', function ($query) use ($exam_id) {
-              //  $query->where('tblschedule_id', $exam_id);
+        $hasSubmitted = AnsweredQuestion::where('tblstudent_id', $user->id)
+            ->whereHas('question', function ($query) use ($exam_id) {
+                $query->where('tblschedule_id', $exam_id);
             })
             ->exists();
     
@@ -518,11 +518,11 @@ public function viewExamDetails2($exam_id)
             foreach ($request->input('answers') as $answer) {
                 AnsweredQuestion::updateOrCreate(
                     [
-                        'user_id' => $user->id,
+                        'tblstudent_id' => $user->id,  // Use tblstudent_id instead of user_id
                         'tblquestion_id' => $answer['question_id'],
-                        'addchoices_id' => $answer['addchoices_id'],
                     ],
                     [
+                        'addchoices_id' => $answer['addchoices_id'],  // Optional: Update the answer
                         'Student_answer' => $answer['Student_answer'], // Assuming this is the correct field for student answers
                     ]
                 );
@@ -537,6 +537,7 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
         }
     }
+    
     
 
     // Get exam results (for students)

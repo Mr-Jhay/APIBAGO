@@ -27,7 +27,7 @@ class Exam extends Model
 
     public function choices()
     {
-        return $this->hasMany(Question::class, 'addchoices');
+        return $this->hasMany(Question::class, 'addchoices','id');
     }
 
 
