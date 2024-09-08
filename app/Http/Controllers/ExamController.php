@@ -495,7 +495,7 @@ public function viewExamDetails2($exam_id)
         // Check if the student has already submitted the exam
         $hasSubmitted = answeredQuestion::where('users_id', $user->id)
             ->whereHas('question', function ($query) use ($exam_id) {
-              // $query->where('tblschedule_id', $exam_id);
+               $query->where('tblschedule_id', $exam_id);
             })
             ->exists();
     
@@ -537,7 +537,6 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'. $e->getMessage()], 500);
         }
     }
-    
 
     // Get exam results (for students)
     public function getResults(Request $request, $examId)
