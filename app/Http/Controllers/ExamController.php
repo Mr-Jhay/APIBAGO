@@ -493,7 +493,7 @@ public function viewExamDetails2($exam_id)
         }
     
         // Check if the student has already submitted the exam
-        $hasSubmitted = AnsweredQuestion::where('tblstudent_id', $user->id)
+        $hasSubmitted = answeredQuestion::where('users_id', $user->id)
             ->whereHas('question', function ($query) use ($exam_id) {
               // $query->where('tblschedule_id', $exam_id);
             })
