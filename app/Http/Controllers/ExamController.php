@@ -132,37 +132,45 @@ class ExamController extends Controller
               $totalQuestions = 0;
   
               // Create questions and correct answers
-              foreach ($request->input('questions') as $qData) {
-                  $totalQuestions++;
-                  $question = Question::create([
-                      'tblschedule_id' => $exam->id,
-                      'question_type' => $qData['question_type'],
-                      'question' => $qData['question']
-                  ]);
-  
-                  if (isset($qData['choices'])) {
-                      foreach ($qData['choices'] as $choice) {
-                          Choice::create([
-                              'tblquestion_id' => $question->id,
-                              'choices' => $choice
-                          ]);
-                      }
-                  }
-  
-                  if (isset($qData['correct_answers'])) {
-                      foreach ($qData['correct_answers'] as $ansData) {
-                          $points = $ansData['points'] ?? 0;
-                          $totalPoints += $points;
-  
-                          CorrectAnswer::create([
-                              'tblquestion_id' => $question->id,
-                              'addchoices_id' => $choice->id ?? null,
-                              'correct_answer' => $ansData['correct_answer'] ?? null,
-                              'points' => $points
-                          ]);
-                      }
-                  }
-              }
+             // Create questions and correct answers
+            foreach ($request->input('questions') as $qData) {
+                $totalQuestions++;
+                $question = Question::create([
+                    'tblschedule_id' => $exam->id,
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+
+                $choicesMap = []; // Map to keep track of created choices
+
+                if (isset($qData['choices'])) {
+                    foreach ($qData['choices'] as $choiceText) {
+                        $choice = Choice::create([
+                            'tblquestion_id' => $question->id,
+                            'choices' => $choiceText
+                        ]);
+                        $choicesMap[$choiceText] = $choice->id; // Map choice text to choice ID
+                    }
+                }
+
+                if (isset($qData['correct_answers'])) {
+                    foreach ($qData['correct_answers'] as $ansData) {
+                        $points = $ansData['points'] ?? 0;
+                        $totalPoints += $points;
+
+                        // Use the choice ID from the mapping, if available
+                        $choiceId = isset($ansData['choice']) ? $choicesMap[$ansData['choice']] ?? null : null;
+
+                        CorrectAnswer::create([
+                            'tblquestion_id' => $question->id,
+                            'addchoices_id' => $choiceId,
+                            'correct_answer' => $ansData['correct_answer'] ?? null,
+                            'points' => $points
+                        ]);
+                    }
+                }
+            }
+
   
               // Notify students if required (Extra logic for addExam2)
               if ($request->input('notify_students', false)) {
