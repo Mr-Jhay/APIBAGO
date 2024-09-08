@@ -118,21 +118,19 @@ class ExamController extends Controller
               'questions.*.question_type' => 'required|string',
               'questions.*.question' => 'required|string',
               'questions.*.choices' => 'nullable|array',
-              'questions.*.choices.*' => 'string', // Validate each choice
               'questions.*.correct_answers' => 'nullable|array',
               'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
               'questions.*.correct_answers.*.points' => 'nullable|integer',
-              'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
-              'notify_students' => 'nullable|boolean',
+              'notify_students' => 'nullable|boolean',  // Example of extra logic
           ]);
-      
+  
           try {
               DB::beginTransaction();
-      
+  
               $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
               $totalPoints = 0;
               $totalQuestions = 0;
-      
+  
               // Create questions and correct answers
               foreach ($request->input('questions') as $qData) {
                   $totalQuestions++;
@@ -141,34 +139,32 @@ class ExamController extends Controller
                       'question_type' => $qData['question_type'],
                       'question' => $qData['question']
                   ]);
-      
-                  $choiceMap = [];
+  
                   if (isset($qData['choices'])) {
-                      foreach ($qData['choices'] as $index => $choice) {
-                          $newChoice = Choice::create([
+                      foreach ($qData['choices'] as $choice) {
+                          Choice::create([
                               'tblquestion_id' => $question->id,
                               'choices' => $choice
                           ]);
-                          $choiceMap[$index] = $newChoice->id; // Map the choice index to its ID
                       }
                   }
-      
+  
                   if (isset($qData['correct_answers'])) {
                       foreach ($qData['correct_answers'] as $ansData) {
                           $points = $ansData['points'] ?? 0;
                           $totalPoints += $points;
-      
+  
                           CorrectAnswer::create([
                               'tblquestion_id' => $question->id,
-                              'addchoices_id' => $choiceMap[$ansData['choice_id']] ?? null, // Use choice_id from the map
+                              'addchoices_id' => $choice->id ?? null,
                               'correct_answer' => $ansData['correct_answer'] ?? null,
                               'points' => $points
                           ]);
                       }
                   }
               }
-      
-              // Notify students if required
+  
+              // Notify students if required (Extra logic for addExam2)
               if ($request->input('notify_students', false)) {
                   $class = tblclass::find($exam->classtable_id);
                   $students = DB::table('users')
@@ -178,14 +174,14 @@ class ExamController extends Controller
                       ->where('users.usertype', 'student')
                       ->select('users.email')
                       ->get();
-      
+  
                   foreach ($students as $student) {
                       Mail::to($student->email)->send(new WelcomeMail($student->email));
                   }
               }
-      
+  
               DB::commit();
-      
+  
               return response()->json([
                   'message' => 'Exam created successfully',
                   'exam' => $exam,
@@ -197,7 +193,7 @@ class ExamController extends Controller
               Log::error('Failed to create exam (addExam2): ' . $e->getMessage());
               return response()->json(['error' => 'Failed to create exam.'], 500);
           }
-      }
+      } 
       
   
     // Publish Exam
