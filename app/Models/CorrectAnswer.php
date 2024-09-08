@@ -16,4 +16,9 @@ class CorrectAnswer extends Model
         'correct_answer',
         'points',
     ];
+
+    public function tblquestion()
+    {
+        return $this->belongsTo(Question::class, 'tblquestion_id');
+    }
 }

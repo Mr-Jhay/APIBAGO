@@ -34,18 +34,20 @@ class ExamController extends Controller
             'questions.*.question_type' => 'required|string',
             'questions.*.question' => 'required|string',
             'questions.*.choices' => 'nullable|array',
+            'questions.*.choices.*' => 'string', // Validate each choice
             'questions.*.correct_answers' => 'nullable|array',
             'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
             'questions.*.correct_answers.*.points' => 'nullable|integer',
+            'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
         ]);
-
+    
         try {
             DB::beginTransaction();
-
+    
             $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
             $totalPoints = 0;
             $totalQuestions = 0;
-
+    
             // Create questions and correct answers
             foreach ($request->input('questions') as $qData) {
                 $totalQuestions++;
@@ -54,33 +56,41 @@ class ExamController extends Controller
                     'question_type' => $qData['question_type'],
                     'question' => $qData['question']
                 ]);
-
+    
+                // Map to store choice IDs
+                $choiceMap = [];
+    
                 if (isset($qData['choices'])) {
-                    foreach ($qData['choices'] as $choice) {
-                        Choice::create([
+                    foreach ($qData['choices'] as $index => $choice) {
+                        $newChoice = Choice::create([
                             'tblquestion_id' => $question->id,
                             'choices' => $choice
                         ]);
+                        $choiceMap[$index] = $newChoice->id; // Store the ID in the map
                     }
                 }
-
+    
+                // Create correct answers if they exist
                 if (isset($qData['correct_answers'])) {
                     foreach ($qData['correct_answers'] as $ansData) {
                         $points = $ansData['points'] ?? 0;
                         $totalPoints += $points;
-
+    
+                        // Map correct answers to the choice IDs
+                        $correctAnswerChoiceId = isset($ansData['id']) ? $choiceMap[$ansData['id']] ?? null : null;
+    
                         CorrectAnswer::create([
                             'tblquestion_id' => $question->id,
-                            'addchoices_id' => $ansData['choice_id'] ?? null,
+                            'addchoices_id' => $correctAnswerChoiceId,
                             'correct_answer' => $ansData['correct_answer'] ?? null,
                             'points' => $points
                         ]);
                     }
                 }
             }
-
+    
             DB::commit();
-
+    
             return response()->json([
                 'message' => 'Exam created successfully',
                 'exam' => $exam,
@@ -93,6 +103,7 @@ class ExamController extends Controller
             return response()->json(['error' => 'Failed to create exam.'], 500);
         }
     }
+    
 
       // Create an exam with additional logic - addExam2
       public function addExam2(Request $request)
@@ -495,7 +506,7 @@ public function viewExamDetails2($exam_id)
         // Check if the student has already submitted the exam
         $hasSubmitted = answeredQuestion::where('users_id', $user->id)
             ->whereHas('question', function ($query) use ($exam_id) {
-              // $query->where('tblschedule_id', $exam_id);
+               $query->where('tblschedule_id', $exam_id);
             })
             ->exists();
     
@@ -544,34 +555,29 @@ public function viewExamDetails2($exam_id)
     {
         $user = auth()->user();
     
+        // Check if the user is a student
         if ($user->usertype !== 'student') {
             return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
         }
     
         try {
             // Retrieve the user's answers for the specific exam
-            $results = AnsweredQuestion::where('user_id', $user->id)
-                ->whereHas('question', function ($query) use ($examId) {
-                    $query->where('tblschedule_id', $examId);
+            $results = AnsweredQuestion::where('users_id', $user->id)
+                ->whereHas('tblquestion', function ($query) use ($examId) {
+                   // $query->where('tblschedule_id', $examId);
                 })
-                ->with('tblquestion_id', 'addchoices_id' , 'Student_answer') // Load related question and correctAnswer
+                ->with(['tblquestion', 'correctAnswer','addchoices']) // Load related question and correctAnswer
                 ->get();
-
-            $correct =AnsweredQuestion::where('user_id', $user->id)
-            ->whereHas('question', function ($query) use ($examId) {
-                $query->where('tblschedule_id', $examId);
-            })
-            ->with('tblquestion_id', 'addchoices_id' , 'Student_answer') // Load related question and correctAnswer
-            ->get();
     
             // Calculate points per question
             $questionScores = $results->map(function ($result) {
                 $correctAnswer = $result->correctAnswer;
                 $points = $correctAnswer ? $correctAnswer->points : 0;
-                $isCorrect = $correctAnswer ? $correctAnswer->correct_answer === $result->Student_answer : false;
+                $isCorrect = $correctAnswer && $correctAnswer->addchoices_id === $result->addchoices_id;
     
                 return [
-                    'question_number' => $result->question->question_number, // Assumes question_number is a field in your question model
+                    'question' => $result->tblquestion->question, // Assumes question_number is a field in your tblquestion model
+                    'choices'=> $result->addchoices->addchoices_id,
                     'student_answer' => $result->Student_answer,
                     'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
                     'points' => $isCorrect ? $points : 0,
