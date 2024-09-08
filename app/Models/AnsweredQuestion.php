@@ -8,8 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 class AnsweredQuestion extends Model
 {
     use HasFactory;
-    
-    protected $table = 'answered_question';  // Change this to match the migration
+    protected $table = 'answeredQuestion';
+
     protected $fillable = [
         'users_id',
         'tblquestion_id',
