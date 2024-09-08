@@ -114,6 +114,7 @@ class ExamController extends Controller
               'quarter' => 'required|string',
               'start' => 'required|date_format:Y-m-d H:i:s',
               'end' => 'required|date_format:Y-m-d H:i:s',
+              'Direction' => 'required|string',
               'questions' => 'required|array',
               'questions.*.question_type' => 'required|string',
               'questions.*.question' => 'required|string',
@@ -127,7 +128,7 @@ class ExamController extends Controller
           try {
               DB::beginTransaction();
   
-              $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+              $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'Direction']));
               $totalPoints = 0;
               $totalQuestions = 0;
   
