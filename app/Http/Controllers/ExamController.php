@@ -553,7 +553,6 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'. $e->getMessage()], 500);
         }
     }
-    
 
     // Get exam results (for students)
     public function getResults(Request $request, $examId)
