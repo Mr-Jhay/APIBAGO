@@ -407,8 +407,7 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-        //    ->where('exam_id', $exam_id) // Ensure correct exam ID is checked
-            ->exists();
+            ->exists(); // You may want to add a condition here to check if the student is enrolled in the specific exam
     
         if (!$isEnrolled) {
             return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
@@ -421,7 +420,7 @@ public function viewExamDetails2($exam_id)
                 ->where('status', 1) // Check if the exam is published
                 ->firstOrFail();
     
-            // Calculate total items and points
+            // Calculate total items
             $totalItems = $exam->questions->count();
     
             // Calculate total points by summing up points from the correctanswer table
@@ -437,7 +436,13 @@ public function viewExamDetails2($exam_id)
             // Shuffle the questions
             $shuffledQuestions = $exam->questions->shuffle();
     
-            // Attach the shuffled questions back to the exam
+            // Shuffle the choices within each question
+            $shuffledQuestions->transform(function ($question) {
+                $question->choices = $question->choices->shuffle();
+                return $question;
+            });
+    
+            // Attach the shuffled questions (with shuffled choices) back to the exam object
             $exam->questions = $shuffledQuestions;
     
             return response()->json([
@@ -450,7 +455,6 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
         }
     }
-
 
     // Submit exam answers (for students)
     public function submitExam(Request $request, $exam_id)
