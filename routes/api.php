@@ -310,7 +310,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
     Route::get('viewExam2/{id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
-    Route::post('submitExam2/{id}', [ExamController::class, 'submitExam2']);//pag submit ng exam
+    Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
     Route::get('getResults/{id}', [ExamController::class, 'getResults']);//pag view ng sagot
    // getResults
     //submitExam2
