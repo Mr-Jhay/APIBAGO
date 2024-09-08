@@ -25,4 +25,21 @@ class AnsweredQuestion extends Model
     {
         return $this->belongsTo(Question::class, 'tblquestion_id');
     }
+
+    public function tblquestion()
+    {
+        return $this->belongsTo(Question::class, 'tblquestion_id');
+    }
+
+    // Define relationship to correctAnswer
+    public function correctAnswer()
+    {
+        return $this->hasOne(CorrectAnswer::class, 'tblquestion_id', 'tblquestion_id')
+            ->where('addchoices_id', $this->addchoices_id);
+    }
+
+    public function addchoices()
+{
+    return $this->belongsTo(Choice::class, 'addchoices_id');
+}
 }
