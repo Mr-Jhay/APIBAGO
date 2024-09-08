@@ -619,9 +619,12 @@ public function viewExamDetails2($exam_id)
         // Calculate total score
         $totalScore = $questionScores->sum('points_awarded');
 
+        $totalPossiblePoints = $questionScores->sum('total_possible_points');
+
         return response()->json([
             'results' => $questionScores,
-            'total_score' => $totalScore
+            'total_score' => $totalScore,
+            'total_possible_points' => $totalPossiblePoints
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam results: ' . $e->getMessage());
