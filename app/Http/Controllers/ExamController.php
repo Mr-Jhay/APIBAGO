@@ -442,7 +442,6 @@ public function viewExamDetails2($exam_id)
         }
 
         $isEnrolled = joinclass::where('user_id', $user->id)
-           // ->where('tblschedule_id', $exam_id)
             ->exists();
 
         if (!$isEnrolled) {
@@ -486,8 +485,8 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-    ->where('tblschedule_id', $exam_id)  // Use 'class_id' instead of 'tblschedule_id'
-        ->exists();
+       //     ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
+            ->exists();
     
         if (!$isEnrolled) {
             return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
@@ -495,8 +494,8 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student has already submitted the exam
         $hasSubmitted = AnsweredQuestion::where('user_id', $user->id)
-            ->whereHas('question', function ($query) use ($exam_id) {
-                $query->where('tblschedule_id', $exam_id);
+            ->whereHas('questions', function ($query) use ($exam_id) {
+              //  $query->where('tblschedule_id', $exam_id);
             })
             ->exists();
     
@@ -542,48 +541,50 @@ public function viewExamDetails2($exam_id)
 
     // Get exam results (for students)
     public function getResults(Request $request, $examId)
-{
-    $user = auth()->user();
-
-    if ($user->usertype !== 'student') {
-        return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
+    {
+        $user = auth()->user();
+    
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
+        }
+    
+        try {
+            // Retrieve the user's answers for the specific exam
+            $results = AnsweredQuestion::where('user_id', $user->id)
+                ->whereHas('question', function ($query) use ($examId) {
+                    $query->where('tblschedule_id', $examId);
+                })
+                ->with('question', 'correctAnswer') // Load related question and correctAnswer
+                ->get();
+    
+            // Calculate points per question
+            $questionScores = $results->map(function ($result) {
+                $correctAnswer = $result->correctAnswer;
+                $points = $correctAnswer ? $correctAnswer->points : 0;
+                $isCorrect = $correctAnswer ? $correctAnswer->correct_answer === $result->Student_answer : false;
+    
+                return [
+                    'question_number' => $result->question->question_number, // Assumes question_number is a field in your question model
+                    'student_answer' => $result->Student_answer,
+                    'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
+                    'points' => $isCorrect ? $points : 0,
+                    'is_correct' => $isCorrect
+                ];
+            });
+    
+            // Calculate total score
+            $totalScore = $questionScores->sum('points');
+    
+            return response()->json([
+                'results' => $questionScores,
+                'total_score' => $totalScore
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+        }
     }
-
-    try {
-        // Retrieve the user's answers for the specific exam
-        $results = AnsweredQuestion::where('user_id', $user->id)
-            ->whereHas('Question', function ($query) use ($examId) {
-               // $query->where('tblschedule_id', $examId);
-            })
-            ->with('Question', 	'aChoiceddchoices_id','correctAnswer') // Load related question and correctAnswer
-            ->get();
-
-        // Calculate the score
-        $score = $results->filter(function ($result) {
-            // Check if the user's answer matches the correct answer
-            return $result->correctAnswer && $result->correctAnswer->correct_answer === $result->Student_answer;
-        })->count();
-
-        // Format results to include user's answer and correctness status
-        $formattedResults = $results->map(function ($result) {
-            $isCorrect = $result->correctAnswer
-                ? $result->correctAnswer->correct_answer === $result->Student_answer
-                : false;
-
-            return [
-                'question_id' => $result->question_id,
-                'Student_answer' => $result->Student_answer,
-                'correct_answer' => $result->correctAnswer ? $result->correctAnswer->correct_answer : null,
-                'is_correct' => $isCorrect
-            ];
-        });
-
-        return response()->json(['results' => $formattedResults, 'score' => $score], 200);
-    } catch (\Exception $e) {
-        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
-    }
-}
+    
 
     // Fetch all exams for a specific class
     public function getExams($class_id)
