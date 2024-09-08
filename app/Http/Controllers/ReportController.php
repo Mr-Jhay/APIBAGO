@@ -1,10 +1,7 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\tblstudent;
-use App\Models\tblstrand;
-use App\Models\tblsection;
 use Illuminate\Http\Request;
 use Fpdf\Fpdf;
 
@@ -23,16 +20,24 @@ class ReportController extends Controller
         // Set margins
         $pdf->SetMargins(10, 20, 10); // left, top, right margins
 
+        // Add logos
+        $this->addLogos($pdf);
+
         // Add Header
         $this->Header($pdf);
 
         // Column widths
         $widths = [15, 30, 60, 20, 50, 40, 40]; // Widths of the columns in mm
 
-        // Table Header
+        // Table Header with color
+        $pdf->SetFillColor(200, 200, 200); // Light gray background for the header
         $pdf->SetFont('Arial', 'B', 8);
+
+        // Set the table headers using index for clarity
+        $headerIndex = 0; // Track the column index for headers
         foreach ($widths as $width) {
-            $pdf->Cell($width, 10, $this->getColumnHeader($width), 1);
+            $pdf->Cell($width, 10, $this->getColumnHeader($headerIndex), 1, 0, 'C', true);
+            $headerIndex++;
         }
         $pdf->Ln();
 
@@ -52,10 +57,12 @@ class ReportController extends Controller
             // Check if page needs to break
             if ($pdf->GetY() > 250) { // 250mm is a rough estimate for space left on the page
                 $pdf->AddPage();
+                $this->addLogos($pdf);
                 $this->Header($pdf);
                 $pdf->SetFont('Arial', 'B', 8);
+                $pdf->SetFillColor(200, 200, 200); // Ensure the new header row has the same color
                 foreach ($widths as $width) {
-                    $pdf->Cell($width, 10, $this->getColumnHeader($width), 1);
+                    $pdf->Cell($width, 10, $this->getColumnHeader($headerIndex), 1, 0, 'C', true);
                 }
                 $pdf->Ln();
                 $pdf->SetFont('Arial', '', 8);
@@ -66,6 +73,23 @@ class ReportController extends Controller
         return response()->streamDownload(function() use ($pdf) {
             $pdf->Output('D', 'student_report.pdf');
         }, 'student_report.pdf');
+    }
+
+    protected function addLogos($pdf)
+    {
+        // Path to logos (ensure the logos are in these paths)
+        $leftLogoPath = storage_path('app/public/images/enhs.png');   
+        $rightLogoPath = storage_path('app/public/images/deped.png');
+
+        // Add left logo
+        if (file_exists($leftLogoPath)) {
+            $pdf->Image($leftLogoPath, 10, 10, 30); // Adjust position (X: 10mm, Y: 10mm) and size (30mm width)
+        }
+
+        // Add right logo
+        if (file_exists($rightLogoPath)) {
+            $pdf->Image($rightLogoPath, 250, 10, 30); // Adjust position (X: 250mm, Y: 10mm) and size (30mm width)
+        }
     }
 
     private function Header($pdf)
@@ -80,19 +104,19 @@ class ReportController extends Controller
         $pdf->Ln(5); // Add some space before the table headers
     }
 
-    private function getColumnHeader($width)
+    private function getColumnHeader($columnIndex)
     {
         $headers = [
-            15 => 'No.',
-            30 => 'LRN',
-            60 => 'Name',
-            20 => 'Sex',
-            50 => 'Email',
-            40 => 'Strand',
-            40 => 'Section'
+            0 => 'No.',
+            1 => 'LRN',
+            2 => 'Name',
+            3 => 'Sex',
+            4 => 'Email',
+            5 => 'Strand',
+            6 => 'Section'
         ];
 
-        return $headers[$width] ?? '';
+        return $headers[$columnIndex] ?? '';
     }
 
     private function filterStudents(Request $request)
