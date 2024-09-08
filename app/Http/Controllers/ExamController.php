@@ -577,7 +577,7 @@ public function viewExamDetails2($exam_id)
             // Retrieve the student's answers for the specific exam
             $results = AnsweredQuestion::where('users_id', $user->id)
                 ->whereHas('tblquestion', function ($query) use ($examId) {
-                    // $query->where('tblschedule_id', $examId);
+                     $query->where('tblschedule_id', $examId);
                 })
                 ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choice
                 ->get();
