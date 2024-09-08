@@ -114,7 +114,7 @@ class ExamController extends Controller
               'quarter' => 'required|string',
               'start' => 'required|date_format:Y-m-d H:i:s',
               'end' => 'required|date_format:Y-m-d H:i:s',
-              'Direction' => 'required|string',
+              'Direction' => 'required|text',
               'questions' => 'required|array',
               'questions.*.question_type' => 'required|string',
               'questions.*.question' => 'required|string',
