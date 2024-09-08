@@ -493,15 +493,15 @@ public function viewExamDetails2($exam_id)
         }
     
         // Check if the student has already submitted the exam
-      //  $hasSubmitted = answeredQuestion::where('user_id', $user->id)
-       //     ->whereHas('question', function ($query) use ($exam_id) {
-        //        $query->where('tblschedule_id', $exam_id);
-        //    })
-       //     ->exists();
+        $hasSubmitted = answeredQuestion::where('users_id', $user->id)
+            ->whereHas('question', function ($query) use ($exam_id) {
+              // $query->where('tblschedule_id', $exam_id);
+            })
+            ->exists();
     
-      //  if ($hasSubmitted) {
-       //     return response()->json(['error' => 'You have already submitted this exam.'], 403);
-      //  }
+        if ($hasSubmitted) {
+           return response()->json(['error' => 'You have already submitted this exam.'], 403);
+        }
     
         // Validate input
         $request->validate([
@@ -554,8 +554,15 @@ public function viewExamDetails2($exam_id)
                 ->whereHas('question', function ($query) use ($examId) {
                     $query->where('tblschedule_id', $examId);
                 })
-                ->with('question', 'correctAnswer') // Load related question and correctAnswer
+                ->with('tblquestion_id', 'addchoices_id' , 'Student_answer') // Load related question and correctAnswer
                 ->get();
+
+            $correct =AnsweredQuestion::where('user_id', $user->id)
+            ->whereHas('question', function ($query) use ($examId) {
+                $query->where('tblschedule_id', $examId);
+            })
+            ->with('tblquestion_id', 'addchoices_id' , 'Student_answer') // Load related question and correctAnswer
+            ->get();
     
             // Calculate points per question
             $questionScores = $results->map(function ($result) {
