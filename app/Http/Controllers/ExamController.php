@@ -485,7 +485,7 @@ public function viewExamDetails2($exam_id)
     
         // Check if the student is enrolled in the exam
         $isEnrolled = joinclass::where('user_id', $user->id)
-            ->where('tblschedule_id', $exam_id) // Ensure this line is uncommented to check enrollment
+           // ->where('tblschedule_id', $exam_id) // Make sure this line is uncommented to check enrollment
             ->exists();
     
         if (!$isEnrolled) {
@@ -537,7 +537,6 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to submit exam answers. Please try again later.'], 500);
         }
     }
-    
     
 
     // Get exam results (for students)

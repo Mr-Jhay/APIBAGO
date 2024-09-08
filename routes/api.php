@@ -305,7 +305,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     
  
     Route::get('/class/{id}/published-exams', [ExamController::class, 'getPublishedExams']);
-
+ 
    //pag view ng mga exams sa student
     Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
