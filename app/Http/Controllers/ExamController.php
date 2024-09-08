@@ -114,7 +114,6 @@ class ExamController extends Controller
               'quarter' => 'required|string',
               'start' => 'required|date_format:Y-m-d H:i:s',
               'end' => 'required|date_format:Y-m-d H:i:s',
-              'Direction' => 'required|text',
               'questions' => 'required|array',
               'questions.*.question_type' => 'required|string',
               'questions.*.question' => 'required|string',
@@ -128,7 +127,7 @@ class ExamController extends Controller
           try {
               DB::beginTransaction();
   
-              $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'Direction']));
+              $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
               $totalPoints = 0;
               $totalQuestions = 0;
   
@@ -577,7 +576,7 @@ public function viewExamDetails2($exam_id)
             // Retrieve the student's answers for the specific exam
             $results = AnsweredQuestion::where('users_id', $user->id)
                 ->whereHas('tblquestion', function ($query) use ($examId) {
-                     $query->where('tblschedule_id', $examId);
+                    // $query->where('tblschedule_id', $examId);
                 })
                 ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choice
                 ->get();
