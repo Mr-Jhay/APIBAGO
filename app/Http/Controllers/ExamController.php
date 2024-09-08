@@ -141,15 +141,15 @@ class ExamController extends Controller
                     'question' => $qData['question']
                 ]);
 
-                $choicesMap = []; // Map to keep track of created choices
+               // $choicesMap = []; // Map to keep track of created choices
 
                 if (isset($qData['choices'])) {
-                    foreach ($qData['choices'] as $choiceText) {
+                    foreach ($qData['choices'] as $choice) {
                         $choice = Choice::create([
                             'tblquestion_id' => $question->id,
-                            'choices' => $choiceText
+                            'choices' => $choice
                         ]);
-                        $choicesMap[$choiceText] = $choice->id; // Map choice text to choice ID
+                      //  $choicesMap[$choiceText] = $choice->id; // Map choice text to choice ID
                     }
                 }
 
@@ -159,11 +159,11 @@ class ExamController extends Controller
                         $totalPoints += $points;
 
                         // Use the choice ID from the mapping, if available
-                        $choiceId = isset($ansData['choice']) ? $choicesMap[$ansData['choice']] ?? null : null;
+                        //$choiceId = isset($ansData['choice']) ? $choicesMap[$ansData['choice']] ?? null : null;
 
                         CorrectAnswer::create([
                             'tblquestion_id' => $question->id,
-                            'addchoices_id' => $choiceId,
+                            'addchoices_id' => $choice->id ?? null,
                             'correct_answer' => $ansData['correct_answer'] ?? null,
                             'points' => $points
                         ]);
