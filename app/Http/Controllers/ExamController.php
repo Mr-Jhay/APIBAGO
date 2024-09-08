@@ -569,32 +569,41 @@ public function viewExamDetails2($exam_id)
         }
     
         try {
-            // Retrieve the user's answers for the specific exam
+            // Retrieve the student's answers for the specific exam
             $results = AnsweredQuestion::where('users_id', $user->id)
                 ->whereHas('tblquestion', function ($query) use ($examId) {
-                   // $query->where('tblschedule_id', $examId);
+                    // $query->where('tblschedule_id', $examId);
                 })
-                ->with(['tblquestion', 'correctAnswer','addchoices']) // Load related question and correctAnswer
+                ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choice
                 ->get();
     
-            // Calculate points per question
-            $questionScores = $results->map(function ($result) {
-                $correctAnswer = $result->correctAnswer;
-                $points = $correctAnswer ? $correctAnswer->points : 0;
-                $isCorrect = $correctAnswer && $correctAnswer->addchoices_id === $result->addchoices_id;
+            // Retrieve all correct answers for the questions in the exam
+            $correctAnswers = CorrectAnswer::select('tblquestion_id', 'correct_answer', 'points')
+                ->whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+                ->get()
+                ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
+    
+            // Calculate points per question and total score
+            $questionScores = $results->map(function ($result) use ($correctAnswers) {
+                // Find the correct answer for this question
+                $correctAnswer = $correctAnswers->get($result->tblquestion_id);
+    
+                // Compare Student's answer with the correct answer
+                $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
+                $points = $isCorrect ? $correctAnswer->points : 0;
     
                 return [
-                    'question' => $result->tblquestion->question, // Assumes question_number is a field in your tblquestion model
-                    'choices'=> $result->addchoices->addchoices_id,
-                    'student_answer' => $result->Student_answer,
+                    'question' => $result->tblquestion->question,
+                    'student_answer' => $result->Student_answer, // Assumes this is the actual answer text
                     'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
-                    'points' => $isCorrect ? $points : 0,
+                    'points_awarded' => $points, // Display the points awarded for this question
+                    'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0, // Display total possible points for this question
                     'is_correct' => $isCorrect
                 ];
             });
     
             // Calculate total score
-            $totalScore = $questionScores->sum('points');
+            $totalScore = $questionScores->sum('points_awarded');
     
             return response()->json([
                 'results' => $questionScores,
@@ -605,6 +614,9 @@ public function viewExamDetails2($exam_id)
             return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
         }
     }
+    
+    
+
     
 
     // Fetch all exams for a specific class
