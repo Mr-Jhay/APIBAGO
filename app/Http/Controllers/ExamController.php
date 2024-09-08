@@ -819,4 +819,45 @@ public function viewAllExamsInClass2($classtable_id)
     }
 }
 
+
+
+public function viewAllResults(Request $request)
+{
+    $user = auth()->user();
+
+    // Check if the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
+    }
+
+    try {
+        // Fetch all exam IDs from tblschedule where the student is enrolled
+        $examIds = DB::table('tblschedule')
+            ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.tblclass_id')
+            ->where('joinclass.user_id', $user->id)
+            ->pluck('tblschedule.id');
+
+        if ($examIds->isEmpty()) {
+            return response()->json(['message' => 'No exams found for this student.'], 404);
+        }
+
+        // Retrieve results for the student's taken exams
+        $results = DB::table('studentexam')
+            ->join('tblschedule', 'studentexam.tblschedule_id', '=', 'tblschedule.id')
+            ->where('studentexam.tblstudent_id', $user->id)
+            ->whereIn('tblschedule.id', $examIds)
+            ->get();
+
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No results found for the exams.'], 404);
+        }
+
+        return response()->json($results, 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+    }
+}
+
+
 }
