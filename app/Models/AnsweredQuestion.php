@@ -8,17 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class AnsweredQuestion extends Model
 {
     use HasFactory;
-    protected $table = 'answeredQuestion';
-
+    
+    protected $table = 'answered_question';  // Change this to match the migration
     protected $fillable = [
         'users_id',
         'tblquestion_id',
-       // 'correctanswer_id'
-      'addchoices_id',
-      'Student_answer',
-
+        'addchoices_id',
+        'Student_answer',
     ];
-
 
     // Add this relationship to link AnsweredQuestion with Question
     public function question()
@@ -26,3 +23,6 @@ class AnsweredQuestion extends Model
         return $this->belongsTo(Question::class, 'tblquestion_id');
     }
 }
+
+
+
