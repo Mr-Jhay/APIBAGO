@@ -130,6 +130,14 @@ Route::group([
 
     //TEACHER
 
+    //yung may time ganun
+    Route::post('createExam', [ExamController::class, 'createExam']);
+    //yung mga question
+    Route::post('addQuestionsToExam/{id}', [ExamController::class, 'addQuestionsToExam']);
+    
+
+
+
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
     Route::get('class/{id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
