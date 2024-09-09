@@ -469,7 +469,6 @@ public function getCounts()
 }
 
 
-
 public function viewAllTeachers()
 {
     try {
@@ -800,7 +799,6 @@ public function getAllStudentsWithStrands()
         'data' => $groupedByStrand,
     ], 200);
 }
-
 
 
 }
