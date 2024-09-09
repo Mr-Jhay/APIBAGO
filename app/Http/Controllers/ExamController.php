@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
+use App\Models\instructions;
 use App\Models\joinclass;
 use App\Models\Question;
 use App\Models\Choice;
@@ -863,6 +864,115 @@ public function getResults2(Request $request)
         ], 500);
     }
 }
+//pag create ng schedule
+public function createExam(Request $request)
+{
+    $request->validate([
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+    ]);
 
+    try {
+        // Create the exam
+        $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end']));
+
+        return response()->json([
+            'message' => 'Exam created successfully',
+            'exam' => $exam
+        ], 201);
+    } catch (\Exception $e) {
+        Log::error('Failed to create exam: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to create exam.'], 500);
+    }
+}
+
+public function addQuestionsToExam(Request $request, $examId)
+{
+    $request->validate([
+        'instruction' => 'required|string',
+        'questions' => 'required|array',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.choices.*' => 'string', // Validate each choice
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer',
+        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        $exam = Exam::findOrFail($examId); // Ensure the exam exists
+
+        $totalPoints = 0;
+        $totalQuestions = 0;
+
+        // Add instruction if provided
+        if ($request->has('instruction')) {
+            instructions::create([
+                'schedule_id' => $examId,
+                'instruction' => $request->input('instruction')
+            ]);
+        }
+
+        // Create questions and correct answers
+        foreach ($request->input('questions') as $qData) {
+            $totalQuestions++;
+            $question = Question::create([
+                'tblschedule_id' => $exam->id,
+                'question_type' => $qData['question_type'],
+                'question' => $qData['question']
+            ]);
+
+            // Map to store choice IDs
+            $choiceMap = [];
+
+            if (isset($qData['choices'])) {
+                foreach ($qData['choices'] as $index => $choice) {
+                    $newChoice = Choice::create([
+                        'tblquestion_id' => $question->id,
+                        'choices' => $choice
+                    ]);
+                    $choiceMap[$index] = $newChoice->id; // Store the ID in the map
+                }
+            }
+
+            // Create correct answers if they exist
+            if (isset($qData['correct_answers'])) {
+                foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points;
+
+                    // Map correct answers to the choice IDs
+                    $correctAnswerChoiceId = isset($ansData['id']) ? $choiceMap[$ansData['id']] ?? null : null;
+
+                    CorrectAnswer::create([
+                        'tblquestion_id' => $question->id,
+                        'addchoices_id' => $correctAnswerChoiceId,
+                        'correct_answer' => $ansData['correct_answer'] ?? null,
+                        'points' => $points
+                    ]);
+                }
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Questions and instructions added successfully',
+            'total_points' => $totalPoints,
+            'total_questions' => $totalQuestions
+        ], 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Failed to add questions and instructions: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
+    }
+}
 
 }
