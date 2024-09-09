@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
 use App\Models\joinclass;
@@ -17,7 +18,9 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Mail\InvitationMail;
 use App\Mail\TestMail;
+
 use App\Mail\WelcomeMail;
+
 
 class ExamController extends Controller
 {
@@ -588,7 +591,7 @@ public function viewExamDetails2($exam_id)
 
         // Check if any results were found
         if ($results->isEmpty()) {
-        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+            Log::error('Failed to retrieve exam results: ' . $e->getMessage());
 
             return response()->json(['message' => 'No results found for this exam.'], 404);
         }
