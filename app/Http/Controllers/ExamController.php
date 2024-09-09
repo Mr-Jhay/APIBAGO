@@ -417,7 +417,7 @@ public function viewExamDetails2($exam_id)
     
         try {
             // Retrieve the exam with questions and choices, but exclude correct answers
-            $exam = Exam::with(['questions.choices'])
+            $exam = Exam::with(['instruction','questions.choices.instruction'])
                 ->where('id', $exam_id)
                 ->where('status', 1) // Check if the exam is published
                 ->firstOrFail();
