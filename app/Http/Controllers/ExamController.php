@@ -18,6 +18,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\InvitationMail;
 use App\Mail\TestMail;
 use App\Mail\WelcomeMail;
+use Illuminate\Support\Facades\Auth;
 
 class ExamController extends Controller
 {
@@ -821,41 +822,45 @@ public function viewAllExamsInClass2($classtable_id)
 
 
 
-public function viewAllResults(Request $request)
+public function getResults2(Request $request)
 {
-    $user = auth()->user();
-
-    // Check if the user is a student
-    if ($user->usertype !== 'student') {
-        return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
-    }
-
     try {
-        // Fetch all exam IDs from tblschedule where the student is enrolled
-        $examIds = DB::table('tblschedule')
-            ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.tblclass_id')
-            ->where('joinclass.user_id', $user->id)
-            ->pluck('tblschedule.id');
+        // Get the authenticated user
+        $user = Auth::user();
+        
+        // Retrieve results specific to the authenticated user
+        $results = DB::table('tblresult')
+            ->join('users', 'tblresult.users_id', '=', 'users.id')
+            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
+            ->select(
+                'tblresult.id',
+                'users.lname AS student_name',
+                'tblschedule.title AS exam_title',
+                'tblresult.total_score',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('tblresult.users_id', $user->id)  // Filter by authenticated user
+            ->get()
+            ->map(function ($result) {
+                // Transform status code to meaningful labels
+                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                return $result;
+            });
 
-        if ($examIds->isEmpty()) {
-            return response()->json(['message' => 'No exams found for this student.'], 404);
-        }
-
-        // Retrieve results for the student's taken exams
-        $results = DB::table('studentexam')
-            ->join('tblschedule', 'studentexam.tblschedule_id', '=', 'tblschedule.id')
-            ->where('studentexam.tblstudent_id', $user->id)
-            ->whereIn('tblschedule.id', $examIds)
-            ->get();
-
+        // Check if results are empty
         if ($results->isEmpty()) {
-            return response()->json(['message' => 'No results found for the exams.'], 404);
+            return response()->json(['message' => 'No exam results found for this user.'], 404);
         }
 
         return response()->json($results, 200);
     } catch (\Exception $e) {
-        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+        return response()->json([
+            'error' => 'Failed to retrieve exam results. Please try again later.',
+            'exception' => $e->getMessage()
+        ], 500);
     }
 }
 

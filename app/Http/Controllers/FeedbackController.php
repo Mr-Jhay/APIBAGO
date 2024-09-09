@@ -130,4 +130,34 @@ class FeedbackController extends Controller
             'feedbacks' => $feedbacks
         ]);
     }
+
+
+
+            public function store(Request $request, $exam_id)
+        {
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'comment' => 'required|string|max:255',
+            ]);
+
+            // Return validation errors if any
+            if ($validator->fails()) {
+                return response()->json($validator->errors(), 400);
+            }
+
+            // Ensure the exam_id exists
+            if (!tblschedule::where('id', $exam_id)->exists()) {
+                return response()->json(['error' => 'Exam not found.'], 404);
+            }
+
+            // Create and save the comment
+            $comment = new Comment();
+            $comment->user_id = Auth::id(); // Use the authenticated user's ID
+            $comment->exam_id = $exam_id;
+            $comment->comment = $request->input('comment');
+            $comment->save();
+
+            // Return success response
+            return response()->json(['message' => 'Comment created successfully!', 'comment' => $comment], 201);
+        }
 }

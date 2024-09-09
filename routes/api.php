@@ -317,7 +317,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
     
  
-    Route::get('viewAllResults', [ExamController::class, 'viewAllResults']);
+    Route::get('getResults2', [ExamController::class, 'getResults2']);
 
  
 
