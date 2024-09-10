@@ -13,7 +13,7 @@ class Exam extends Model
 
     protected $fillable = [
         'classtable_id', 
-        'title',
+        'title', 
         'quarter',
         'start',
         'end',

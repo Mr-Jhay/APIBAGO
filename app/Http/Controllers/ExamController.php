@@ -1293,14 +1293,18 @@ public function updateExam(Request $request, $examId)
 public function getExamInstructionAndCorrectAnswers($examId)
 {
     try {
-        // Fetch the exam, including instructions, questions, and correct answers
-        $exam = Exam::with(['instructions', 'questions.correctAnswers'])
+        // Fetch the exam with its related instructions and questions
+        $exam = Exam::with(['instruction', 'questions.correctAnswers'])
                     ->findOrFail($examId);
+
+        \Log::info('Fetched exam data: ', $exam->toArray());
 
         // Transform the data to include instructions, questions, and correct answers
         $response = [
-            'instruction' => $exam->instructions->instruction ?? 'No instructions available',
+            'instruction' => $exam->instruction->instruction ?? 'No instructions available',
             'questions' => $exam->questions->map(function ($question) {
+                \Log::info('Processing question ID: ' . $question->id);
+
                 return [
                     'question_id' => $question->id,
                     'question_text' => $question->question,
@@ -1309,9 +1313,9 @@ public function getExamInstructionAndCorrectAnswers($examId)
                             'correct_answer' => $answer->correct_answer,
                             'points' => $answer->points
                         ];
-                    })
+                    })->toArray() ?? [] // Ensure it returns an empty array if null
                 ];
-            })
+            })->toArray() ?? [] // Ensure it returns an empty array if null
         ];
 
         return response()->json([
@@ -1319,12 +1323,14 @@ public function getExamInstructionAndCorrectAnswers($examId)
             'data' => $response
         ], 200);
     } catch (\Exception $e) {
+        \Log::error('Error fetching exam details: ' . $e->getMessage());
         return response()->json([
             'success' => false,
             'message' => 'Failed to fetch exam details. ' . $e->getMessage(),
         ], 500);
     }
 }
+
 
 
 }
