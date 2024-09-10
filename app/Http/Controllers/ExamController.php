@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
 use App\Models\instructions;
@@ -19,7 +18,6 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\Controller;
 use App\Mail\InvitationMail;
 use App\Mail\TestMail;
-
 use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Auth;
 
@@ -568,73 +566,87 @@ public function viewExamDetails2($exam_id)
 
     // Get exam results (for students)
     public function getResults(Request $request, $examId)
-{
-    $user = auth()->user();
-
-    // Check if the user is a student
-    if ($user->usertype !== 'student') {
-        return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
-    }
-
-    try {
-        // Fetch the exam details
-        $examSchedule = Exam::where('id', $examId)
-            ->firstOrFail();
-
-        // Retrieve the student's answers for the specific exam
-        $results = AnsweredQuestion::where('users_id', $user->id)
-            ->whereHas('tblquestion', function ($query) use ($examId) {
-                // Filter questions by the exam schedule ID
-                $query->where('tblschedule_id', $examId);
-            })
-            ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
-            ->get();
-
-        // Check if any results were found
-        if ($results->isEmpty()) {
-        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-
-            return response()->json(['message' => 'No results found for this exam.'], 404);
+    {
+        $user = auth()->user();
+    
+        // Check if the user is a student
+        if ($user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
         }
-
-        // Retrieve all correct answers for the questions in the exam
-        $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
-            ->get()
-            ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
-
-        // Calculate points per question and total score
-        $questionScores = $results->map(function ($result) use ($correctAnswers) {
-            $correctAnswer = $correctAnswers->get($result->tblquestion_id);
-
-            // Compare Student's answer with the correct answer
-            $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
-            $points = $isCorrect ? $correctAnswer->points : 0;
-
-            return [
-                'question' => $result->tblquestion->question,
-                'student_answer' => $result->Student_answer, // Assumes this is the actual answer text
-                'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
-                'points_awarded' => $points, // Display the points awarded for this question
-                'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0, // Display total possible points for this question
-                'is_correct' => $isCorrect
-            ];
-        });
-
-        // Calculate total score
-        $totalScore = $questionScores->sum('points_awarded');
-
-        $totalPossiblePoints = $questionScores->sum('total_possible_points');
-
-        return response()->json([
-            'results' => $questionScores,
-            'total_score' => $totalScore,
-            'total_possible_points' => $totalPossiblePoints
-        ], 200);
-    } catch (\Exception $e) {
-        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+    
+        try {
+            // Fetch the exam details
+            $examSchedule = Exam::where('id', $examId)->firstOrFail();
+    
+            // Retrieve the student's answers for the specific exam
+            $results = AnsweredQuestion::where('users_id', $user->id)
+                ->whereHas('tblquestion', function ($query) use ($examId) {
+                    // Filter questions by the exam schedule ID
+                    $query->where('tblschedule_id', $examId);
+                })
+                ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
+                ->get();
+    
+            // Check if any results were found
+            if ($results->isEmpty()) {
+                Log::error('Failed to retrieve exam results: No results found.');
+                return response()->json(['message' => 'No results found for this exam.'], 404);
+            }
+    
+            // Retrieve all correct answers for the questions in the exam
+            $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+                ->get()
+                ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
+    
+            // Calculate points per question and total score
+            $questionScores = $results->map(function ($result) use ($correctAnswers) {
+                $correctAnswer = $correctAnswers->get($result->tblquestion_id);
+    
+                // Compare Student's answer with the correct answer
+                $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
+                $points = $isCorrect ? $correctAnswer->points : 0;
+    
+                return [
+                    'question' => $result->tblquestion->question,
+                    'student_answer' => $result->Student_answer, // Assumes this is the actual answer text
+                    'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
+                    'points_awarded' => $points, // Display the points awarded for this question
+                    'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0, // Display total possible points for this question
+                    'is_correct' => $isCorrect
+                ];
+            });
+    
+            // Calculate total score and total possible points
+            $totalScore = $questionScores->sum('points_awarded');
+            $totalPossiblePoints = $questionScores->sum('total_possible_points');
+    
+            // Calculate passing or failing status
+            $passingThreshold = $totalPossiblePoints * 0.50; // 50% of total possible points
+            $status = $totalScore >= $passingThreshold ? 1 : 0;
+    
+            // Save or update the result in tblresult
+            DB::table('tblresult')->updateOrInsert(
+                ['users_id' => $user->id, 'exam_id' => $examId],
+                [
+                    'total_score' => $totalScore,
+                    'total_exam' => $totalPossiblePoints,
+                    'status' => $status
+                ]
+            );
+    
+            return response()->json([
+                'results' => $questionScores,
+                'total_score' => $totalScore,
+                'total_possible_points' => $totalPossiblePoints,
+                'status' => $status // Include pass/fail status
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+        }
     }
-}
+    
+    
 
     
     
@@ -1145,14 +1157,7 @@ public function getAllExamsByClass($classId)
 public function getExam($id)
 {
     try {
-        $exam = Exam::with([
-            'instruction',
-            'questions' => function ($query) {
-                $query->with(['choices', 'correctAnswers']); // Load choices and correct answers for each question
-            },
-            'questions.choices', // Load choices directly related to each question
-            'questions.correctAnswers', // Load correct answers directly related to each question
-        ])->findOrFail($id);
+        $exam = Exam::findOrFail($id);
 
         return response()->json([
             'exam' => $exam
