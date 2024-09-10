@@ -389,12 +389,27 @@ public function getCounts()
             'users.sex', 
             'tblstudent.Mobile_no', 
             'tblstrand.addstrand as strand_name', 
+            'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
         )
         ->join('users', 'tblstudent.user_id', '=', 'users.id') // Join the users table
         ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id') // Join the tblstrand table
         ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id') // Join the tblsection table
         ->get();
+
+        // Group students by strand and grade level, count males, females, and total students
+        $groupedByStrandAndGradeLevel = $students->groupBy(['strand_name', 'grade_level'])->map(function ($groupByGradeLevel) {
+            $maleCount = $groupByGradeLevel->where('sex', 'male')->count();
+            $femaleCount = $groupByGradeLevel->where('sex', 'female')->count();
+            $totalCount = $groupByGradeLevel->count();
+            
+            return [
+                'students' => $groupByGradeLevel,
+                'male_count' => $maleCount,
+                'female_count' => $femaleCount,
+                'total_count' => $totalCount,
+            ];
+        });
 
         // Group students by strand, count males, females, and total students
         $groupedByStrand = $students->groupBy('strand_name')->map(function ($groupByStrand) {
@@ -422,10 +437,10 @@ public function getCounts()
         ->get();
 
         // Group teachers by sex, count males, females, and total teachers
-        $groupedBySex = $teachers->groupBy('sex')->map(function ($groupedBySex) {
-            $maleCount = $groupedBySex->where('sex', 'male')->count();
-            $femaleCount = $groupedBySex->where('sex', 'female')->count();
-            $totalCount = $groupedBySex->count();
+        $groupedBySex = $teachers->groupBy('sex')->map(function ($groupBySex) {
+            $maleCount = $groupBySex->where('sex', 'male')->count();
+            $femaleCount = $groupBySex->where('sex', 'female')->count();
+            $totalCount = $groupBySex->count();
             
             return [
                 'male_count' => $maleCount,
@@ -445,8 +460,9 @@ public function getCounts()
             'status' => true,
             'message' => 'Data retrieved successfully!',
             'data' => [
-                'students_grouped' => $groupedByStrand,
-                'teacher_grouped' => $groupedBySex,
+                'students_grouped_by_strand_and_grade_level' => $groupedByStrandAndGradeLevel,
+                'students_grouped_by_strand' => $groupedByStrand,
+                'teachers_grouped' => $groupedBySex,
                 'counts' => [
                     'teacher_count' => $teacherCount,
                     'student_count' => $studentCount,
@@ -467,6 +483,7 @@ public function getCounts()
         ], 500);
     }
 }
+
 
 
 
