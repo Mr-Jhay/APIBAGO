@@ -902,7 +902,7 @@ public function addQuestionsToExam(Request $request, $examId)
         'questions.*.correct_answers' => 'nullable|array',
         'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
         'questions.*.correct_answers.*.points' => 'nullable|integer',
-        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
+        //'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
     ]);
 
     try {
@@ -948,10 +948,18 @@ public function addQuestionsToExam(Request $request, $examId)
                 foreach ($qData['correct_answers'] as $ansData) {
                     $points = $ansData['points'] ?? 0;
                     $totalPoints += $points;
-
-                    // Map correct answers to the choice IDs
-                    $correctAnswerChoiceId = isset($ansData['id']) ? $choiceMap[$ansData['id']] ?? null : null;
-
+            
+                    // Find the choice ID based on the correct answer text
+                    $correctAnswerChoiceId = null;
+                    if (isset($qData['choices'])) {
+                        foreach ($qData['choices'] as $index => $choice) {
+                            if ($choice === $ansData['correct_answer']) {
+                                $correctAnswerChoiceId = $choiceMap[$index] ?? null; // Get the corresponding choice ID
+                                break;
+                            }
+                        }
+                    }
+            
                     CorrectAnswer::create([
                         'tblquestion_id' => $question->id,
                         'addchoices_id' => $correctAnswerChoiceId,
@@ -975,7 +983,6 @@ public function addQuestionsToExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
     }
 }
-
 
 public function getResultswithtestbank(Request $request, $examId)
 {
@@ -1314,7 +1321,7 @@ public function getExamInstructionAndCorrectAnswers($examId)
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Failed to fetch exam details.',
+            'message' => 'Failed to fetch exam details. ' . $e->getMessage(),
         ], 500);
     }
 }
