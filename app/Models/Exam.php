@@ -17,8 +17,10 @@ class Exam extends Model
         'quarter',
         'start',
         'end',
+        'points_exam',
         'Direction',
         'status'
+        
     ];
 
     public function questions()
