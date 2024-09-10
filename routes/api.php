@@ -135,7 +135,7 @@ Route::group([
     //yung mga question
     Route::post('addQuestionsToExam/{id}', [ExamController::class, 'addQuestionsToExam']);
     //ito yung sa teacherside na fetch niya yung schedule tapos saka palang mag add pag ni click
-   Route::get('getAllExamsByClass/{id}', [ExamController::class, 'viewAllExamsInClass']);
+   Route::get('getAllExamsByClass/{id}', [ExamController::class, 'getAllExamsByClass']);
    //specific schedule
    Route::get('getExam/{id}', [ExamController::class, 'getExam']);
    //updateExam
