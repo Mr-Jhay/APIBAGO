@@ -143,6 +143,10 @@ Route::group([
    //updateExam
    Route::put('updateExam/{id}', [ExamController::class, 'updateExam']);
 
+   //pag view nung nagawana bagong questions
+   Route::get('getExamInstructionAndCorrectAnswers/{id}', [ExamController::class, 'getExamInstructionAndCorrectAnswers']);
+ 
+
     
 
 
