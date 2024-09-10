@@ -57,7 +57,7 @@ class tblyearController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Year not found'
-            ], 404);
+            ], 404); 
         }
 
         // Check for duplicate year names
