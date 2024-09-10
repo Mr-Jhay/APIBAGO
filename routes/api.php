@@ -134,6 +134,13 @@ Route::group([
     Route::post('createExam', [ExamController::class, 'createExam']);
     //yung mga question
     Route::post('addQuestionsToExam/{id}', [ExamController::class, 'addQuestionsToExam']);
+    //ito yung sa teacherside na fetch niya yung schedule tapos saka palang mag add pag ni click
+   Route::get('getAllExamsByClass/{id}', [ExamController::class, 'viewAllExamsInClass']);
+   //specific schedule
+   Route::get('getExam/{id}', [ExamController::class, 'getExam']);
+   //updateExam
+   Route::put('updateExam/{id}', [ExamController::class, 'updateExam']);
+
     
 
 
@@ -184,6 +191,9 @@ Route::group([
 
  // getStudentClassroomDetails2
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
+
+
+   
 
 Route::get('/tblclass/{id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
