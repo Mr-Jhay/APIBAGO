@@ -1157,7 +1157,14 @@ public function getAllExamsByClass($classId)
 public function getExam($id)
 {
     try {
-        $exam = Exam::findOrFail($id);
+        $exam = Exam::with([
+            'instruction',
+            'questions' => function ($query) {
+                $query->with(['choices', 'correctAnswers']); // Load choices and correct answers for each question
+            },
+            'questions.choices', // Load choices directly related to each question
+            'questions.correctAnswers', // Load correct answers directly related to each question
+        ])->findOrFail($id);
 
         return response()->json([
             'exam' => $exam
