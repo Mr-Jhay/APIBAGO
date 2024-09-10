@@ -132,6 +132,21 @@ Route::group([
 
     //TEACHER
 
+    //yung may time ganun
+    Route::post('createExam', [ExamController::class, 'createExam']);
+    //yung mga question
+    Route::post('addQuestionsToExam/{id}', [ExamController::class, 'addQuestionsToExam']);
+    //ito yung sa teacherside na fetch niya yung schedule tapos saka palang mag add pag ni click
+   Route::get('getAllExamsByClass/{id}', [ExamController::class, 'getAllExamsByClass']);
+   //specific schedule
+   Route::get('getExam/{id}', [ExamController::class, 'getExam']);
+   //updateExam
+   Route::put('updateExam/{id}', [ExamController::class, 'updateExam']);
+
+    
+
+
+
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
     Route::get('class/{id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
@@ -178,6 +193,9 @@ Route::group([
 
  // getStudentClassroomDetails2
    Route::post('addExam', [ExamController::class, 'addExam']);//pag add ng exam
+
+
+   
 
 Route::get('/tblclass/{id}/exams', [ExamController::class, 'viewAllExamsInClass']);
 
@@ -312,15 +330,18 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
     Route::get('viewExam2/{id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
-    Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
+   // Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
     Route::get('getResults/{id}', [ExamController::class, 'getResults']);//pag view ng sagot
    // getResults
     //submitExam2
     Route::get('listStudentsInClass4/{class_id}', [joinclassController::class, 'listStudentsInClass4']);//list ng mga kaklase
     
  
-   
+    Route::get('getResults2', [ExamController::class, 'getResults2']);
 
+    //new in testbank
+    Route::get('viewExam2updated/{id}', [ExamController::class, 'viewExam2updated']);//pag view ng student sa exam then meron ng suffle testbank
+    Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
+    Route::get('getResultswithtestbank/{id}', [ExamController::class, 'getResultswithtestbank']);//pag view the result
  
-
 });

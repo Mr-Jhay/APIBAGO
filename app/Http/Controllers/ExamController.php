@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Facades\DB;
 use App\Models\Exam;
+use App\Models\instructions;
 use App\Models\joinclass;
 use App\Models\Question;
 use App\Models\Choice;
@@ -20,7 +21,7 @@ use App\Mail\InvitationMail;
 use App\Mail\TestMail;
 
 use App\Mail\WelcomeMail;
-
+use Illuminate\Support\Facades\Auth;
 
 class ExamController extends Controller
 {
@@ -418,7 +419,7 @@ public function viewExamDetails2($exam_id)
     
         try {
             // Retrieve the exam with questions and choices, but exclude correct answers
-            $exam = Exam::with(['questions.choices'])
+            $exam = Exam::with(['instruction','questions.choices'])
                 ->where('id', $exam_id)
                 ->where('status', 1) // Check if the exam is published
                 ->firstOrFail();
@@ -591,7 +592,7 @@ public function viewExamDetails2($exam_id)
 
         // Check if any results were found
         if ($results->isEmpty()) {
-            Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
 
             return response()->json(['message' => 'No results found for this exam.'], 404);
         }
@@ -805,6 +806,473 @@ public function viewAllExamsInClass2($classtable_id)
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exams: ' . $e->getMessage());
         return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
+    }
+}
+
+
+
+public function getResults2(Request $request)
+{
+    try {
+        // Get the authenticated user
+        $user = Auth::user();
+        
+        // Retrieve results specific to the authenticated user
+        $results = DB::table('tblresult')
+            ->join('users', 'tblresult.users_id', '=', 'users.id')
+            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
+            ->select(
+                'tblresult.id',
+                'users.lname AS student_name',
+                'tblschedule.title AS exam_title',
+                'tblresult.total_score',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('tblresult.users_id', $user->id)  // Filter by authenticated user
+            ->get()
+            ->map(function ($result) {
+                // Transform status code to meaningful labels
+                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                return $result;
+            });
+
+        // Check if results are empty
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No exam results found for this user.'], 404);
+        }
+
+        return response()->json($results, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to retrieve exam results. Please try again later.',
+            'exception' => $e->getMessage()
+        ], 500);
+    }
+}
+//pag create ng schedule
+public function createExam(Request $request)
+{
+    $request->validate([
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+        'points_exam' => 'required|numeric',
+    ]);
+
+    try {
+        // Create the exam
+        $exam = Exam::create($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'points_exam']));
+
+        return response()->json([
+            'message' => 'Exam created successfully',
+            'exam' => $exam
+        ], 201);
+    } catch (\Exception $e) {
+        Log::error('Failed to create exam: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to create exam.'], 500);
+    }
+}
+
+public function addQuestionsToExam(Request $request, $examId)
+{
+    $request->validate([
+        'instruction' => 'required|string',
+        'questions' => 'required|array',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.choices.*' => 'string', // Validate each choice
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer',
+        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        $exam = Exam::findOrFail($examId); // Ensure the exam exists
+
+        $totalPoints = 0;
+        $totalQuestions = 0;
+
+        // Add instruction if provided
+        if ($request->has('instruction')) {
+            instructions::create([
+                'schedule_id' => $examId,
+                'instruction' => $request->input('instruction')
+            ]);
+        }
+
+        // Create questions and correct answers
+        foreach ($request->input('questions') as $qData) {
+            $totalQuestions++;
+            $question = Question::create([
+                'tblschedule_id' => $exam->id,
+                'question_type' => $qData['question_type'],
+                'question' => $qData['question']
+            ]);
+
+            // Map to store choice IDs
+            $choiceMap = [];
+
+            if (isset($qData['choices'])) {
+                foreach ($qData['choices'] as $index => $choice) {
+                    $newChoice = Choice::create([
+                        'tblquestion_id' => $question->id,
+                        'choices' => $choice
+                    ]);
+                    $choiceMap[$index] = $newChoice->id; // Store the ID in the map
+                }
+            }
+
+            // Create correct answers if they exist
+            if (isset($qData['correct_answers'])) {
+                foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points;
+
+                    // Map correct answers to the choice IDs
+                    $correctAnswerChoiceId = isset($ansData['id']) ? $choiceMap[$ansData['id']] ?? null : null;
+
+                    CorrectAnswer::create([
+                        'tblquestion_id' => $question->id,
+                        'addchoices_id' => $correctAnswerChoiceId,
+                        'correct_answer' => $ansData['correct_answer'] ?? null,
+                        'points' => $points
+                    ]);
+                }
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Questions and instructions added successfully',
+            'total_points' => $totalPoints,
+            'total_questions' => $totalQuestions
+        ], 201);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Failed to add questions and instructions: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
+    }
+}
+
+
+public function getResultswithtestbank(Request $request, $examId)
+{
+    $user = auth()->user();
+
+    // Check if the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view results.'], 403);
+    }
+
+    try {
+        // Fetch the exam details
+        $examSchedule = Exam::where('id', $examId)->firstOrFail();
+
+        // Retrieve the student's answers for the specific exam
+        $results = AnsweredQuestion::where('users_id', $user->id)
+            ->whereHas('tblquestion', function ($query) use ($examId) {
+                // Filter questions by the exam schedule ID
+                $query->where('tblschedule_id', $examId);
+            })
+            ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
+            ->get();
+
+        // Check if any results were found
+        if ($results->isEmpty()) {
+            Log::error('Failed to retrieve exam results: No results found.');
+            return response()->json(['message' => 'No results found for this exam.'], 404);
+        }
+
+        // Retrieve all correct answers for the questions in the exam
+        $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+            ->get()
+            ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
+
+        // Calculate points per question and total score
+        $questionScores = $results->map(function ($result) use ($correctAnswers) {
+            $correctAnswer = $correctAnswers->get($result->tblquestion_id);
+
+            // Compare Student's answer with the correct answer
+            $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
+            $points = $isCorrect ? $correctAnswer->points : 0;
+
+            return [
+                'question' => $result->tblquestion->question,
+                'student_answer' => $result->Student_answer, // Assumes this is the actual answer text
+                'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
+                'points_awarded' => $points, // Display the points awarded for this question
+                'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0, // Display total possible points for this question
+                'is_correct' => $isCorrect
+            ];
+        });
+
+        // Calculate total score and use points_exam for total possible points
+        $totalScore = $questionScores->sum('points_awarded');
+        $totalPossiblePoints = $examSchedule->points_exam; // Use points_exam from the examSchedule
+
+        // Calculate passing or failing status
+        $passingThreshold = $totalPossiblePoints * 0.50; // 50% of total possible points
+        $status = $totalScore >= $passingThreshold ? 1 : 0;
+
+        // Save or update the result in tblresult
+        DB::table('tblresult')->updateOrInsert(
+            ['users_id' => $user->id, 'exam_id' => $examId],
+            [
+                'total_score' => $totalScore,
+                'total_exam' => $totalPossiblePoints,
+                'status' => $status
+            ]
+        );
+
+        return response()->json([
+            'results' => $questionScores,
+            'total_score' => $totalScore,
+            'total_possible_points' => $totalPossiblePoints,
+            'status' => $status // Include pass/fail status
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+    }
+}
+
+
+
+public function viewExam2updated($exam_id)
+{
+    $user = auth()->user();
+
+    // Ensure only students can view exams
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+    }
+
+    // Check if the student is enrolled in the exam
+    $isEnrolled = joinclass::where('user_id', $user->id)
+        ->exists(); // Add a condition if needed to check if the student is enrolled in the specific exam
+
+    if (!$isEnrolled) {
+        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+    }
+
+    try {
+        // Retrieve the exam with questions and choices, but exclude correct answers
+        $exam = Exam::with(['instruction', 'questions.choices'])
+            ->where('id', $exam_id)
+            ->where('status', 1) // Check if the exam is published
+            ->firstOrFail();
+
+        // Initialize variables for tracking points and questions
+        $totalPoints = 0;
+        $selectedQuestions = collect();
+
+        // Iterate over the questions, stopping when the points_exam limit is reached
+        foreach ($exam->questions as $question) {
+            // Get the correct answer associated with this question
+            $correctAnswer = \DB::table('correctanswer')
+                ->where('tblquestion_id', $question->id)
+                ->first();
+
+            $questionPoints = $correctAnswer ? $correctAnswer->points : 0;
+
+            // Check if adding this question exceeds the points_exam limit
+            if ($totalPoints + $questionPoints > $exam->points_exam) {
+                break; // Stop adding questions if the limit is reached
+            }
+
+            $totalPoints += $questionPoints;
+            $selectedQuestions->push($question);
+        }
+
+        // Shuffle the selected questions
+        $shuffledQuestions = $selectedQuestions->shuffle();
+
+        // Shuffle the choices within each question
+        $shuffledQuestions->transform(function ($question) {
+            $question->choices = $question->choices->shuffle();
+            return $question;
+        });
+
+        // Attach the shuffled questions (with shuffled choices) back to the exam object
+        $exam->questions = $shuffledQuestions;
+
+        return response()->json([
+            'exam' => $exam,
+            'total_items' => $shuffledQuestions->count(),
+            'total_points' => $totalPoints
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
+
+
+
+public function getAllExamsByClass($classId)
+{
+    try {
+        // Fetch exams filtered by the class ID
+        $exams = Exam::where('classtable_id', $classId)->get();
+
+        // Check if any exams were found
+        if ($exams->isEmpty()) {
+            return response()->json([
+                'message' => 'No exams found for this class.'
+            ], 404);
+        }
+
+        return response()->json([
+            'exams' => $exams
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exams for class: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exams.'], 500);
+    }
+}
+
+
+public function getExam($id)
+{
+    try {
+        $exam = Exam::with([
+            'instruction',
+            'questions' => function ($query) {
+                $query->with(['choices', 'correctAnswers']); // Load choices and correct answers for each question
+            },
+            'questions.choices', // Load choices directly related to each question
+            'questions.correctAnswers', // Load correct answers directly related to each question
+        ])->findOrFail($id);
+
+        return response()->json([
+            'exam' => $exam
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam: ' . $e->getMessage());
+        return response()->json(['error' => 'Exam not found.'], 404);
+    }
+}
+
+
+public function updateExam(Request $request, $examId)
+{
+    $request->validate([
+        'title' => 'nullable|string',
+        'quarter' => 'nullable|string',
+        'start' => 'nullable|date_format:Y-m-d H:i:s',
+        'end' => 'nullable|date_format:Y-m-d H:i:s',
+        'points_exam' => 'nullable|numeric',
+        'instruction' => 'nullable|string',
+        'questions' => 'nullable|array',
+        'questions.*.id' => 'nullable|exists:questions,id',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.choices.*' => 'string',
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer',
+        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id',
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        $exam = Exam::findOrFail($examId); // Ensure the exam exists
+
+        // Update exam details if provided
+        $exam->update($request->only(['title', 'quarter', 'start', 'end', 'points_exam']));
+
+        $totalPoints = 0;
+        $totalQuestions = 0;
+
+        // Update instruction if provided
+        if ($request->has('instruction')) {
+            instructions::updateOrCreate(
+                ['schedule_id' => $examId],
+                ['instruction' => $request->input('instruction')]
+            );
+        }
+
+        // Process each question
+        foreach ($request->input('questions', []) as $qData) {
+            $totalQuestions++;
+
+            if (isset($qData['id'])) {
+                // Update existing question
+                $question = Question::findOrFail($qData['id']);
+                $question->update([
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+            } else {
+                // Create new question
+                $question = Question::create([
+                    'tblschedule_id' => $exam->id,
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+            }
+
+            // Map to store choice IDs
+            $choiceMap = [];
+
+            if (isset($qData['choices'])) {
+                foreach ($qData['choices'] as $index => $choice) {
+                    // Update or create choices
+                    $choiceRecord = Choice::updateOrCreate(
+                        ['tblquestion_id' => $question->id, 'choices' => $choice],
+                        ['tblquestion_id' => $question->id, 'choices' => $choice]
+                    );
+                    $choiceMap[$index] = $choiceRecord->id; // Store the ID in the map
+                }
+            }
+
+            // Handle correct answers
+            if (isset($qData['correct_answers'])) {
+                foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points;
+
+                    // Map correct answers to the choice IDs
+                    $correctAnswerChoiceId = isset($ansData['choice_id']) ? $choiceMap[$ansData['choice_id']] ?? null : null;
+
+                    // Update or create correct answer
+                    CorrectAnswer::updateOrCreate(
+                        [
+                            'tblquestion_id' => $question->id,
+                            'addchoices_id' => $correctAnswerChoiceId
+                        ],
+                        [
+                            'correct_answer' => $ansData['correct_answer'] ?? null,
+                            'points' => $points
+                        ]
+                    );
+                }
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Exam and related data updated successfully',
+            'total_points' => $totalPoints,
+            'total_questions' => $totalQuestions
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Failed to update exam and related data: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update exam and related data.'], 500);
     }
 }
 

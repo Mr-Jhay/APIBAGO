@@ -17,8 +17,9 @@ class Exam extends Model
         'quarter',
         'start',
         'end',
-        'Direction',
+        'points_exam',
         'status'
+        
     ];
 
     public function questions()
@@ -30,6 +31,16 @@ class Exam extends Model
     {
         return $this->hasMany(Question::class, 'addchoices','id');
     }
+
+    public function instruction()
+    {
+        return $this->hasOne(instructions::class, 'schedule_id', 'id');
+    }
+
+
+
+
+
 
 
 
