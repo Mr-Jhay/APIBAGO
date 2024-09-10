@@ -318,7 +318,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('exams/{id}', [ExamController::class, 'viewAllExams2']);
    
     Route::get('viewExam2/{id}', [ExamController::class, 'viewExam2']);//pag view ng student sa exam then meron ng suffle
-    Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
+   // Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
     Route::get('getResults/{id}', [ExamController::class, 'getResults']);//pag view ng sagot
    // getResults
     //submitExam2
@@ -327,6 +327,9 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  
     Route::get('getResults2', [ExamController::class, 'getResults2']);
 
+    //new in testbank
+    Route::get('viewExam2updated/{id}', [ExamController::class, 'viewExam2updated']);//pag view ng student sa exam then meron ng suffle testbank
+    Route::post('/exam/{id}/submitExam2', [ExamController::class, 'submitExam2']);//pag submit ng exam
+    Route::get('getResultswithtestbank/{id}', [ExamController::class, 'getResultswithtestbank']);//pag view the result
  
-
 });
