@@ -1287,16 +1287,17 @@ public function getExamInstructionAndCorrectAnswers($examId)
 {
     try {
         // Fetch the exam, including instructions, questions, and correct answers
-        $exam = Exam::with(['instructions', 'questions.correctAnswers'])
-                    ->findOrFail($examId);
+        $exam = Exam::with(['instructions', 'questions.correctAnswers'])->findOrFail($examId);
 
         // Transform the data to include instructions, questions, and correct answers
         $response = [
             'instruction' => $exam->instructions->instruction ?? 'No instructions available',
             'questions' => $exam->questions->map(function ($question) {
                 return [
-                    'question_id' => $question->id,
-                    'question_text' => $question->question,
+                    'id' => $question->id,  // Changed to 'id'
+                    'question' => $question->question,  // Changed to 'question'
+                    'question_type' => $question->type,  // Assuming a 'type' field exists
+                    'choices' => $question->choices,  // Assuming a 'choices' field exists for MCQs
                     'correct_answers' => $question->correctAnswers->map(function ($answer) {
                         return [
                             'correct_answer' => $answer->correct_answer,
@@ -1309,7 +1310,7 @@ public function getExamInstructionAndCorrectAnswers($examId)
 
         return response()->json([
             'success' => true,
-            'data' => $response
+            'questions' => $response  // Updated to match frontend expectations
         ], 200);
     } catch (\Exception $e) {
         return response()->json([
@@ -1318,6 +1319,5 @@ public function getExamInstructionAndCorrectAnswers($examId)
         ], 500);
     }
 }
-
 
 }
