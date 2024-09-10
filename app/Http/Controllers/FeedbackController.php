@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\FeedbackQuestion; // Model for feedback questions
 use App\Models\FeedbackOption; // Model for feedback options
 use App\Models\UserFeedback; // Model for user feedback
+use App\Models\Comment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
