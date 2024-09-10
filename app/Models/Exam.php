@@ -18,7 +18,6 @@ class Exam extends Model
         'start',
         'end',
         'points_exam',
-        'Direction',
         'status'
         
     ];
