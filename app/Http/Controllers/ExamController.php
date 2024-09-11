@@ -893,80 +893,81 @@ public function createExam(Request $request)
 public function addQuestionsToExam(Request $request, $examId)
 {
     $request->validate([
-        'instruction' => 'required|string',
-        'questions' => 'required|array',
-        'questions.*.question_type' => 'required|string',
-        'questions.*.question' => 'required|string',
-        'questions.*.choices' => 'nullable|array',
-        'questions.*.choices.*' => 'string', // Validate each choice
-        'questions.*.correct_answers' => 'nullable|array',
-        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
-        'questions.*.correct_answers.*.points' => 'nullable|integer',
-        //'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id', // Validate choice_id
+        'instructions' => 'required|array',
+        'instructions.*.instruction' => 'required|string',
+        'instructions.*.question_type' => 'required|string',
+        'instructions.*.questions' => 'required|array',
+        'instructions.*.questions.*.question' => 'required|string',
+        'instructions.*.questions.*.choices' => 'nullable|array',
+        'instructions.*.questions.*.choices.*' => 'string',
+        'instructions.*.questions.*.correct_answers' => 'nullable|array',
+        'instructions.*.questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'instructions.*.questions.*.correct_answers.*.points' => 'nullable|integer',
     ]);
 
     try {
         DB::beginTransaction();
 
-        $exam = Exam::findOrFail($examId); // Ensure the exam exists
+        $exam = Exam::findOrFail($examId);
 
         $totalPoints = 0;
         $totalQuestions = 0;
+        $groupedQuestions = [];
 
-        // Add instruction if provided
-        if ($request->has('instruction')) {
-            instructions::create([
+        foreach ($request->input('instructions') as $instructionData) {
+            $instruction = Instruction::create([
                 'schedule_id' => $examId,
-                'instruction' => $request->input('instruction')
-            ]);
-        }
-
-        // Create questions and correct answers
-        foreach ($request->input('questions') as $qData) {
-            $totalQuestions++;
-            $question = Question::create([
-                'tblschedule_id' => $exam->id,
-                'question_type' => $qData['question_type'],
-                'question' => $qData['question']
+                'instruction' => $instructionData['instruction'],
+                'question_type' => $instructionData['question_type'],
             ]);
 
-            // Map to store choice IDs
-            $choiceMap = [];
+            $groupedQuestions[$instructionData['question_type']] = [];
 
-            if (isset($qData['choices'])) {
-                foreach ($qData['choices'] as $index => $choice) {
-                    $newChoice = Choice::create([
-                        'tblquestion_id' => $question->id,
-                        'choices' => $choice
-                    ]);
-                    $choiceMap[$index] = $newChoice->id; // Store the ID in the map
+            foreach ($instructionData['questions'] as $qData) {
+                $totalQuestions++;
+
+                $question = Question::create([
+                    'tblschedule_id' => $exam->id,
+                    'question' => $qData['question'],
+                ]);
+
+                $choiceMap = [];
+
+                if (isset($qData['choices'])) {
+                    foreach ($qData['choices'] as $index => $choice) {
+                        $newChoice = Choice::create([
+                            'tblquestion_id' => $question->id,
+                            'choices' => $choice
+                        ]);
+                        $choiceMap[$index] = $newChoice->id;
+                    }
                 }
-            }
 
-            // Create correct answers if they exist
-            if (isset($qData['correct_answers'])) {
-                foreach ($qData['correct_answers'] as $ansData) {
-                    $points = $ansData['points'] ?? 0;
-                    $totalPoints += $points;
-            
-                    // Find the choice ID based on the correct answer text
-                    $correctAnswerChoiceId = null;
-                    if (isset($qData['choices'])) {
-                        foreach ($qData['choices'] as $index => $choice) {
-                            if ($choice === $ansData['correct_answer']) {
-                                $correctAnswerChoiceId = $choiceMap[$index] ?? null; // Get the corresponding choice ID
-                                break;
+                if (isset($qData['correct_answers'])) {
+                    foreach ($qData['correct_answers'] as $ansData) {
+                        $points = $ansData['points'] ?? 0;
+                        $totalPoints += $points;
+
+                        $correctAnswerChoiceId = null;
+                        if (isset($qData['choices'])) {
+                            foreach ($qData['choices'] as $index => $choice) {
+                                if ($choice === $ansData['correct_answer']) {
+                                    $correctAnswerChoiceId = $choiceMap[$index] ?? null;
+                                    break;
+                                }
                             }
                         }
+
+                        CorrectAnswer::create([
+                            'tblquestion_id' => $question->id,
+                            'addchoices_id' => $correctAnswerChoiceId,
+                            'correct_answer' => $ansData['correct_answer'] ?? null,
+                            'points' => $points
+                        ]);
                     }
-            
-                    CorrectAnswer::create([
-                        'tblquestion_id' => $question->id,
-                        'addchoices_id' => $correctAnswerChoiceId,
-                        'correct_answer' => $ansData['correct_answer'] ?? null,
-                        'points' => $points
-                    ]);
                 }
+
+                $groupedQuestions[$instructionData['question_type']][] = $question;
             }
         }
 
@@ -975,7 +976,8 @@ public function addQuestionsToExam(Request $request, $examId)
         return response()->json([
             'message' => 'Questions and instructions added successfully',
             'total_points' => $totalPoints,
-            'total_questions' => $totalQuestions
+            'total_questions' => $totalQuestions,
+            'grouped_questions' => $groupedQuestions,
         ], 201);
     } catch (\Exception $e) {
         DB::rollBack();
@@ -983,6 +985,7 @@ public function addQuestionsToExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
     }
 }
+
 
 public function getResultswithtestbank(Request $request, $examId)
 {
@@ -1078,15 +1081,16 @@ public function viewExam2updated($exam_id)
 
     // Check if the student is enrolled in the exam
     $isEnrolled = joinclass::where('user_id', $user->id)
-        ->exists(); // Add a condition if needed to check if the student is enrolled in the specific exam
+        ->where('exam_id', $exam_id) // Assuming you have an `exam_id` field to check specific enrollment
+        ->exists();
 
     if (!$isEnrolled) {
         return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
     }
 
     try {
-        // Retrieve the exam with questions and choices, but exclude correct answers
-        $exam = Exam::with(['instruction', 'questions.choices'])
+        // Retrieve the exam with instructions, questions, and choices
+        $exam = Exam::with(['instructions.questions.choices'])
             ->where('id', $exam_id)
             ->where('status', 1) // Check if the exam is published
             ->firstOrFail();
@@ -1094,47 +1098,55 @@ public function viewExam2updated($exam_id)
         // Initialize variables for tracking points and questions
         $totalPoints = 0;
         $selectedQuestions = collect();
+        $instructionsWithQuestions = [];
 
-        // Iterate over the questions, stopping when the points_exam limit is reached
-        foreach ($exam->questions as $question) {
-            // Get the correct answer associated with this question
-            $correctAnswer = \DB::table('correctanswer')
-                ->where('tblquestion_id', $question->id)
-                ->first();
+        foreach ($exam->instructions as $instruction) {
+            $instructionType = $instruction->question_type;
+            $questions = $instruction->questions;
 
-            $questionPoints = $correctAnswer ? $correctAnswer->points : 0;
+            foreach ($questions as $question) {
+                $correctAnswer = \DB::table('correctanswer')
+                    ->where('tblquestion_id', $question->id)
+                    ->first();
 
-            // Check if adding this question exceeds the points_exam limit
-            if ($totalPoints + $questionPoints > $exam->points_exam) {
-                break; // Stop adding questions if the limit is reached
+                $questionPoints = $correctAnswer ? $correctAnswer->points : 0;
+
+                if ($totalPoints + $questionPoints > $exam->points_exam) {
+                    break;
+                }
+
+                $totalPoints += $questionPoints;
+                $selectedQuestions->push($question);
             }
 
-            $totalPoints += $questionPoints;
-            $selectedQuestions->push($question);
+            $instructionsWithQuestions[] = [
+                'instruction' => $instruction->instruction,
+                'question_type' => $instructionType,
+                'questions' => $questions->map(function ($question) {
+                    $question->choices = $question->choices->shuffle();
+                    return $question;
+                }),
+            ];
         }
 
         // Shuffle the selected questions
         $shuffledQuestions = $selectedQuestions->shuffle();
 
-        // Shuffle the choices within each question
-        $shuffledQuestions->transform(function ($question) {
-            $question->choices = $question->choices->shuffle();
-            return $question;
-        });
-
-        // Attach the shuffled questions (with shuffled choices) back to the exam object
-        $exam->questions = $shuffledQuestions;
-
         return response()->json([
-            'exam' => $exam,
-            'total_items' => $shuffledQuestions->count(),
-            'total_points' => $totalPoints
+            'exam' => [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'instructions' => $instructionsWithQuestions,
+                'total_items' => $shuffledQuestions->count(),
+                'total_points' => $totalPoints
+            ]
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam details: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
     }
 }
+
 
 
 
@@ -1293,34 +1305,42 @@ public function updateExam(Request $request, $examId)
 public function getExamInstructionAndCorrectAnswers($examId)
 {
     try {
-        // Fetch the exam with its related instructions and questions
-        $exam = Exam::with(['instruction', 'questions.correctAnswers'])
+        // Fetch the exam with related instructions and questions, including choices and correct answers
+        $exam = Exam::with(['instructions.questions.choices', 'questions.correctAnswers'])
                     ->findOrFail($examId);
 
         \Log::info('Fetched exam data: ', $exam->toArray());
 
-        // Transform the data to include instructions, questions, and correct answers
-        $response = [
-            'instruction' => $exam->instruction->instruction ?? 'No instructions available',
-            'questions' => $exam->questions->map(function ($question) {
-                \Log::info('Processing question ID: ' . $question->id);
+        // Group questions by their instructions
+        $instructions = $exam->instructions->map(function ($instruction) {
+            return [
+                'instruction' => $instruction->instruction,
+                'question_type' => $instruction->question_type,
+                'questions' => $instruction->questions->map(function ($question) {
+                    \Log::info('Processing question ID: ' . $question->id);
 
-                return [
-                    'question_id' => $question->id,
-                    'question_text' => $question->question,
-                    'correct_answers' => $question->correctAnswers->map(function ($answer) {
-                        return [
-                            'correct_answer' => $answer->correct_answer,
-                            'points' => $answer->points
-                        ];
-                    })->toArray() ?? [] // Ensure it returns an empty array if null
-                ];
-            })->toArray() ?? [] // Ensure it returns an empty array if null
-        ];
+                    return [
+                        'question_id' => $question->id,
+                        'question_text' => $question->question,
+                        'choices' => $question->choices->map(function ($choice) {
+                            return [
+                                'choice' => $choice->choices
+                            ];
+                        })->toArray(),
+                        'correct_answers' => $question->correctAnswers->map(function ($answer) {
+                            return [
+                                'correct_answer' => $answer->correct_answer,
+                                'points' => $answer->points
+                            ];
+                        })->toArray() ?? [] // Ensure it returns an empty array if null
+                    ];
+                })->toArray() ?? [] // Ensure it returns an empty array if null
+            ];
+        })->toArray() ?? []; // Ensure it returns an empty array if null
 
         return response()->json([
             'success' => true,
-            'data' => $response
+            'data' => $instructions
         ], 200);
     } catch (\Exception $e) {
         \Log::error('Error fetching exam details: ' . $e->getMessage());
@@ -1328,6 +1348,125 @@ public function getExamInstructionAndCorrectAnswers($examId)
             'success' => false,
             'message' => 'Failed to fetch exam details. ' . $e->getMessage(),
         ], 500);
+    }
+}
+
+public function updateQuestionsInExam(Request $request, $examId)
+{
+    $request->validate([
+        'title' => 'nullable|string',
+        'quarter' => 'nullable|string',
+        'start' => 'nullable|date_format:Y-m-d H:i:s',
+        'end' => 'nullable|date_format:Y-m-d H:i:s',
+        'points_exam' => 'nullable|numeric',
+        'instructions' => 'nullable|array',
+        'instructions.*.id' => 'required|exists:instructions,id',
+        'instructions.*.instruction' => 'nullable|string',
+        'instructions.*.question_type' => 'nullable|string',
+        'questions' => 'nullable|array',
+        'questions.*.id' => 'nullable|exists:questions,id',
+        'questions.*.question_type' => 'required|string',
+        'questions.*.question' => 'required|string',
+        'questions.*.choices' => 'nullable|array',
+        'questions.*.choices.*' => 'string',
+        'questions.*.correct_answers' => 'nullable|array',
+        'questions.*.correct_answers.*.id' => 'nullable|exists:correct_answers,id',
+        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'questions.*.correct_answers.*.points' => 'nullable|integer',
+        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id',
+    ]);
+
+    try {
+        DB::beginTransaction();
+
+        $exam = Exam::findOrFail($examId);
+
+        // Update exam details if provided
+        $exam->update($request->only(['title', 'quarter', 'start', 'end', 'points_exam']));
+
+        $totalPoints = 0;
+        $totalQuestions = 0;
+
+        // Update instructions if provided
+        if ($request->has('instructions')) {
+            foreach ($request->input('instructions') as $instData) {
+                $instruction = Instruction::findOrFail($instData['id']);
+                $instruction->update([
+                    'instruction' => $instData['instruction'] ?? $instruction->instruction,
+                    'question_type' => $instData['question_type'] ?? $instruction->question_type
+                ]);
+            }
+        }
+
+        // Process each question
+        foreach ($request->input('questions', []) as $qData) {
+            $totalQuestions++;
+
+            if (isset($qData['id'])) {
+                // Update existing question
+                $question = Question::findOrFail($qData['id']);
+                $question->update([
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+            } else {
+                // Create new question
+                $question = Question::create([
+                    'tblschedule_id' => $exam->id,
+                    'question_type' => $qData['question_type'],
+                    'question' => $qData['question']
+                ]);
+            }
+
+            // Map to store choice IDs
+            $choiceMap = [];
+
+            if (isset($qData['choices'])) {
+                foreach ($qData['choices'] as $index => $choice) {
+                    // Update or create choices
+                    $choiceRecord = Choice::updateOrCreate(
+                        ['tblquestion_id' => $question->id, 'choices' => $choice],
+                        ['tblquestion_id' => $question->id, 'choices' => $choice]
+                    );
+                    $choiceMap[$index] = $choiceRecord->id; // Store the ID in the map
+                }
+            }
+
+            // Handle correct answers
+            if (isset($qData['correct_answers'])) {
+                foreach ($qData['correct_answers'] as $ansData) {
+                    $points = $ansData['points'] ?? 0;
+                    $totalPoints += $points;
+
+                    // Map correct answers to the choice IDs
+                    $correctAnswerChoiceId = isset($ansData['choice_id']) ? $choiceMap[$ansData['choice_id']] ?? null : null;
+
+                    // Update or create correct answer
+                    CorrectAnswer::updateOrCreate(
+                        [
+                            'tblquestion_id' => $question->id,
+                            'addchoices_id' => $correctAnswerChoiceId
+                        ],
+                        [
+                            'correct_answer' => $ansData['correct_answer'] ?? null,
+                            'points' => $points
+                        ]
+                    );
+                }
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Exam and related data updated successfully',
+            'total_points' => $totalPoints,
+            'total_questions' => $totalQuestions
+        ], 200);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Failed to update exam and related data: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update exam and related data.'], 500);
     }
 }
 
