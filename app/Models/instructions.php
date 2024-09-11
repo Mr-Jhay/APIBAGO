@@ -17,6 +17,7 @@ class instructions extends Model
     protected $fillable = [
         'schedule_id',
         'instruction',
+        'question_type',
         
     ];
 }

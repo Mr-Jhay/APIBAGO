@@ -13,8 +13,7 @@ class Question extends Model
 
     protected $fillable = [
         'tblschedule_id',
-        'question_type',
-        'question'
+        'question',
     ];
 
     public function choices()
