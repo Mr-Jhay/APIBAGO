@@ -34,7 +34,7 @@ class Exam extends Model
 
     public function instructions()
     {
-        return $this->hasOne(instructions::class, 'schedule_id', 'id');
+        return $this->hasOne(instructions::class, 'schedule_id', 'id','instruction','question_type');
     }
 
 

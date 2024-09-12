@@ -243,7 +243,7 @@ Route::delete('/exam/{exam_id}', [ExamController::class, 'deleteExam']);
 Route::post('/exams/publish2/{id}', [ExamController::class, 'publish2']);
 
 
-Route::patch('exam/{examId}/publish', [ExamController::class, 'publish']);
+//Route::patch('exam/{examId}/publish', [ExamController::class, 'publish']);
 
   
 
