@@ -917,7 +917,7 @@ public function addQuestionsToExam(Request $request, $examId)
         $groupedQuestions = [];
 
         foreach ($request->input('instructions') as $instructionData) {
-            $instruction = Instruction::create([
+            $instruction = instructions::create([
                 'schedule_id' => $examId,
                 'instruction' => $instructionData['instruction'],
                 'question_type' => $instructionData['question_type'],
