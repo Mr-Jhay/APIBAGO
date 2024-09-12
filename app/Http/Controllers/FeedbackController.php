@@ -134,31 +134,43 @@ class FeedbackController extends Controller
 
 
 
-            public function store(Request $request, $exam_id)
-        {
-            // Validate the request data
-            $validator = Validator::make($request->all(), [
-                'comment' => 'required|string|max:255',
-            ]);
-
-            // Return validation errors if any
-            if ($validator->fails()) {
-                return response()->json($validator->errors(), 400);
-            }
-
-            // Ensure the exam_id exists
-            if (!tblschedule::where('id', $exam_id)->exists()) {
-                return response()->json(['error' => 'Exam not found.'], 404);
-            }
-
+    public function commentfeedback(Request $request, $exam_id)
+    {
+        $user = auth()->user();
+    
+        // Validate the request data
+        $validator = Validator::make($request->all(), [
+            'comment' => 'required|string|max:255',
+        ]);
+    
+        // Return validation errors if any
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 400);
+        }
+    
+        // Ensure the exam exists in tblschedule table
+        $exam = tblschedule::find($exam_id);
+        if (!$exam) {
+            return response()->json(['error' => 'Exam not found.'], 404);
+        }
+    
+        try {
             // Create and save the comment
             $comment = new Comment();
-            $comment->user_id = Auth::id(); // Use the authenticated user's ID
+            $comment->user_id = $user->id; // Authenticated user's ID
             $comment->exam_id = $exam_id;
             $comment->comment = $request->input('comment');
             $comment->save();
-
+    
             // Return success response
-            return response()->json(['message' => 'Comment created successfully!', 'comment' => $comment], 201);
+            return response()->json([
+                'message' => 'Comment created successfully!',
+                'comment' => $comment
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error('Error saving comment: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create comment. Please try again later.'], 500);
         }
+    }
+    
 }
