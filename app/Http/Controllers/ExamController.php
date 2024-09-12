@@ -890,6 +890,8 @@ public function createExam(Request $request)
     }
 }
 
+
+//add questions to the exam 
 public function addQuestionsToExam(Request $request, $examId)
 {
     $request->validate([
@@ -987,6 +989,8 @@ public function addQuestionsToExam(Request $request, $examId)
 }
 
 
+
+//result sa test bank
 public function getResultswithtestbank(Request $request, $examId)
 {
     $user = auth()->user();
