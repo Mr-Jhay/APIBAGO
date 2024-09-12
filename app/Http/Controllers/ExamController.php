@@ -917,7 +917,7 @@ public function addQuestionsToExam(Request $request, $examId)
         $groupedQuestions = [];
 
         foreach ($request->input('instructions') as $instructionData) {
-            $instruction = instructions::create([
+            $instruction = Instructions::create([
                 'schedule_id' => $examId,
                 'instruction' => $instructionData['instruction'],
                 'question_type' => $instructionData['question_type'],
@@ -980,6 +980,7 @@ public function addQuestionsToExam(Request $request, $examId)
             'total_points' => $totalPoints,
             'total_questions' => $totalQuestions,
             'grouped_questions' => $groupedQuestions,
+            'submitted_data' => $request->all() // Return the setup body here
         ], 201);
     } catch (\Exception $e) {
         DB::rollBack();
@@ -987,6 +988,7 @@ public function addQuestionsToExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
     }
 }
+
 
 
 
