@@ -32,14 +32,15 @@ class Exam extends Model
         return $this->hasMany(Question::class, 'addchoices','id');
     }
 
-    public function instructionS()
+    public function instructions()
     {
         return $this->hasOne(instructions::class, 'schedule_id', 'id');
     }
-    public function instruction()
-    {
-        return $this->hasOne(instructions::class, 'schedule_id', 'id');
-    }
+
+
+    
+
+    
 
 
 

@@ -20,4 +20,10 @@ class instructions extends Model
         'question_type',
         
     ];
+
+    public function questions()
+    {
+        return $this->hasMany(Question::class, 'tblschedule_id', 'schedule_id');
+    }
+    
 }

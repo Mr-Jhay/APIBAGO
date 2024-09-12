@@ -20,6 +20,7 @@ use App\Mail\InvitationMail;
 use App\Mail\TestMail;
 use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Collection;
 
 class ExamController extends Controller
 {
@@ -1311,51 +1312,29 @@ public function updateExam(Request $request, $examId)
 public function getExamInstructionAndCorrectAnswers($examId)
 {
     try {
-        // Fetch the exam with related instructions and questions, including choices and correct answers
-        $exam = Exam::with(['instructions.questions.choices', 'questions.correctAnswers'])
-                    ->findOrFail($examId);
-
-        \Log::info('Fetched exam data: ', $exam->toArray());
-
-        // Group questions by their instructions
-        $instructions = $exam->instructions->map(function ($instruction) {
-            return [
-                'instruction' => $instruction->instruction,
-                'question_type' => $instruction->question_type,
-                'questions' => $instruction->questions->map(function ($question) {
-                    \Log::info('Processing question ID: ' . $question->id);
-
-                    return [
-                        'question_id' => $question->id,
-                        'question_text' => $question->question,
-                        'choices' => $question->choices->map(function ($choice) {
-                            return [
-                                'choice' => $choice->choices
-                            ];
-                        })->toArray(),
-                        'correct_answers' => $question->correctAnswers->map(function ($answer) {
-                            return [
-                                'correct_answer' => $answer->correct_answer,
-                                'points' => $answer->points
-                            ];
-                        })->toArray() ?? [] // Ensure it returns an empty array if null
-                    ];
-                })->toArray() ?? [] // Ensure it returns an empty array if null
-            ];
-        })->toArray() ?? []; // Ensure it returns an empty array if null
+        $exam = Exam::findOrFail($examId);
+        $instructions = Instructions::where('schedule_id', $examId)->with('questions.choices', 'questions.correctAnswers')->get();
 
         return response()->json([
-            'success' => true,
-            'data' => $instructions
+            'exam' => $exam,
+            'instructions' => $instructions,
         ], 200);
+
     } catch (\Exception $e) {
-        \Log::error('Error fetching exam details: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch exam details. ' . $e->getMessage(),
-        ], 500);
+        Log::error('Failed to retrieve exam questions: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam questions.'], 500);
     }
 }
+
+
+
+
+
+
+
+
+
+
 
 public function updateQuestionsInExam(Request $request, $examId)
 {

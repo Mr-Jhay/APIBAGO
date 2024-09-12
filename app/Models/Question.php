@@ -16,8 +16,8 @@ class Question extends Model
         'question',
     ];
 
-    public function choices()
-    {
+   public function choices()
+   {
         return $this->hasMany(Choice::class, 'tblquestion_id');
     }
 
@@ -29,5 +29,13 @@ class Question extends Model
 {
     return $this->belongsTo(Question::class, 'tblquestion_id');
 }
+public function instruction()
+{
+    return $this->belongsTo(instructions::class, 'tblschedule_id', 'schedule_id');
+}
+
+
+
+
     
 }
