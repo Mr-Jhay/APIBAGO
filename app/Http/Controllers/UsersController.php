@@ -414,6 +414,11 @@ public function getCounts()
             });
         });
 
+        // Count the number of students per strand
+        $strandCounts = $students->groupBy('strand_name')->map(function ($strand) {
+            return $strand->count();
+        });
+
         // Count the number of teachers, students, strands, and subjects
         $teacherCount = tblteacher::count();
         $studentCount = tblstudent::count();
@@ -451,7 +456,8 @@ public function getCounts()
                     'student_count' => $studentCount,
                     'male_student_count' => $maleStudentCount,
                     'female_student_count' => $femaleStudentCount,
-                ]
+                ],
+                'strand_counts' => $strandCounts,
             ]
         ], 200);
     } catch (\Exception $e) {
@@ -466,7 +472,6 @@ public function getCounts()
         ], 500);
     }
 }
-
 
 
 public function viewAllTeachers()
