@@ -1017,14 +1017,14 @@ public function getResultswithtestbank(Request $request, $examId)
     try {
         // Fetch the exam details
         $examSchedule = Exam::where('id', $examId)->firstOrFail();
+        $totalPossiblePoints = $examSchedule->points_exam; // Use points_exam from the examSchedule
 
         // Retrieve the student's answers for the specific exam
         $results = AnsweredQuestion::where('users_id', $user->id)
             ->whereHas('tblquestion', function ($query) use ($examId) {
-                // Filter questions by the exam schedule ID
                 $query->where('tblschedule_id', $examId);
             })
-            ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
+            ->with(['tblquestion', 'addchoices'])
             ->get();
 
         // Check if any results were found
@@ -1036,32 +1036,30 @@ public function getResultswithtestbank(Request $request, $examId)
         // Retrieve all correct answers for the questions in the exam
         $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
             ->get()
-            ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
+            ->keyBy('tblquestion_id');
 
         // Calculate points per question and total score
         $questionScores = $results->map(function ($result) use ($correctAnswers) {
             $correctAnswer = $correctAnswers->get($result->tblquestion_id);
-
-            // Compare Student's answer with the correct answer
             $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
             $points = $isCorrect ? $correctAnswer->points : 0;
 
             return [
                 'question' => $result->tblquestion->question,
-                'student_answer' => $result->Student_answer, // Assumes this is the actual answer text
+                'student_answer' => $result->Student_answer,
                 'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
-                'points_awarded' => $points, // Display the points awarded for this question
-                'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0, // Display total possible points for this question
+                'points_awarded' => $points,
+                'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0,
                 'is_correct' => $isCorrect
             ];
         });
 
-        // Calculate total score and use points_exam for total possible points
+        // Calculate total score
         $totalScore = $questionScores->sum('points_awarded');
-        $totalPossiblePoints = $examSchedule->points_exam; // Use points_exam from the examSchedule
+        $average = $totalPossiblePoints > 0 ? ($totalScore / $totalPossiblePoints) * 100 : 0; // Percentage
 
         // Calculate passing or failing status
-        $passingThreshold = $totalPossiblePoints * 0.50; // 50% of total possible points
+        $passingThreshold = $totalPossiblePoints * 0.75; // 75% of total possible points
         $status = $totalScore >= $passingThreshold ? 1 : 0;
 
         // Save or update the result in tblresult
@@ -1070,6 +1068,7 @@ public function getResultswithtestbank(Request $request, $examId)
             [
                 'total_score' => $totalScore,
                 'total_exam' => $totalPossiblePoints,
+                'average' => $average,
                 'status' => $status
             ]
         );
@@ -1078,13 +1077,14 @@ public function getResultswithtestbank(Request $request, $examId)
             'results' => $questionScores,
             'total_score' => $totalScore,
             'total_possible_points' => $totalPossiblePoints,
-            'status' => $status // Include pass/fail status
+            'status' => $status
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam results: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
     }
 }
+
 
 
 
