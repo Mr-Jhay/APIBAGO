@@ -7,8 +7,11 @@ use App\Models\FeedbackQuestion; // Model for feedback questions
 use App\Models\FeedbackOption; // Model for feedback options
 use App\Models\UserFeedback; // Model for user feedback
 use App\Models\Comment;
+use App\Models\Exam;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+
 
 class FeedbackController extends Controller
 {
@@ -149,7 +152,7 @@ class FeedbackController extends Controller
         }
     
         // Ensure the exam exists in tblschedule table
-        $exam = tblschedule::find($exam_id);
+        $exam = Exam::find($exam_id);
         if (!$exam) {
             return response()->json(['error' => 'Exam not found.'], 404);
         }
