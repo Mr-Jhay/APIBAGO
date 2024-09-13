@@ -17,4 +17,19 @@ class tblbank extends Model
         'correct_id',
         'Quarter',
     ];
+
+    public function question()
+    {
+        return $this->belongsTo(TblQuestion::class, 'question_id');
+    }
+
+    public function choices()
+    {
+        return $this->belongsTo(AddChoices::class, 'choice_id');
+    }
+
+    public function correct_answer()
+    {
+        return $this->belongsTo(CorrectAnswer::class, 'correct_id');
+    }
 }
