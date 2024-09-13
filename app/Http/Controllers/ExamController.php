@@ -1621,5 +1621,61 @@ public function getResultsallexam(Request $request)
 }
 
 
+public function getAllStudentResults(Request $request)
+{
+    try {
+        // Get the authenticated teacher
+        $teacher = Auth::user();
+
+        // Validate that classtable_id is provided in the request
+        $request->validate([
+            'classtable_id' => 'required|integer'
+        ]);
+
+        // Retrieve all student results for the specified class
+        $results = DB::table('tblresult')
+            ->join('users', 'tblresult.users_id', '=', 'users.id')
+            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
+            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id') // Join with class table
+            ->select(
+                'tblresult.id',
+                'users.lname AS student_name',
+                'tblschedule.title AS exam_title',
+                'tblschedule.classtable_id',  // Class ID
+                'tblresult.total_score',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('tblschedule.classtable_id', $request->classtable_id)  // Filter by class
+            ->where('tblclass.teacher_id', $teacher->id)  // Ensure the authenticated user is the teacher of this class
+            ->orderBy('users.lname', 'asc')  // Sort by student name (lname) alphabetically
+            ->get()
+            ->map(function ($result) {
+                // Transform status code to meaningful labels
+                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                return $result;
+            });
+
+        // Categorize results by exam_title
+        $categorizedResults = $results->groupBy('exam_title');
+
+        // Check if results are empty
+        if ($categorizedResults->isEmpty()) {
+            return response()->json(['message' => 'No exam results found for this class.'], 404);
+        }
+
+        return response()->json($categorizedResults, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to retrieve exam results. Please try again later.',
+            'exception' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
+
 
 }

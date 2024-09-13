@@ -318,6 +318,9 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  Route::get('showClasstotal', [tblclassController::class, 'showClasstotal']);
 
 
+ Route::get('getAllStudentResults', [ExamController::class, 'getAllStudentResults']);
+
+
 
    
    
