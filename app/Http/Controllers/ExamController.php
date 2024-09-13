@@ -1471,7 +1471,7 @@ public function updateQuestionsInExam(Request $request, $examId)
 }
 
 
-public function storetsetbank(Request $request)
+public function storetestbank(Request $request)
 {
     $validatedData = $request->validate([
         'schedule_id' => 'required|exists:tblschedule,id', // Get schedule ID from request
