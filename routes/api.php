@@ -154,6 +154,8 @@ Route::group([
   //pag store sa testbank
    Route::post('storetestbank', [ExamController::class, 'storetestbank']);
 
+   Route::get('viewTestBank', [ExamController::class, 'viewTestBank']);
+
     
 
 
