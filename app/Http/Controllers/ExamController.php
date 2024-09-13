@@ -1590,6 +1590,8 @@ public function getResultsallexam(Request $request)
                 'tblresult.id',
                 'users.lname AS student_name',
                 'tblschedule.title AS exam_title',
+                'tblschedule.start',
+                'tblschedule.end',
                 'tblschedule.classtable_id',  // Add classtable_id
                 'tblresult.total_score',
                 'tblresult.total_exam',
@@ -1642,6 +1644,8 @@ public function getAllStudentResults(Request $request)
                 'users.lname AS student_name',
                 'tblschedule.title AS exam_title',
                 'tblschedule.classtable_id',  // Class ID
+                'tblschedule.start',
+                'tblschedule.end',
                 'tblresult.total_score',
                 'tblresult.total_exam',
                 'tblresult.status',
