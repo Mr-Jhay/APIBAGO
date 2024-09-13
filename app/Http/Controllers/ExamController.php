@@ -1636,15 +1636,22 @@ public function getAllStudentResults(Request $request)
         ]);
 
         // Retrieve all student results for the specified class
-        $results = DB::table('tblresult')
-            ->join('users', 'tblresult.users_id', '=', 'users.id')
-            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
-            ->join('tblclass', 'tblschedule.classtable_id', '=', 'tblclass.id') // Join with class table
+        $results = DB::table('users')
+            ->leftJoin('joinclass', 'users.id', '=', 'joinclass.user_id') // Join with joinclass to get enrolled students
+            ->leftJoin('tblschedule', function ($join) use ($request) {
+                $join->on('tblschedule.classtable_id', '=', 'joinclass.class_id')
+                     ->where('tblschedule.classtable_id', $request->classtable_id); // Filter by class
+            })
+            ->leftJoin('tblresult', function ($join) {
+                $join->on('tblresult.users_id', '=', 'users.id')
+                     ->on('tblresult.exam_id', '=', 'tblschedule.id'); // Match results with students and exams
+            })
             ->select(
-                'tblresult.id',
+                'users.id AS student_id',
                 'users.lname AS student_name',
+                'users.fname',
+                'users.mname',
                 'tblschedule.title AS exam_title',
-                'tblschedule.classtable_id',  // Class ID
                 'tblschedule.start',
                 'tblschedule.end',
                 'tblresult.total_score',
@@ -1654,25 +1661,41 @@ public function getAllStudentResults(Request $request)
                 'tblresult.created_at',
                 'tblresult.updated_at'
             )
-            ->where('tblschedule.classtable_id', $request->classtable_id)  // Filter by class
-            ->where('tblclass.user_id', $teacher->id)  // Ensure the authenticated user is the teacher of this class
+            ->where('joinclass.class_id', $request->classtable_id)  // Filter by class
+            ->where('tblschedule.classtable_id', $request->classtable_id) // Ensure the schedule is in the correct class
+            ->where('joinclass.status', 1)  // Ensure the student is actively joined
+            ->where('tblschedule.id', '!=', null)  // Ensure schedule ID exists
             ->orderBy('users.lname', 'asc')  // Sort by student name (lname) alphabetically
             ->get()
             ->map(function ($result) {
                 // Transform status code to meaningful labels
-                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                $result->status = $result->status === null ? 'N/A' : ($result->status == 1 ? 'Passed' : 'Failed');
                 return $result;
             });
 
-        // Categorize results by exam_title
-        $categorizedResults = $results->groupBy('exam_title');
+        // Calculate total finished and unfinished students per exam
+        $resultsByExam = $results->groupBy('exam_title')->map(function ($examResults) {
+            $finishedStudentsCount = $examResults->where('status', 'Passed','Failed')->count();
+            $unfinishedStudentsCount = $examResults->where('status', 'N/A')->count();
+
+            return [
+                'exam_results' => $examResults,
+                'finished_students' => $finishedStudentsCount,
+                'unfinished_students' => $unfinishedStudentsCount
+            ];
+        });
 
         // Check if results are empty
-        if ($categorizedResults->isEmpty()) {
-            return response()->json(['message' => 'No exam results found for this class.'], 404);
+        if ($resultsByExam->isEmpty()) {
+            return response()->json([
+                'message' => 'No exam results found for this class.',
+                'results' => $resultsByExam
+            ], 404);
         }
 
-        return response()->json($categorizedResults, 200);
+        return response()->json([
+            'results' => $resultsByExam
+        ], 200);
     } catch (\Exception $e) {
         return response()->json([
             'error' => 'Failed to retrieve exam results. Please try again later.',
@@ -1680,6 +1703,11 @@ public function getAllStudentResults(Request $request)
         ], 500);
     }
 }
+
+
+
+
+
 
 
 
