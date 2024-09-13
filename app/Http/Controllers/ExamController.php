@@ -1623,7 +1623,7 @@ public function getResultsallexam(Request $request)
     }
 }
 
-
+//for teacher
 public function getAllStudentResults(Request $request)
 {
     try {
@@ -1655,7 +1655,7 @@ public function getAllStudentResults(Request $request)
                 'tblresult.updated_at'
             )
             ->where('tblschedule.classtable_id', $request->classtable_id)  // Filter by class
-            ->where('tblclass.teacher_id', $teacher->id)  // Ensure the authenticated user is the teacher of this class
+            ->where('tblclass.user_id', $teacher->id)  // Ensure the authenticated user is the teacher of this class
             ->orderBy('users.lname', 'asc')  // Sort by student name (lname) alphabetically
             ->get()
             ->map(function ($result) {
