@@ -1705,7 +1705,41 @@ public function getAllStudentResults(Request $request)
 }
 
 
+public function itemAnalysis (Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'examId' => 'required|integer|exists:exams,id',
+            'userId' => 'required|integer|exists:users,id',
+        ]);
 
+        $examId = $request->input('examId');
+        $userId = $request->input('userId');
+
+        // Fetch the exam details
+        $examSchedule = Exam::where('id', $examId)->firstOrFail();
+
+        // Retrieve the student's answers for the specific exam
+        $results = AnsweredQuestion::where('users_id', $userId)
+            ->whereHas('tblquestion', function ($query) use ($examId) {
+                // Filter questions by the exam schedule ID
+                $query->where('tblschedule_id', $examId);
+            })
+            ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
+            ->get();
+
+        // Retrieve correct answers for the questions involved in the exam
+        $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+            ->get()
+            ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
+
+        // Return the results as JSON
+        return response()->json([
+            'examSchedule' => $examSchedule,
+            'results' => $results,
+            'correctAnswers' => $correctAnswers,
+        ]);
+    }
 
 
 
