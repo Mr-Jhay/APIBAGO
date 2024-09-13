@@ -172,6 +172,8 @@ Route::group([
     Route::get('viewcuriculum3', [manage_curiculumController::class, 'viewCurriculum3']); 
     Route::get('getCurriculumDetails/{id}', [tblclassController::class, 'getCurriculumDetails']);
 
+   // Route::patch('/exam/{id}/archive', [ExamController::class, 'archiveExam']);
+
 
     //enter the class_id
     //Route::get('student/classroom-details/{class_id}', [tblclassController::class, 'getCurriculumDetails2']);

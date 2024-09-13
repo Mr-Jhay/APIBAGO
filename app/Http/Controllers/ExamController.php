@@ -108,6 +108,33 @@ class ExamController extends Controller
         }
     }
     
+    public function archiveExam($id)
+    {
+        try {
+            // Find the exam by its ID
+            $exam = Exam::findOrFail($id);
+
+            // Mark the exam as archived (assuming you have an 'archived' column in your table)
+            $exam->archived = true;
+
+            // Save the updated exam
+            $exam->save();
+
+            // Return success response
+            return response()->json([
+                'success' => true,
+                'message' => 'Exam archived successfully.',
+            ], 200);
+
+        } catch (\Exception $e) {
+            // Return error response if something goes wrong
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to archive exam: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
       // Create an exam with additional logic - addExam2
       public function addExam2(Request $request)
@@ -646,14 +673,8 @@ public function viewExamDetails2($exam_id)
             Log::error('Failed to retrieve exam results: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
         }
+    
     }
-    
-    
-
-    
-    
-
-    
 
     // Fetch all exams for a specific class
     public function getExams($class_id)
@@ -689,17 +710,6 @@ public function getPublishedExams($class_id) {
         return response()->json(['error' => 'Failed to retrieve exams.'], 500);
     }
 }
-
-    // Archive an exam
-    public function archiveExam($exam_id)
-    {
-        $exam = Exam::findOrFail($exam_id);
-        $exam->is_archived = true;
-        $exam->save();
-
-        return response()->json(['message' => 'Exam archived successfully']);
-    }
-
 
     // View all available exams for a student
 public function viewAllExams()
