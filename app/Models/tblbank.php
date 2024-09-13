@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class tblbank extends Model
 {
-    protected $table = 'studentexam';
+    protected $table = 'tblbank';
 
     protected $fillable = [
         'user_id',

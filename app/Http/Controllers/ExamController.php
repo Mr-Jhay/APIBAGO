@@ -12,6 +12,7 @@ use App\Models\Question;
 use App\Models\Choice;
 use App\Models\CorrectAnswer;
 use App\Models\tblclass;
+use App\Models\tblbank;
 use App\Models\studentexam;
 use App\Models\AnsweredQuestion;
 use Illuminate\Support\Facades\Mail;
@@ -1468,6 +1469,51 @@ public function updateQuestionsInExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to update exam and related data.'], 500);
     }
 }
+
+
+public function storetsetbank(Request $request)
+{
+    $validatedData = $request->validate([
+        'schedule_id' => 'required|exists:tblschedule,id', // Get schedule ID from request
+        'questions' => 'required|array',
+        'questions.*.question_id' => 'required|exists:tblquestion,id',
+        'questions.*.correct_id' => 'required|exists:correctanswer,id',
+        'questions.*.choices' => 'required|array',
+        'questions.*.choices.*.choice_id' => 'required|exists:addchoices,id',
+    ]);
+
+    // Get the authenticated user's ID
+    $userId = auth()->id();
+
+    // Find the tblschedule by its ID
+    $tblschedule = Exam::findOrFail($validatedData['schedule_id']);
+
+    // Get the quarter from tblschedule
+    $quarter = $tblschedule->quarter;
+
+    // Find the related tblclasstable by its ID in tblschedule
+    $classtableId = tblclass::findOrFail($tblschedule->classtable_id);
+
+    // Extract subject_id from tblclasstable
+    $subjectId = $classtableId->subject_id;
+
+    // Loop through the questions array and create TblBank entries
+    foreach ($validatedData['questions'] as $question) {
+        foreach ($question['choices'] as $choice) {
+            tblbank::create([
+                'user_id' => $userId, // Use authenticated user's ID
+                'subject_id' => $subjectId, // Insert subject_id from tblclasstable
+                'question_id' => $question['question_id'],
+                'choice_id' => $choice['choice_id'],
+                'correct_id' => $question['correct_id'], // Correct ID is now associated with the question
+                'Quarter' => $quarter, // Get quarter from tblschedule
+            ]);
+        }
+    }
+
+    return response()->json(['message' => 'Records created successfully'], 201);
+}
+
 
 
 
