@@ -12,6 +12,7 @@ use App\Models\Question;
 use App\Models\Choice;
 use App\Models\CorrectAnswer;
 use App\Models\tblclass;
+use App\Models\tblbank;
 use App\Models\studentexam;
 use App\Models\AnsweredQuestion;
 use Illuminate\Support\Facades\Mail;
@@ -1468,6 +1469,97 @@ public function updateQuestionsInExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to update exam and related data.'], 500);
     }
 }
+
+
+public function storetestbank(Request $request)
+{
+    $validatedData = $request->validate([
+        'schedule_id' => 'required|exists:tblschedule,id', // Get schedule ID from request
+        'questions' => 'required|array',
+        'questions.*.question_id' => 'required|exists:tblquestion,id',
+        'questions.*.correct_id' => 'required|exists:correctanswer,id',
+        'questions.*.choices' => 'required|array',
+        'questions.*.choices.*.choice_id' => 'required|exists:addchoices,id',
+    ]);
+
+    // Get the authenticated user's ID
+    $userId = auth()->id();
+
+    // Find the tblschedule by its ID
+    $tblschedule = Exam::findOrFail($validatedData['schedule_id']);
+
+    // Get the quarter from tblschedule
+    $quarter = $tblschedule->quarter;
+
+    // Find the related tblclasstable by its ID in tblschedule
+    $classtableId = tblclass::findOrFail($tblschedule->classtable_id);
+
+    // Extract subject_id from tblclasstable
+    $subjectId = $classtableId->subject_id;
+
+    // Loop through the questions array and create TblBank entries
+    foreach ($validatedData['questions'] as $question) {
+        foreach ($question['choices'] as $choice) {
+            tblbank::create([
+                'user_id' => $userId, // Use authenticated user's ID
+                'subject_id' => $subjectId, // Insert subject_id from tblclasstable
+                'question_id' => $question['question_id'],
+                'choice_id' => $choice['choice_id'],
+                'correct_id' => $question['correct_id'], // Correct ID is now associated with the question
+                'Quarter' => $quarter, // Get quarter from tblschedule
+            ]);
+        }
+    }
+
+    return response()->json(['message' => 'Records created successfully'], 201);
+}
+
+
+public function viewTestBank(Request $request)
+{
+    // Validate that schedule_id is present in the request
+    $request->validate([
+        'schedule_id' => 'required|exists:tblschedule,id'
+    ]);
+
+    // Get the authenticated user's ID
+    $userId = auth()->id(); // Automatically get the authenticated user's ID
+
+    // Retrieve schedule_id directly from the validated request
+    $scheduleId = $request->validated()['schedule_id'];
+
+    // Find the tblschedule by its ID
+    $tblschedule = Exam::findOrFail($scheduleId);
+
+    // Get the quarter from tblschedule
+    $quarter = $tblschedule->quarter;
+
+    // Find the related tblclasstable by its ID in tblschedule
+    $classtable = tblclass::findOrFail($tblschedule->classtable_id);
+
+    // Extract subject_id from tblclasstable
+    $subjectId = $classtable->subject_id;
+
+    // Optional filter for quarter
+    $filterQuarter = $request->query('quarter', $quarter); // Default to quarter from tblschedule if not provided
+
+    // Build the query
+    $query = tblbank::with(['question', 'choices', 'correct_answer']) // Use Eloquent relationships for eager loading
+                ->where('user_id', $userId) // Filter by authenticated user's ID
+                ->where('subject_id', $subjectId); // Filter by derived subject_id
+
+    // Apply optional filter for quarter if provided
+    if ($filterQuarter) {
+        $query->where('Quarter', $filterQuarter);
+    }
+
+    // Get all results (without pagination)
+    $testBankRecords = $query->get();
+
+    // Return the result as JSON
+    return response()->json($testBankRecords);
+}
+
 
 
 

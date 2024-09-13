@@ -148,6 +148,14 @@ Route::group([
    Route::put('updateExam/{id}', [ExamController::class, 'updateExam']);
 //pag view nung nagawana bagong questions
    Route::get('getExamInstructionAndCorrectAnswers/{id}', [ExamController::class, 'getExamInstructionAndCorrectAnswers']);
+
+
+
+  //pag store sa testbank
+   Route::post('storetestbank', [ExamController::class, 'storetestbank']);
+
+   Route::get('viewTestBank', [ExamController::class, 'viewTestBank']);
+
     
 
 
