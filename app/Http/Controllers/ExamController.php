@@ -1594,6 +1594,7 @@ public function getResultsallexam(Request $request)
                 'tblschedule.end',
                 'tblschedule.classtable_id',  // Add classtable_id
                 'tblresult.total_score',
+                'tblresult.average',
                 'tblresult.total_exam',
                 'tblresult.status',
                 'tblresult.created_at',
@@ -1647,6 +1648,7 @@ public function getAllStudentResults(Request $request)
                 'tblschedule.start',
                 'tblschedule.end',
                 'tblresult.total_score',
+                'tblresult.average',
                 'tblresult.total_exam',
                 'tblresult.status',
                 'tblresult.created_at',
