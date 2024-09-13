@@ -1570,6 +1570,55 @@ public function viewTestBank(Request $request)
     return response()->json($testBankRecords);
 }
 
+//pag view ng exam sa student side
+public function getResultsallexam(Request $request)
+{
+    try {
+        // Get the authenticated user
+        $user = Auth::user();
+
+        // Validate that classtable_id is provided in the request
+        $request->validate([
+            'classtable_id' => 'required|integer'
+        ]);
+
+        // Retrieve results specific to the authenticated user and the class
+        $results = DB::table('tblresult')
+            ->join('users', 'tblresult.users_id', '=', 'users.id')
+            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
+            ->select(
+                'tblresult.id',
+                'users.lname AS student_name',
+                'tblschedule.title AS exam_title',
+                'tblschedule.classtable_id',  // Add classtable_id
+                'tblresult.total_score',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('tblresult.users_id', $user->id)  // Filter by authenticated user
+            ->where('tblschedule.classtable_id', $request->classtable_id)  // Filter by classtable_id from the request
+            ->get()
+            ->map(function ($result) {
+                // Transform status code to meaningful labels
+                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                return $result;
+            });
+
+        // Check if results are empty
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No exam results found for this user in this class.'], 404);
+        }
+
+        return response()->json($results, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to retrieve exam results. Please try again later.',
+            'exception' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 
