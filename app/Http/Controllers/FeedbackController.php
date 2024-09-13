@@ -176,4 +176,49 @@ class FeedbackController extends Controller
         }
     }
     
+
+
+    public function getComments(Request $request)
+{
+    try {
+        // Validate the request data
+        $request->validate([
+            'classtable_id' => 'required|integer'
+        ]);
+
+        $teacher = Auth::user();
+
+        // Retrieve comments and associated student details for the specified class
+        $results = DB::table('tblschedule')
+            ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.class_id')
+            ->join('users', 'joinclass.user_id', '=', 'users.id')
+            ->leftJoin('tblcomment', function ($join) {
+                $join->on('tblcomment.users_id', '=', 'users.id')
+                     ->on('tblcomment.exam_id', '=', 'tblschedule.id');
+            })
+            ->select(
+                'users.id AS student_id',
+                'users.lname AS student_name',
+                'users.fname',
+                'users.mname',
+                'tblcomment.comment'
+            )
+            ->where('tblschedule.classtable_id', $request->classtable_id) // Filter by class
+            ->where('joinclass.status', 1) // Ensure the student is actively joined
+            ->orderBy('users.lname', 'asc') // Sort by student name (lname) alphabetically
+            ->get();
+
+        // Group by student
+        $groupedResults = $results->groupBy('student_id');
+
+        return response()->json([
+            'comments' => $groupedResults
+        ], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Error retrieving comments: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve comments. Please try again later.'], 500);
+    }
+}
+
 }

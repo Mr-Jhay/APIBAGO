@@ -320,6 +320,8 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
  Route::get('getAllStudentResults', [ExamController::class, 'getAllStudentResults']);
 
+ Route::get('getComments', [FeedbackController::class, 'getComments']); //getComments
+
 
 
    
