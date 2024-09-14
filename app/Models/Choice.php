@@ -24,5 +24,11 @@ class Choice extends Model
 {
     return $this->belongsTo(instructions::class, 'tblschedule_id', 'schedule_id');
 }
+
+public function correctAnswers()
+{
+    return $this->hasOne(CorrectAnswer::class, 'tblquestion_id', 'tblquestion_id')
+        ->where('addchoices_id', $this->addchoices_id);
+}
 }
  

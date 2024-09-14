@@ -1417,20 +1417,26 @@ public function updateExam(Request $request, $examId)
 
 
 
-public function getExamInstructionAndCorrectAnswers($examId)
+public function getExamInstructionAndCorrectAnswers($exam_id)
 {
     try {
-        $exam = Exam::findOrFail($examId);
-        $instructions = Instructions::where('schedule_id', $examId)->with('questions.choices', 'questions.correctAnswers')->get();
+       // $exam = Exam::findOrFail($examId);
+
+       $instructions = Exam::with(['instructions.questions.choices'])
+       ->where('id', $exam_id)
+       ->where('status', 1) // Check if the exam is published
+       ->get();
+
+       // $instructions = Instructions::where('schedule_id', $examId)->with(['questions.choices.correctAnswers'])->get();
 
         return response()->json([
-            'exam' => $exam,
+         //   'exam' => $exam,
             'instructions' => $instructions,
         ], 200);
 
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam questions: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam questions.'], 500);
+        return response()->json(['error' => 'Failed to retrieve exam questions.'. $e->getMessage()], 500);
     }
 }
 
