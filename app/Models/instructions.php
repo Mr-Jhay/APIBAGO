@@ -30,5 +30,10 @@ class instructions extends Model
     {
         return $this->hasMany(Question::class, 'tblschedule_id', 'schedule_id');
     }
+
+    public function choices()
+    {
+         return $this->hasMany(Choice::class, 'tblquestion_id');
+     }
     
 }

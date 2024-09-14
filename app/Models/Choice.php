@@ -19,5 +19,10 @@ class Choice extends Model
     {
         return $this->belongsTo(Question::class, 'tblquestion_id');
     }
+
+    public function instruction()
+{
+    return $this->belongsTo(instructions::class, 'tblschedule_id', 'schedule_id');
+}
 }
  
