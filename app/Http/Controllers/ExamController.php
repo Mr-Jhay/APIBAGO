@@ -1578,19 +1578,32 @@ public function storetestbank(Request $request)
     // Loop through the questions array and create TblBank entries
     foreach ($validatedData['questions'] as $question) {
         foreach ($question['choices'] as $choice) {
-            tblbank::create([
-                'user_id' => $userId, // Use authenticated user's ID
-                'subject_id' => $subjectId, // Insert subject_id from tblclasstable
-                'question_id' => $question['question_id'],
-                'choice_id' => $choice['choice_id'] ?? null, // choice_id can be null
-                'correct_id' => $question['correct_id'], // Correct ID is now associated with the question
-                'Quarter' => $quarter, // Get quarter from tblschedule
-            ]);
+            // Check if the record already exists
+            $existingRecord = tblbank::where('user_id', $userId)
+                ->where('subject_id', $subjectId)
+                ->where('question_id', $question['question_id'])
+                ->where('choice_id', $choice['choice_id'] ?? null)
+                ->where('correct_id', $question['correct_id'])
+                ->where('Quarter', $quarter)
+                ->exists();
+
+            // Create the record only if it does not already exist
+            if (!$existingRecord) {
+                tblbank::create([
+                    'user_id' => $userId, // Use authenticated user's ID
+                    'subject_id' => $subjectId, // Insert subject_id from tblclasstable
+                    'question_id' => $question['question_id'],
+                    'choice_id' => $choice['choice_id'] ?? null, // choice_id can be null
+                    'correct_id' => $question['correct_id'], // Correct ID is now associated with the question
+                    'Quarter' => $quarter, // Get quarter from tblschedule
+                ]);
+            }
         }
     }
 
     return response()->json(['message' => 'Records created successfully'], 201);
 }
+
 
 
 
