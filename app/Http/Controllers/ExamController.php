@@ -1683,7 +1683,7 @@ public function getAllStudentResults(Request $request)
 
         // Calculate total finished and unfinished students per exam
         $resultsByExam = $results->groupBy('exam_title')->map(function ($examResults) {
-            $finishedStudentsCount = $examResults->where('status', 'Passed')->count();
+            $finishedStudentsCount = $examResults->where('status', 'Passed','Failed')->count();
             $unfinishedStudentsCount = $examResults->where('status', 'N/A')->count();
             $allScores = $examResults->map(function ($result) {
                 return [
