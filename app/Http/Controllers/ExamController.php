@@ -1551,15 +1551,13 @@ public function updateQuestionsInExam(Request $request, $examId)
 
 public function storetestbank(Request $request)
 {
-    \Log::info('Incoming request data:', $request->all());
-    
     $validatedData = $request->validate([
         'schedule_id' => 'required|exists:tblschedule,id', // Get schedule ID from request
         'questions' => 'required|array',
         'questions.*.question_id' => 'required|exists:tblquestion,id',
         'questions.*.correct_id' => 'required|exists:correctanswer,id',
         'questions.*.choices' => 'required|array',
-        'questions.*.choices.*.choice_id' => 'nullable|exists:addchoices,id',
+        'questions.*.choices.*.choice_id' => 'nullable|exists:addchoices,id', // choice_id is now nullable
     ]);
 
     // Get the authenticated user's ID
@@ -1584,7 +1582,7 @@ public function storetestbank(Request $request)
                 'user_id' => $userId, // Use authenticated user's ID
                 'subject_id' => $subjectId, // Insert subject_id from tblclasstable
                 'question_id' => $question['question_id'],
-                'choice_id' => $choice['choice_id'],
+                'choice_id' => $choice['choice_id'] ?? null, // choice_id can be null
                 'correct_id' => $question['correct_id'], // Correct ID is now associated with the question
                 'Quarter' => $quarter, // Get quarter from tblschedule
             ]);
@@ -1593,6 +1591,7 @@ public function storetestbank(Request $request)
 
     return response()->json(['message' => 'Records created successfully'], 201);
 }
+
 
 
 public function viewTestBank(Request $request)
