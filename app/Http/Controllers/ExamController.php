@@ -1162,6 +1162,74 @@ public function viewExam2updated($exam_id)
 
 
 
+public function viewExam2updated2($exam_id)
+{
+    $user = auth()->user();
+
+    // Ensure only students can view exams
+    if ($user->usertype !== 'student') {
+        return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+    }
+
+    // Check if the student is enrolled in the exam
+    $isEnrolled = joinclass::where('user_id', $user->id)
+        ->exists(); // Add a condition if needed to check if the student is enrolled in the specific exam
+
+    if (!$isEnrolled) {
+        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
+    }
+
+    try {
+        // Retrieve the exam with instructions, questions, and choices, but exclude correct answers
+        $exam = Exam::with(['instructions.questions.choices'])
+            ->where('id', $exam_id)
+            ->where('status', 1) // Check if the exam is published
+            ->firstOrFail();
+
+        // Initialize variables for tracking points and questions
+        $totalPoints = 0;
+        $selectedQuestions = collect();
+
+        // Iterate over the questions, stopping when the points_exam limit is reached
+        foreach ($exam->instructions->questions as $question) {
+            // Get the correct answer associated with this question
+            $correctAnswer = \DB::table('correctanswer')
+                ->where('tblquestion_id', $question->id)
+                ->first();
+
+            $questionPoints = $correctAnswer ? $correctAnswer->points : 0;
+
+            // Check if adding this question exceeds the points_exam limit
+            if ($totalPoints + $questionPoints > $exam->points_exam) {
+                break; // Stop adding questions if the limit is reached
+            }
+
+            $totalPoints += $questionPoints;
+            $selectedQuestions->push($question);
+        }
+
+        // Shuffle the selected questions
+        $shuffledQuestions = $selectedQuestions->shuffle();
+
+        // Shuffle the choices within each question
+        $shuffledQuestions->transform(function ($question) {
+            $question->choices = $question->choices->shuffle();
+            return $question;
+        });
+
+        // Attach the shuffled questions (with shuffled choices) back to the exam object
+        $exam->instructions->questions = $shuffledQuestions;
+
+        return response()->json([
+            'exam' => $exam,
+            'total_items' => $shuffledQuestions->count(),
+            'total_points' => $totalPoints
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam details: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+    }
+}
 
 
 

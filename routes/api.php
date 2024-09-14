@@ -376,5 +376,8 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('getResultswithtestbank/{id}', [ExamController::class, 'getResultswithtestbank']);//pag view the result
 
     Route::post('commentfeedback/{id}', [FeedbackController::class, 'commentfeedback']);//pag submit ng exam
+
+
+    Route::get('viewExam2updated2/{id}', [ExamController::class, 'viewExam2updated2']);//pag view ng student sa exam then meron ng suffle testbank2
  
 });
