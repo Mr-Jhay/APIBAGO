@@ -78,7 +78,7 @@ class tblclassController extends Controller
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve all classes created by this teacher with related data
-            $classes = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year'])  // Adjust the relations based on your models
+            $classes = tblclass::with(['strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
                             ->where('user_id', $user->id)
                             ->get();
 
@@ -102,7 +102,7 @@ class tblclassController extends Controller
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve the class created by this teacher with related data
-            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+            $class = tblclass::with(['strand', 'section', 'subject', 'year']) // Adjust relations as necessary
                             ->where('id', $class_id)
                             ->where('user_id', $user->id) // Ensure class belongs to the teacher
                             ->first();
