@@ -25,7 +25,7 @@ class tblbank extends Model
 
     public function choices()
     {
-        return $this->belongsTo(AddChoices::class, 'choice_id');
+        return $this->belongsTo(Choice::class, 'choice_id');
     }
 
     public function correct_answer()
