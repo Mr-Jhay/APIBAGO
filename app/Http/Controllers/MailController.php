@@ -19,33 +19,52 @@ class MailController extends Controller
     * @param Request $request
     * @return \Illuminate\Http\JsonResponse
     */
-   public function sendInvitation(Request $request)
-   {
-       // Validate the request data
-       $validated = $request->validate([
-           'email' => 'required|email',
-           'name' => 'required|string',
-       ]);
 
-       // Prepare email details
-       $details = [
-           'name' => $validated['name'],
-       ];
-
-       try {
-           // Send the email
-           Mail::to($validated['email'])->send(new InvitationMail($details));
-           
-           // Return a success response
-           return response()->json(['message' => 'Email sent successfully.'], 200);
-       } catch (\Exception $e) {
-           // Log the error for debugging
-           Log::error('Failed to send invitation email', ['error' => $e->getMessage()]);
-           
-           // Return an error response
-           return response()->json(['message' => 'Failed to send email.'], 500);
+       public function sendInvitation(Request $request)
+       {
+           $validated = $request->validate([
+               'email' => 'required|email',
+               'name' => 'required|string',
+           ]);
+   
+           $details = ['name' => $validated['name']];
+   
+           try {
+               Mail::to($validated['email'])->send(new InvitationMail($details));
+   
+               return response()->json(['message' => 'Invitation email sent successfully'], 200);
+           } catch (\Exception $e) {
+               Log::error('Failed to send invitation email', ['error' => $e->getMessage()]);
+   
+               return response()->json(['message' => 'Failed to send email.'], 500);
+           }
        }
-   }
+   
+       /**
+        * Send invitation by email.
+        */
+       public function inviteStudentByEmail(Request $request)
+       {
+           $validated = $request->validate([
+               'email' => 'required|email',
+               'name' => 'required|string',
+           ]);
+   
+           $details = [
+               'name' => $validated['name'],
+           ];
+   
+           try {
+               Mail::to($validated['email'])->send(new InvitationMail($details));
+   
+               return response()->json(['message' => 'Invitation email sent successfully']);
+           } catch (\Exception $e) {
+               Log::error('Failed to send invitation email', ['error' => $e->getMessage()]);
+   
+               return response()->json(['message' => 'Failed to send email.'], 500);
+           }
+       }
+   
 
    public function sendWelcomeMail(Request $request)
    {

@@ -1483,6 +1483,8 @@ public function updateQuestionsInExam(Request $request, $examId)
 
 public function storetestbank(Request $request)
 {
+    \Log::info('Incoming request data:', $request->all());
+    
     $validatedData = $request->validate([
         'schedule_id' => 'required|exists:tblschedule,id', // Get schedule ID from request
         'questions' => 'required|array',

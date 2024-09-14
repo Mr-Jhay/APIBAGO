@@ -45,6 +45,8 @@ Route::post('sendSms2', [smsController::class, 'sendSms2']);
 
 Route::post('/send-welcome-mail', [MailController::class, 'sendWelcomeMail']);
 
+Route::post('/inviteStudentByEmail', [MailController::class, 'inviteStudentByEmail']);
+
 
 //EmailController
 Route::group([
