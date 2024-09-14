@@ -323,6 +323,11 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  Route::get('getComments', [FeedbackController::class, 'getComments']); //getComments
 
 
+ //item analysis
+ Route::get('itemAnalysis', [ExamController::class, 'itemAnalysis']);
+ 
+
+
 
    
    
