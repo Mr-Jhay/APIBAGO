@@ -42,4 +42,9 @@ class AnsweredQuestion extends Model
 {
     return $this->belongsTo(Choice::class, 'addchoices_id');
 }
+
+public function choice()
+{
+    return $this->belongsTo(Choice::class, 'correctanswer_id');
+}
 }
