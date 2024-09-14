@@ -938,6 +938,18 @@ public function addQuestionsToExam(Request $request, $examId)
             $groupedQuestions[$instructionData['question_type']] = [];
 
             foreach ($instructionData['questions'] as $qData) {
+                // Check if the question already exists in the exam for this instruction
+                $existingQuestion = Question::where('tblschedule_id', $exam->id)
+                    ->where('question', $qData['question'])
+                    ->exists();
+
+                if ($existingQuestion) {
+                    // If the question already exists, skip adding it and log the occurrence
+                    Log::info("Duplicate question found for exam ID {$exam->id}: " . $qData['question']);
+                    continue;  // Skip this question to prevent duplicates
+                }
+
+                // Proceed with adding the new question
                 $totalQuestions++;
 
                 $question = Question::create([
@@ -947,6 +959,7 @@ public function addQuestionsToExam(Request $request, $examId)
 
                 $choiceMap = [];
 
+                // Add choices if they exist
                 if (isset($qData['choices'])) {
                     foreach ($qData['choices'] as $index => $choice) {
                         $newChoice = Choice::create([
@@ -957,6 +970,7 @@ public function addQuestionsToExam(Request $request, $examId)
                     }
                 }
 
+                // Add correct answers if they exist
                 if (isset($qData['correct_answers'])) {
                     foreach ($qData['correct_answers'] as $ansData) {
                         $points = $ansData['points'] ?? 0;
@@ -1000,6 +1014,7 @@ public function addQuestionsToExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to add questions and instructions.'], 500);
     }
 }
+
 
 
 
