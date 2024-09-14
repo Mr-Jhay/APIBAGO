@@ -1690,6 +1690,9 @@ public function getAllStudentResults(Request $request)
                     'student_id' => $result->student_id,
                     'student_name' => $result->student_name,
                     'total_score' => $result->total_score,
+                    'total_exam' => $result->total_exam,
+                    'exam_start' => $result->start,
+                    'exam_end' => $result->end,
                     'status' => $result->status
                 ];
             });
@@ -1711,6 +1714,7 @@ public function getAllStudentResults(Request $request)
         ], 500);
     }
 }
+
 
 
 public function itemAnalysis(Request $request)
