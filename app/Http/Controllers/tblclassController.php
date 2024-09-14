@@ -453,7 +453,7 @@ public function getSingleClassroomDetails($class_id)
             $class_id = $this->getClassIdForTeacher($user->id);
 
             // Retrieve the class created by this teacher with related data
-            $class = tblclass::with(['strand', 'section', 'subject', 'curriculum', 'year']) // Adjust relations as necessary
+            $class = tblclass::with(['strand', 'section', 'subject', 'year']) // Adjust relations as necessary
                             ->where('id', $class_id)
                             ->where('user_id', $user->id)
                             ->first();
