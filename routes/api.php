@@ -48,6 +48,8 @@ Route::post('/send-welcome-mail', [MailController::class, 'sendWelcomeMail']);
 Route::post('/inviteStudentByEmail', [MailController::class, 'inviteStudentByEmail']);
 
 
+
+
 //EmailController
 Route::group([
     "middleware" => "auth:sanctum"
