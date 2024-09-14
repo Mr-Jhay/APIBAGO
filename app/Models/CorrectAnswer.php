@@ -25,4 +25,8 @@ class CorrectAnswer extends Model
     {
         return $this->belongsTo(Question::class, 'tblquestion_id');
     }
+    public function choices()
+    {
+         return $this->hasMany(Choice::class, 'tblquestion_id');
+     }
 }

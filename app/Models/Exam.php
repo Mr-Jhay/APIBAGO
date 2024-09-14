@@ -36,7 +36,10 @@ class Exam extends Model
     {
         return $this->hasOne(instructions::class, 'schedule_id', 'id','instruction','question_type');
     }
-
+    public function correctAnswers() // Change from correctAnswer to correctAnswers
+    {
+        return $this->hasMany(CorrectAnswer::class, 'tblquestion_id');
+    }
 
     
 

@@ -1422,7 +1422,7 @@ public function getExamInstructionAndCorrectAnswers($exam_id)
     try {
        // $exam = Exam::findOrFail($examId);
 
-       $instructions = Exam::with(['instructions.questions.choices'])
+       $instructions = Exam::with('instructions.questions.choices.correctAnswers','instructions.questions.correctAnswers')
        ->where('id', $exam_id)
        ->where('status', 1) // Check if the exam is published
        ->get();
