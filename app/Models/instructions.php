@@ -21,6 +21,11 @@ class instructions extends Model
         
     ];
 
+
+    public function exam()
+    {
+        return $this->belongsTo(Exam::class,'schedule_id','id');
+    }
     public function questions()
     {
         return $this->hasMany(Question::class, 'tblschedule_id', 'schedule_id');

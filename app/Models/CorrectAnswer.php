@@ -21,4 +21,8 @@ class CorrectAnswer extends Model
     {
         return $this->belongsTo(Question::class, 'tblquestion_id');
     }
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'tblquestion_id');
+    }
 }
