@@ -1722,7 +1722,7 @@ public function itemAnalysis(Request $request)
     // Retrieve all students in the class
     $students = joinclass::where('class_id', $classId)
         ->where('status', 1) // Only get active students
-        ->with('user') // Assuming you have a relation to the user model
+        ->with('user') // Load the related user model
         ->get();
 
     // Array to hold the comparison data and counts per question
@@ -1731,14 +1731,14 @@ public function itemAnalysis(Request $request)
 
     // Retrieve all questions for the exam
     $questions = Question::where('tblschedule_id', $examId)
-        ->with('addchoices') // Include possible choices for each question
+        ->with('choices') // Load choices for each question
         ->get();
 
     // Initialize counters for each question and its choices
     foreach ($questions as $question) {
         // Initialize choice count for each question's choices
         $choiceCounts = [];
-        foreach ($question->addchoices as $choice) {
+        foreach ($question->choices as $choice) {
             $choiceCounts[$choice->id] = [
                 'choice' => $choice->choices,
                 'count' => 0, // Initialize each choice's selection count
@@ -1763,7 +1763,7 @@ public function itemAnalysis(Request $request)
                 // Filter questions by the exam schedule ID
                 $query->where('tblschedule_id', $examId);
             })
-            ->with(['tblquestion', 'addchoices']) // Load related question and student's selected choices
+            ->with(['tblquestion', 'choices']) // Load related question and student's selected choices
             ->get();
 
         // Retrieve correct answers for the questions involved in the exam
@@ -1808,6 +1808,7 @@ public function itemAnalysis(Request $request)
         'questionAnalysis' => $questionAnalysis, // Correct and incorrect counts per question with choice counts
     ]);
 }
+
 
 
 
