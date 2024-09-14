@@ -1705,19 +1705,57 @@ public function getAllStudentResults(Request $request)
 }
 
 
-public function itemAnalysis (Request $request)
-    {
-        // Validate the request
-        $request->validate([
-            'examId' => 'required|integer|exists:exams,id',
-            'userId' => 'required|integer|exists:users,id',
-        ]);
+public function itemAnalysis(Request $request)
+{
+    // Validate the request
+    $request->validate([
+        'examId' => 'required|integer',
+        'classId' => 'required|integer'
+    ]);
 
-        $examId = $request->input('examId');
-        $userId = $request->input('userId');
+    $examId = $request->input('examId');
+    $classId = $request->input('classId');
 
-        // Fetch the exam details
-        $examSchedule = Exam::where('id', $examId)->firstOrFail();
+    // Fetch the exam details
+    $examSchedule = Exam::where('id', $examId)->firstOrFail();
+
+    // Retrieve all students in the class
+    $students = joinclass::where('class_id', $classId)
+        ->where('status', 1) // Only get active students
+        ->with('user') // Assuming you have a relation to the user model
+        ->get();
+
+    // Array to hold the comparison data and counts per question
+    $analysis = [];
+    $questionAnalysis = [];
+
+    // Retrieve all questions for the exam
+    $questions = Question::where('tblschedule_id', $examId)
+        ->with('addchoices') // Include possible choices for each question
+        ->get();
+
+    // Initialize counters for each question and its choices
+    foreach ($questions as $question) {
+        // Initialize choice count for each question's choices
+        $choiceCounts = [];
+        foreach ($question->addchoices as $choice) {
+            $choiceCounts[$choice->id] = [
+                'choice' => $choice->choices,
+                'count' => 0, // Initialize each choice's selection count
+            ];
+        }
+
+        // Store the question analysis
+        $questionAnalysis[$question->id] = [
+            'question' => $question->question, // Question text
+            'correctCount' => 0,
+            'incorrectCount' => 0,
+            'choices' => $choiceCounts, // Store choices and their counts
+        ];
+    }
+
+    foreach ($students as $student) {
+        $userId = $student->user_id;
 
         // Retrieve the student's answers for the specific exam
         $results = AnsweredQuestion::where('users_id', $userId)
@@ -1733,13 +1771,43 @@ public function itemAnalysis (Request $request)
             ->get()
             ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
 
-        // Return the results as JSON
-        return response()->json([
-            'examSchedule' => $examSchedule,
+        // Analyze each student's result per question
+        foreach ($results as $result) {
+            $tblquestionId = $result->tblquestion_id;
+            $studentAnswer = $result->correctanswer_id; // The answer selected by the student
+
+            // Check if the student's answer matches the correct answer
+            if (isset($correctAnswers[$tblquestionId])) {
+                $correctAnswer = $correctAnswers[$tblquestionId]->correctanswer_id;
+
+                // Increment correct or incorrect count per question
+                if ($studentAnswer == $correctAnswer) {
+                    $questionAnalysis[$tblquestionId]['correctCount']++; // Count as correct
+                } else {
+                    $questionAnalysis[$tblquestionId]['incorrectCount']++; // Count as incorrect
+                }
+            }
+
+            // Count the student's selected choice
+            if (isset($questionAnalysis[$tblquestionId]['choices'][$studentAnswer])) {
+                $questionAnalysis[$tblquestionId]['choices'][$studentAnswer]['count']++; // Increment count for this choice
+            }
+        }
+
+        // Store student data and their answers
+        $analysis[] = [
+            'student' => $student->user, // Include student details
             'results' => $results,
-            'correctAnswers' => $correctAnswers,
-        ]);
+        ];
     }
+
+    // Return the analysis along with the per-question counts
+    return response()->json([
+        'examSchedule' => $examSchedule,
+        'analysis' => $analysis,
+        'questionAnalysis' => $questionAnalysis, // Correct and incorrect counts per question with choice counts
+    ]);
+}
 
 
 
