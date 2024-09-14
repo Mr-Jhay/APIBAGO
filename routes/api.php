@@ -320,12 +320,27 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  Route::get('showClasstotal', [tblclassController::class, 'showClasstotal']);
 
 
+ Route::get('getAllStudentResults', [ExamController::class, 'getAllStudentResults']);
+
+ Route::get('getComments', [FeedbackController::class, 'getComments']); //getComments
+
+
+ //item analysis
+ Route::get('itemAnalysis', [ExamController::class, 'itemAnalysis']);
+ 
+
+
 
    
    
     //STUDENTS
-    
 
+    //pag view ng exam results sa class
+    Route::get('getResultsallexam', [ExamController::class, 'getResultsallexam']);
+
+    //finshi and unfinish exam
+    Route::get('getResultsallexam2', [ExamController::class, 'getResultsallexam2']);
+   
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
     Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);// Student joins a class using gen_code
 
@@ -363,5 +378,8 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
     Route::get('getResultswithtestbank/{id}', [ExamController::class, 'getResultswithtestbank']);//pag view the result
 
     Route::post('commentfeedback/{id}', [FeedbackController::class, 'commentfeedback']);//pag submit ng exam
+
+
+    Route::get('viewExam2updated2/{id}', [ExamController::class, 'viewExam2updated2']);//pag view ng student sa exam then meron ng suffle testbank2
  
 });

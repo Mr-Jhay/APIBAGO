@@ -14,5 +14,10 @@ class Choice extends Model
         'tblquestion_id',
         'choices'
     ];
+
+    public function question()
+    {
+        return $this->belongsTo(Question::class, 'tblquestion_id');
+    }
 }
  

@@ -16,6 +16,7 @@ class tblresult extends Model
            'users_id', 
            'exam_id',
            'total_score',
+           'average',
            'total_exam',
            'status',                
        ];

@@ -34,7 +34,10 @@ public function instruction()
     return $this->belongsTo(instructions::class, 'tblschedule_id', 'schedule_id');
 }
 
-
+public function answeredQuestions()
+{
+    return $this->hasMany(AnsweredQuestion::class, 'tblquestion_id');
+}
 
 
     

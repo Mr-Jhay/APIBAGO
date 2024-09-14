@@ -7,8 +7,13 @@ use App\Models\FeedbackQuestion; // Model for feedback questions
 use App\Models\FeedbackOption; // Model for feedback options
 use App\Models\UserFeedback; // Model for user feedback
 use App\Models\Comment;
+use App\Models\Exam;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exception;
+
 
 class FeedbackController extends Controller
 {
@@ -149,7 +154,7 @@ class FeedbackController extends Controller
         }
     
         // Ensure the exam exists in tblschedule table
-        $exam = tblschedule::find($exam_id);
+        $exam = Exam::find($exam_id);
         if (!$exam) {
             return response()->json(['error' => 'Exam not found.'], 404);
         }
@@ -173,4 +178,84 @@ class FeedbackController extends Controller
         }
     }
     
+
+
+    public function getComments(Request $request)
+    {
+        try {
+            // Validate the request data
+            $request->validate([
+                'classtable_id' => 'required|integer'
+            ]);
+    
+            // Retrieve comments and associated student details for the specified class
+            $results = DB::table('tblschedule')
+                ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.class_id')
+                ->join('users', 'joinclass.user_id', '=', 'users.id')
+                ->leftJoin('recomendation_suggestion', function ($join) {
+                    $join->on('recomendation_suggestion.user_id', '=', 'users.id')
+                         ->on('recomendation_suggestion.exam_id', '=', 'tblschedule.id');
+                })
+                ->select(
+                    'tblschedule.title',
+                    'users.id AS student_id',
+                    'users.lname AS student_name',
+                    'users.fname',
+                    'users.mname',
+                    'recomendation_suggestion.comment'
+                )
+                ->where('tblschedule.classtable_id', $request->classtable_id) // Filter by class
+                ->where('joinclass.status', 1) // Ensure the student is actively joined
+                ->orderBy('tblschedule.title') // Sort by title
+                ->orderBy('users.lname', 'asc') // Sort by student name (lname) alphabetically
+                ->get();
+    
+            // Initialize the array for results
+            $groupedResults = [];
+    
+            // Group results by title
+            foreach ($results as $result) {
+                if (!isset($groupedResults[$result->title])) {
+                    $groupedResults[$result->title] = [
+                        'title' => $result->title,
+                        'comments' => []
+                    ];
+                }
+    
+                if ($result->comment) {
+                    $groupedResults[$result->title]['comments'][] = [
+                        'student_id' => $result->student_id,
+                        'student_name' => $result->student_name,
+                        'fname' => $result->fname,
+                        'mname' => $result->mname,
+                        'comment' => $result->comment
+                    ];
+                }
+            }
+    
+            // Format the response to include "No comment" for titles with no comments
+            $formattedResults = [];
+            foreach ($groupedResults as $title => $data) {
+                if (empty($data['comments'])) {
+                    $formattedResults[] = [
+                        'title' => $title,
+                        'comments' => 'No comment'
+                    ];
+                } else {
+                    $formattedResults[] = $data;
+                }
+            }
+    
+            return response()->json([
+                'comments' => $formattedResults
+            ], 200);
+    
+        } catch (\Exception $e) {
+            \Log::error('Error retrieving comments: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to retrieve comments. Please try again later.'], 500);
+        }
+    }
+    
+    
+
 }

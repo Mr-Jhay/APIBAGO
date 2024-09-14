@@ -24,7 +24,7 @@ class Exam extends Model
 
     public function questions()
     {
-        return $this->hasMany(Question::class, 'tblschedule_id');
+        return $this->hasMany(Question::class, 'tblschedule_id','id');
     }
 
     public function choices()
