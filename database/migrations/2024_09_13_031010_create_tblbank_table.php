@@ -16,7 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id'); // Foreign key to users table
             $table->unsignedBigInteger('subject_id'); // Foreign key to exams table
             $table->unsignedBigInteger('question_id'); // Foreign key to users table
-            $table->unsignedBigInteger('choice_id'); // Foreign key to exams table
+            $table->unsignedBigInteger('choice_id')->nullable(); // Foreign key to exams table
             $table->unsignedBigInteger('correct_id'); 
             $table->string('Quarter');
 

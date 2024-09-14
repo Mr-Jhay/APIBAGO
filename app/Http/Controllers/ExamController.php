@@ -1559,7 +1559,7 @@ public function storetestbank(Request $request)
         'questions.*.question_id' => 'required|exists:tblquestion,id',
         'questions.*.correct_id' => 'required|exists:correctanswer,id',
         'questions.*.choices' => 'required|array',
-        'questions.*.choices.*.choice_id' => 'required|exists:addchoices,id',
+        'questions.*.choices.*.choice_id' => 'nullable|exists:addchoices,id',
     ]);
 
     // Get the authenticated user's ID
