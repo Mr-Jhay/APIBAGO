@@ -1734,7 +1734,8 @@ public function getAllStudentResults(Request $request)
             ->where('tblschedule.classtable_id', $request->classtable_id) // Ensure the schedule is in the correct class
             ->where('joinclass.status', 1)  // Ensure the student is actively joined
             ->where('tblschedule.id', '!=', null)  // Ensure schedule ID exists
-            ->orderBy('users.lname.fname', 'asc')  // Sort by student name (lname) alphabetically
+            ->orderBy('users.lname')  // Sort by student last name (lname) alphabetically
+            ->orderBy('users.fname')  // Then sort by student first name (fname) alphabetically
             ->get()
             ->map(function ($result) {
                 // Transform status code to meaningful labels
