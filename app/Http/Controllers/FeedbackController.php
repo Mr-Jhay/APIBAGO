@@ -11,6 +11,8 @@ use App\Models\Exam;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Exception;
 
 
 class FeedbackController extends Controller
@@ -209,7 +211,7 @@ class FeedbackController extends Controller
             ->get();
 
         // Group by student
-        $groupedResults = $results->groupBy('student_id');
+        $groupedResults = $results->groupBy('student_name');
 
         return response()->json([
             'comments' => $groupedResults
