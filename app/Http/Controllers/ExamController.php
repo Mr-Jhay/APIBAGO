@@ -1718,7 +1718,7 @@ public function getAllStudentResults(Request $request)
                 'users.id AS student_id',
                 'users.idnumber AS Lrn_id',
                 'users.lname AS Last_name',
-                'users.fname AS Fist_name',
+                'users.fname AS First_name',
                 'users.mname AS Middle_i',
                 'tblschedule.title AS exam_title',
                 'tblschedule.start',
@@ -1734,8 +1734,7 @@ public function getAllStudentResults(Request $request)
             ->where('tblschedule.classtable_id', $request->classtable_id) // Ensure the schedule is in the correct class
             ->where('joinclass.status', 1)  // Ensure the student is actively joined
             ->where('tblschedule.id', '!=', null)  // Ensure schedule ID exists
-            ->orderBy('users.lname', 'asc')  // Sort by student name (lname) alphabetically
-            ->orderBy('users.fname', 'asc') 
+            ->orderBy('users.lname.fname', 'asc')  // Sort by student name (lname) alphabetically
             ->get()
             ->map(function ($result) {
                 // Transform status code to meaningful labels
@@ -1760,7 +1759,7 @@ public function getAllStudentResults(Request $request)
                     'student_id' => $result->student_id,
                     'Lrn_id' => $result->Lrn_id,
                     'Last_name' => $result->Last_name,
-                    'Fist_name' => $result->Fist_name,
+                    'First_name' => $result->First_name,
                     'Middle_i' => $result->Middle_i,
                     'total_score' => $result->total_score,
                     'total_exam' => $result->total_exam,
