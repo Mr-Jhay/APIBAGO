@@ -194,16 +194,16 @@ class FeedbackController extends Controller
         $results = DB::table('tblschedule')
             ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.class_id')
             ->join('users', 'joinclass.user_id', '=', 'users.id')
-            ->leftJoin('tblcomment', function ($join) {
-                $join->on('tblcomment.users_id', '=', 'users.id')
-                     ->on('tblcomment.exam_id', '=', 'tblschedule.id');
+            ->leftJoin('recomendation_suggestion', function ($join) {
+                $join->on('recomendation_suggestion.user_id', '=', 'users.id')
+                     ->on('recomendation_suggestion.exam_id', '=', 'tblschedule.id');
             })
             ->select(
                 'users.id AS student_id',
                 'users.lname AS student_name',
                 'users.fname',
                 'users.mname',
-                'tblcomment.comment'
+                'recomendation_suggestion.comment'
             )
             ->where('tblschedule.classtable_id', $request->classtable_id) // Filter by class
             ->where('joinclass.status', 1) // Ensure the student is actively joined
@@ -219,7 +219,7 @@ class FeedbackController extends Controller
 
     } catch (\Exception $e) {
         \Log::error('Error retrieving comments: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve comments. Please try again later.'], 500);
+        return response()->json(['error' => 'Failed to retrieve comments. Please try again later.' . $e->getMessage()], 500);
     }
 }
 
