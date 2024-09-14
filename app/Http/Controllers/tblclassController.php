@@ -20,7 +20,7 @@ class tblclassController extends Controller
 {
     // Validate the request data
     $validatedData = $request->validate([
-        'curiculum_id' => 'required|exists:strandcuriculum,id',
+       // 'curiculum_id' => 'required|exists:strandcuriculum,id',
         'strand_id' => 'required|exists:tblstrand,id',
         'section_id' => 'required|exists:tblsection,id',
         'subject_id' => 'required|exists:tblsubject,id',
@@ -38,7 +38,7 @@ class tblclassController extends Controller
     if ($user && $user->usertype === 'teacher') {
         // Check if a class with the same details already exists
         $existingClass = tblclass::where([
-            'curiculum_id' => $validatedData['curiculum_id'],
+          //  'curiculum_id' => $validatedData['curiculum_id'],
             'strand_id' => $validatedData['strand_id'],
             'section_id' => $validatedData['section_id'],
             'subject_id' => $validatedData['subject_id'],
