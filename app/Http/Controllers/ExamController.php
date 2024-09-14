@@ -1673,25 +1673,33 @@ public function getAllStudentResults(Request $request)
                 return $result;
             });
 
+        // Check if results are empty
+        if ($results->isEmpty()) {
+            return response()->json([
+                'message' => 'No exam results found for this class.',
+                'results' => $results
+            ], 404);
+        }
+
         // Calculate total finished and unfinished students per exam
         $resultsByExam = $results->groupBy('exam_title')->map(function ($examResults) {
-            $finishedStudentsCount = $examResults->where('status', 'Passed','Failed')->count();
+            $finishedStudentsCount = $examResults->where('status', 'Passed')->count();
             $unfinishedStudentsCount = $examResults->where('status', 'N/A')->count();
+            $allScores = $examResults->map(function ($result) {
+                return [
+                    'student_id' => $result->student_id,
+                    'student_name' => $result->student_name,
+                    'total_score' => $result->total_score,
+                    'status' => $result->status
+                ];
+            });
 
             return [
-                'exam_results' => $examResults,
+                'exam_results' => $allScores,
                 'finished_students' => $finishedStudentsCount,
                 'unfinished_students' => $unfinishedStudentsCount
             ];
         });
-
-        // Check if results are empty
-        if ($resultsByExam->isEmpty()) {
-            return response()->json([
-                'message' => 'No exam results found for this class.',
-                'results' => $resultsByExam
-            ], 404);
-        }
 
         return response()->json([
             'results' => $resultsByExam
@@ -1810,6 +1818,69 @@ public function itemAnalysis(Request $request)
 }
 
 
+public function getResultsallexam2(Request $request)
+{
+    try {
+        // Get the authenticated user
+        $user = Auth::user();
+
+        // Validate that classtable_id is provided in the request
+        $request->validate([
+            'classtable_id' => 'required|integer'
+        ]);
+
+        // Retrieve results specific to the authenticated user and the class
+        $results = DB::table('tblresult')
+            ->join('users', 'tblresult.users_id', '=', 'users.id')
+            ->join('tblschedule', 'tblresult.exam_id', '=', 'tblschedule.id')
+            ->select(
+                'tblresult.id',
+                'users.lname AS student_name',
+                'tblschedule.title AS exam_title',
+                'tblschedule.start',
+                'tblschedule.end',
+                'tblschedule.classtable_id',
+                'tblresult.total_score',
+                'tblresult.average',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('tblresult.users_id', $user->id)
+            ->where('tblschedule.classtable_id', $request->classtable_id)
+            ->get()
+            ->map(function ($result) {
+                $result->status = $result->status == 1 ? 'Passed' : 'Failed';
+                $result->exam_status = $result->status == 'Passed' ? 'Finished' : 'Unfinished';
+                return $result;
+            });
+
+        // Check if results are empty
+        if ($results->isEmpty()) {
+            return response()->json(['message' => 'No exam results found for this user in this class.'], 404);
+        }
+
+        // Count finished and unfinished exams
+        $totalExams = $results->count();
+        $finishedExams = $results->where('exam_status', 'Finished')->count();
+        $unfinishedExams = $results->where('exam_status', 'Unfinished')->count();
+
+        // Return results with counts
+        return response()->json([
+            'total_exams' => $totalExams,
+            'finished_exams_count' => $finishedExams,
+            'unfinished_exams_count' => $unfinishedExams,
+            'results' => $results,
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to retrieve exam results. Please try again later.',
+            'exception' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 

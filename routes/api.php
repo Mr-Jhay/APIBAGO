@@ -335,6 +335,9 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
     //pag view ng exam results sa class
     Route::get('getResultsallexam', [ExamController::class, 'getResultsallexam']);
+
+    //finshi and unfinish exam
+    Route::get('getResultsallexam2', [ExamController::class, 'getResultsallexam2']);
    
     Route::post('jcstudent', [joinclassController::class, 'jcstudent']);//join the student in class
     Route::post('jcstudent2', [joinclassController::class, 'jcstudent2']);// Student joins a class using gen_code
