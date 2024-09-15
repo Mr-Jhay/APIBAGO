@@ -1186,36 +1186,29 @@ public function viewExam2updated2($exam_id)
         return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
     }
 
-    // Check if the student is enrolled in the exam
-    $isEnrolled = joinclass::where('user_id', $user->id)
-        ->exists(); // Add a condition if needed to check if the student is enrolled in the specific exam
-
-    if (!$isEnrolled) {
-        return response()->json(['error' => 'Unauthorized: You are not enrolled in this exam.'], 403);
-    }
-
     try {
-        // Retrieve the exam with instructions, questions, and choices, but exclude correct answers
-        $exam = Exam::with(['instructions.questions.choices'])
+        // Retrieve the exam with instructions and questions
+        $exam = Exam::with(['instructions.choices'])
             ->where('id', $exam_id)
-            ->where('status', 1) // Check if the exam is published
+            ->where('status', 1) // Ensure the exam is published
             ->firstOrFail();
+
+        $totalItems = $exam->total_items; // Get the limit of questions for the exam
+        $pointsLimit = $exam->points_exam; // Points limit for the exam
 
         // Initialize variables for tracking points and questions
         $totalPoints = 0;
         $selectedQuestions = collect();
 
-        // Iterate over the questions, stopping when the points_exam limit is reached
-        foreach ($exam->instructions->questions as $question) {
-            // Get the correct answer associated with this question
-            $correctAnswer = \DB::table('correctanswer')
-                ->where('tblquestion_id', $question->id)
-                ->first();
+        // Get limited questions based on total_items
+        $questions = $exam->instructions->questions()->limit($totalItems)->get();
 
-            $questionPoints = $correctAnswer ? $correctAnswer->points : 0;
+        foreach ($questions as $question) {
+            // Assuming 'points' is a field in the correct answer or calculated in some way
+            $questionPoints = $question->correctAnswer->points ?? 0; // Handle case where correct answer might not exist
 
             // Check if adding this question exceeds the points_exam limit
-            if ($totalPoints + $questionPoints > $exam->points_exam) {
+            if ($totalPoints + $questionPoints > $pointsLimit) {
                 break; // Stop adding questions if the limit is reached
             }
 
@@ -1232,12 +1225,12 @@ public function viewExam2updated2($exam_id)
             return $question;
         });
 
-        // Attach the shuffled questions (with shuffled choices) back to the exam object
+        // Attach the shuffled questions back to the exam object
         $exam->instructions->questions = $shuffledQuestions;
 
         return response()->json([
             'exam' => $exam,
-            'total_items' => $shuffledQuestions->count(),
+            'total_items' => $shuffledQuestions->count(), // Show the number of questions being returned
             'total_points' => $totalPoints
         ], 200);
     } catch (\Exception $e) {
@@ -1245,6 +1238,12 @@ public function viewExam2updated2($exam_id)
         return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
     }
 }
+
+
+
+
+
+
 
 
 
