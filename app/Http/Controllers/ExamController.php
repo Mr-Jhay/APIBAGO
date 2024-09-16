@@ -1039,7 +1039,7 @@ public function getResultswithtestbank(Request $request, $examId)
             ->whereHas('tblquestion', function ($query) use ($examId) {
                 $query->where('tblschedule_id', $examId);
             })
-            ->with(['tblquestion', 'addchoices'])
+            ->with(['tblquestion.addchoices', 'addchoices']) // Retrieve all choices for each question and student's selected choice
             ->get();
 
         // Check if any results were found
@@ -1050,19 +1050,28 @@ public function getResultswithtestbank(Request $request, $examId)
 
         // Retrieve all correct answers for the questions in the exam
         $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+            ->with('addchoices') // Load correct answer choices
             ->get()
             ->keyBy('tblquestion_id');
 
         // Calculate points per question and total score
         $questionScores = $results->map(function ($result) use ($correctAnswers) {
             $correctAnswer = $correctAnswers->get($result->tblquestion_id);
-            $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
+
+            // Compare the student's selected answer (addchoices_id) with the correct answer (addchoices_id)
+            $isCorrect = $correctAnswer && ($result->addchoices_id === $correctAnswer->addchoices_id || $result->addchoices->choices === $correctAnswer->correct_answer);
             $points = $isCorrect ? $correctAnswer->points : 0;
+
+            // Get all choices for the question
+            $allChoices = $result->tblquestion->addchoices->map(function ($choice) {
+                return $choice->choices;
+            });
 
             return [
                 'question' => $result->tblquestion->question,
-                'student_answer' => $result->Student_answer,
-                'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
+                'all_choices' => $allChoices, // All possible choices for the question
+                'student_answer' => $result->addchoices ? $result->addchoices->choices : null, // Show student's selected answer
+                'correct_answer' => $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer, // Show correct answer
                 'points_awarded' => $points,
                 'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0,
                 'is_correct' => $isCorrect
@@ -1076,6 +1085,7 @@ public function getResultswithtestbank(Request $request, $examId)
         // Calculate passing or failing status
         $passingThreshold = $totalPossiblePoints * 0.75; // 75% of total possible points
         $status = $totalScore >= $passingThreshold ? 1 : 0;
+        $statusText = $status ? 'Passed' : 'Failed'; // Human-readable status
 
         // Save or update the result in tblresult
         DB::table('tblresult')->updateOrInsert(
@@ -1092,11 +1102,12 @@ public function getResultswithtestbank(Request $request, $examId)
             'results' => $questionScores,
             'total_score' => $totalScore,
             'total_possible_points' => $totalPossiblePoints,
-            'status' => $status
+            'status' => $status,
+            'status_text' => $statusText 
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
+        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later. ' . $e->getMessage()], 500);
     }
 }
 
@@ -1824,6 +1835,7 @@ public function getAllStudentResults(Request $request)
 
 
 
+
 public function itemAnalysis(Request $request)
 {
     // Validate the request
@@ -1843,89 +1855,70 @@ public function itemAnalysis(Request $request)
         ->with('user') // Load the related user model
         ->get();
 
-    // Array to hold the comparison data and counts per question
-    $analysis = [];
-    $questionAnalysis = [];
-
     // Retrieve all questions for the exam
     $questions = Question::where('tblschedule_id', $examId)
-        ->with('choices') // Load choices for each question
+        ->with('addchoices') // Load choices for each question
         ->get();
 
-    // Initialize counters for each question and its choices
+    // Initialize an array to hold item analysis data
+    $itemAnalysis = [];
+
     foreach ($questions as $question) {
-        // Initialize choice count for each question's choices
-        $choiceCounts = [];
-        foreach ($question->choices as $choice) {
-            $choiceCounts[$choice->id] = [
-                'choice' => $choice->choices,
-                'count' => 0, // Initialize each choice's selection count
-            ];
-        }
+        $questionId = $question->id;
 
-        // Store the question analysis
-        $questionAnalysis[$question->id] = [
-            'question' => $question->question, // Question text
-            'correctCount' => 0,
-            'incorrectCount' => 0,
-            'choices' => $choiceCounts, // Store choices and their counts
-        ];
-    }
+        // Retrieve all choices for the question
+        $choices = $question->addchoices;
 
-    foreach ($students as $student) {
-        $userId = $student->user_id;
+        // Initialize counts
+        $choiceCounts = $choices->mapWithKeys(function ($choice) {
+            return [$choice->id => 0];
+        })->toArray();
 
-        // Retrieve the student's answers for the specific exam
-        $results = AnsweredQuestion::where('users_id', $userId)
+        // Count the number of students who chose each choice
+        $studentsWhoAnswered = AnsweredQuestion::where('tblquestion_id', $questionId)
             ->whereHas('tblquestion', function ($query) use ($examId) {
-                // Filter questions by the exam schedule ID
-                $query->where('tblschedule_id', $examId);
+                $query->where('tblschedule_id', $examId); // Ensure `tblschedule_id` is used from `tblquestion` model
             })
-            ->with(['tblquestion', 'choices']) // Load related question and student's selected choices
             ->get();
 
-        // Retrieve correct answers for the questions involved in the exam
-        $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
-            ->get()
-            ->keyBy('tblquestion_id'); // Organize by question ID for easy lookup
-
-        // Analyze each student's result per question
-        foreach ($results as $result) {
-            $tblquestionId = $result->tblquestion_id;
-            $studentAnswer = $result->correctanswer_id; // The answer selected by the student
-
-            // Check if the student's answer matches the correct answer
-            if (isset($correctAnswers[$tblquestionId])) {
-                $correctAnswer = $correctAnswers[$tblquestionId]->correctanswer_id;
-
-                // Increment correct or incorrect count per question
-                if ($studentAnswer == $correctAnswer) {
-                    $questionAnalysis[$tblquestionId]['correctCount']++; // Count as correct
-                } else {
-                    $questionAnalysis[$tblquestionId]['incorrectCount']++; // Count as incorrect
-                }
-            }
-
-            // Count the student's selected choice
-            if (isset($questionAnalysis[$tblquestionId]['choices'][$studentAnswer])) {
-                $questionAnalysis[$tblquestionId]['choices'][$studentAnswer]['count']++; // Increment count for this choice
+        foreach ($studentsWhoAnswered as $answeredQuestion) {
+            if (isset($choiceCounts[$answeredQuestion->addchoices_id])) {
+                $choiceCounts[$answeredQuestion->addchoices_id]++;
             }
         }
 
-        // Store student data and their answers
-        $analysis[] = [
-            'student' => $student->user, // Include student details
-            'results' => $results,
+        // Get the correct answer for the question
+        $correctAnswer = CorrectAnswer::where('tblquestion_id', $questionId)->first();
+        $correctAnswerText = $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer;
+
+        // Calculate percentages
+        $totalAnswered = count($studentsWhoAnswered);
+        $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered) {
+            $count = $choiceCounts[$choice->id] ?? 0;
+            $percentage = $totalAnswered > 0 ? ($count / $totalAnswered) * 100 : 0;
+            return [
+                'choice' => $choice->choices,
+                'count' => $count,
+                'percentage' => round($percentage, 2) // Round to 2 decimal places
+            ];
+        });
+
+        $itemAnalysis[] = [
+            'question_id' => $questionId,
+            'question' => $question->question,
+            'choices' => $choicesWithPercentage,
+            'correct_answer' => $correctAnswerText,
         ];
     }
 
-    // Return the analysis along with the per-question counts
     return response()->json([
-        'examSchedule' => $examSchedule,
-        'analysis' => $analysis,
-        'questionAnalysis' => $questionAnalysis, // Correct and incorrect counts per question with choice counts
-    ]);
+        'item_analysis' => $itemAnalysis,
+        'total_students' => $students->count()
+    ], 200);
 }
+
+
+
 
 
 public function getResultsallexam2(Request $request)

@@ -58,6 +58,11 @@ public function getPoints()
 //    return $this->choices()->get()->shuffle();
 //} 
 
+public function addchoices()
+{
+    return $this->hasMany(Choice::class, 'tblquestion_id');
+}
+
 
 public function scopeLimitedByPoints($query, $limit, $pointsLimit)
     {
