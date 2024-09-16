@@ -201,8 +201,7 @@ Route::group([
    Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
-   
-
+   Route::get('listStudentsInClassGendertotal/{id}', [joinclassController::class, 'listStudentsInClassGendertotal']);//list of total with gender
 
     // Method to list all students with approved join requests in a class WITH total_students , MALE FEMALE
    Route::get('listStudentsInClass2/{id}', [joinclassController::class, 'listStudentsInClass2']);// Teacher fetches approved students in a class 
