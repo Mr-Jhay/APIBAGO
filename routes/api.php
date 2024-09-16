@@ -328,7 +328,8 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
  //item analysis
  Route::get('itemAnalysis', [ExamController::class, 'itemAnalysis']);
- 
+ Route::get('analysisStudent/{id}', [ExamController::class, 'analysisStudent']);
+ //analysisStudent
 
 
 

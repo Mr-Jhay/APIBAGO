@@ -1986,6 +1986,96 @@ public function getResultsallexam2(Request $request)
 }
 
 
+public function analysisStudent(Request $request, $examId)
+{
+    // Validate the request
+    $request->validate([
+        'user_id' => 'required|integer|exists:users,id', // Validate user_id is provided and exists in the users table
+    ]);
+
+    $userId = $request->input('user_id'); // Get the user ID from the request
+
+    try {
+        // Fetch the exam details
+        $examSchedule = Exam::where('id', $examId)->firstOrFail();
+        $totalPossiblePoints = $examSchedule->points_exam; // Use points_exam from the examSchedule
+
+        // Retrieve the student's answers for the specific exam
+        $results = AnsweredQuestion::where('users_id', $userId)
+            ->whereHas('tblquestion', function ($query) use ($examId) {
+                $query->where('tblschedule_id', $examId); // Ensure this column exists in tblquestion table
+            })
+            ->with(['tblquestion.addchoices', 'addchoices']) // Retrieve all choices for each question and student's selected choice
+            ->get();
+
+        // Check if any results were found
+        if ($results->isEmpty()) {
+            Log::error('Failed to retrieve exam results: No results found.');
+            return response()->json(['message' => 'No results found for this exam.'], 404);
+        }
+
+        // Retrieve all correct answers for the questions in the exam
+        $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
+            ->with('addchoices') // Load correct answer choices
+            ->get()
+            ->keyBy('tblquestion_id');
+
+        // Calculate points per question and total score
+        $questionScores = $results->map(function ($result) use ($correctAnswers) {
+            $correctAnswer = $correctAnswers->get($result->tblquestion_id);
+
+            // Compare the student's selected answer (addchoices_id) with the correct answer (addchoices_id)
+            $isCorrect = $correctAnswer && ($result->addchoices_id === $correctAnswer->addchoices_id || $result->addchoices->choices === $correctAnswer->correct_answer);
+            $points = $isCorrect ? $correctAnswer->points : 0;
+
+            // Get all choices for the question
+            $allChoices = $result->tblquestion->addchoices->map(function ($choice) {
+                return $choice->choices;
+            });
+
+            return [
+                'question' => $result->tblquestion->question,
+                'all_choices' => $allChoices, // All possible choices for the question
+                'student_answer' => $result->addchoices ? $result->addchoices->choices : null, // Show student's selected answer
+                'correct_answer' => $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer, // Show correct answer
+                'points_awarded' => $points,
+                'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0,
+                'is_correct' => $isCorrect
+            ];
+        });
+
+        // Calculate total score
+        $totalScore = $questionScores->sum('points_awarded');
+        $average = $totalPossiblePoints > 0 ? ($totalScore / $totalPossiblePoints) * 100 : 0; // Percentage
+
+        // Calculate passing or failing status
+        $passingThreshold = $totalPossiblePoints * 0.75; // 75% of total possible points
+        $status = $totalScore >= $passingThreshold ? 1 : 0;
+        $statusText = $status ? 'Passed' : 'Failed'; // Human-readable status
+
+        // Save or update the result in tblresult
+        DB::table('tblresult')->updateOrInsert(
+            ['users_id' => $userId, 'exam_id' => $examId],
+            [
+                'total_score' => $totalScore,
+                'total_exam' => $totalPossiblePoints,
+                'average' => $average,
+                'status' => $status
+            ]
+        );
+
+        return response()->json([
+            'results' => $questionScores,
+            'total_score' => $totalScore,
+            'total_possible_points' => $totalPossiblePoints,
+            'status' => $status,
+            'status_text' => $statusText 
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exam results: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later. ' . $e->getMessage()], 500);
+    }
+}
 
 
 
