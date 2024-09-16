@@ -1829,14 +1829,13 @@ public function itemAnalysis(Request $request)
     // Validate the request
     $request->validate([
         'examId' => 'required|integer',
-        'classId' => 'required|integer'
     ]);
 
     $examId = $request->input('examId');
-    $classId = $request->input('classId');
 
-    // Fetch the exam details
+    // Fetch the exam details and automatically get the class ID
     $examSchedule = Exam::where('id', $examId)->firstOrFail();
+    $classId = $examSchedule->classtable_id; // Automatically get the classId from the exam
 
     // Retrieve all students in the class
     $students = joinclass::where('class_id', $classId)
