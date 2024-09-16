@@ -1039,7 +1039,7 @@ public function getResultswithtestbank(Request $request, $examId)
             ->whereHas('tblquestion', function ($query) use ($examId) {
                 $query->where('tblschedule_id', $examId);
             })
-            ->with(['tblquestion.addchoices', 'addchoices']) // Retrieve all choices for each question and student's selected choice
+            ->with(['tblquestion', 'addchoices'])
             ->get();
 
         // Check if any results were found
@@ -1050,28 +1050,19 @@ public function getResultswithtestbank(Request $request, $examId)
 
         // Retrieve all correct answers for the questions in the exam
         $correctAnswers = CorrectAnswer::whereIn('tblquestion_id', $results->pluck('tblquestion_id'))
-            ->with('addchoices') // Load correct answer choices
             ->get()
             ->keyBy('tblquestion_id');
 
         // Calculate points per question and total score
         $questionScores = $results->map(function ($result) use ($correctAnswers) {
             $correctAnswer = $correctAnswers->get($result->tblquestion_id);
-
-            // Compare the student's selected answer (addchoices_id) with the correct answer (addchoices_id)
-            $isCorrect = $correctAnswer && ($result->addchoices_id === $correctAnswer->addchoices_id || $result->addchoices->choices === $correctAnswer->correct_answer);
+            $isCorrect = $correctAnswer && $result->Student_answer === $correctAnswer->correct_answer;
             $points = $isCorrect ? $correctAnswer->points : 0;
-
-            // Get all choices for the question
-            $allChoices = $result->tblquestion->addchoices->map(function ($choice) {
-                return $choice->choices;
-            });
 
             return [
                 'question' => $result->tblquestion->question,
-                'all_choices' => $allChoices, // All possible choices for the question
-                'student_answer' => $result->addchoices ? $result->addchoices->choices : null, // Show student's selected answer
-                'correct_answer' => $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer, // Show correct answer
+                'student_answer' => $result->Student_answer,
+                'correct_answer' => $correctAnswer ? $correctAnswer->correct_answer : null,
                 'points_awarded' => $points,
                 'total_possible_points' => $correctAnswer ? $correctAnswer->points : 0,
                 'is_correct' => $isCorrect
@@ -1085,7 +1076,6 @@ public function getResultswithtestbank(Request $request, $examId)
         // Calculate passing or failing status
         $passingThreshold = $totalPossiblePoints * 0.75; // 75% of total possible points
         $status = $totalScore >= $passingThreshold ? 1 : 0;
-        $statusText = $status ? 'Passed' : 'Failed'; // Human-readable status
 
         // Save or update the result in tblresult
         DB::table('tblresult')->updateOrInsert(
@@ -1102,14 +1092,14 @@ public function getResultswithtestbank(Request $request, $examId)
             'results' => $questionScores,
             'total_score' => $totalScore,
             'total_possible_points' => $totalPossiblePoints,
-            'status' => $status,
-            'status_text' => $statusText 
+            'status' => $status
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam results: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later. ' . $e->getMessage()], 500);
+        return response()->json(['error' => 'Failed to retrieve exam results. Please try again later.'], 500);
     }
 }
+
 
 
 
