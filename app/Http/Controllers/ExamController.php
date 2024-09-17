@@ -2076,7 +2076,7 @@ public function itemAnalysis(Request $request)
         $correctAnswer = CorrectAnswer::where('tblquestion_id', $questionId)->first();
         $correctAnswerText = $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer;
 
-        // Calculate percentages
+        // Calculate percentages and format them with %
         $totalAnswered = count($studentsWhoAnswered);
         $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered) {
             $count = $choiceCounts[$choice->id] ?? 0;
@@ -2084,7 +2084,7 @@ public function itemAnalysis(Request $request)
             return [
                 'choice' => $choice->choices,
                 'count' => $count,
-                'percentage' => round($percentage, 2) // Round to 2 decimal places
+                'percentage' => round($percentage, 2) . '%' // Append % sign and round to 2 decimal places
             ];
         });
 
@@ -2101,6 +2101,7 @@ public function itemAnalysis(Request $request)
         'total_students' => $students->count()
     ], 200);
 }
+
 
 
 
