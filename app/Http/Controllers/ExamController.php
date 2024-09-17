@@ -818,39 +818,48 @@ public function viewAllExamsInClass2($classtable_id)
                 'tblschedule.start',
                 'tblschedule.end',
                 'tblresult.total_score', // Include the student's result score
-                'tblresult.status' // Include the result status
+                'tblresult.status' // Include the result status from tblresult
             )
             ->orderBy('tblschedule.created_at', 'desc')
             ->get()
-            ->map(function ($exam) {
+            ->map(function ($exam) use ($user) {
                 $currentDateTime = now(); // Get the current date and time
 
                 // Convert total_score to whole number or mark as "Unfinished" if null
                 $exam->total_score = $exam->total_score === null ? 'Unfinished' : (int)round($exam->total_score);
 
-                // Check if the exam's end time has passed
-                if ($currentDateTime->greaterThan($exam->end)) {
-                    $exam->status = 'Missing';
+                // Determine the status based on tblresult
+                if ($exam->status === null) {
+                    $exam->status = 'Pending';  // No status in tblresult means "Pending"
                 } else {
-                    // Convert status to meaningful label, including 'Pending' for null
-                    $exam->status = $exam->status === null ? 'Pending' : ($exam->status == 1 ? 'Passed' : 'Failed');
+                    // Use the status from tblresult (e.g., 1 for "Passed", 0 for "Failed")
+                    $exam->status = $exam->status == 1 ? 'Passed' : 'Failed';
+                }
+
+                // If the result exists, mark the exam as "Done"
+                if ($exam->total_score !== 'Unfinished') {
+                    $exam->status = 'Finish';
+                }
+
+                // If no result and the exam's end time has passed, mark it as "Missing"
+                if ($currentDateTime->greaterThan($exam->end) && $exam->status === 'Pending') {
+                    $exam->status = 'Missing';
                 }
 
                 return $exam;
             });
 
-                // Calculate totals and counts
-                $totalExams = \DB::table('tblschedule')
-                ->where('classtable_id', $classtable_id)
-                ->where('tblschedule.status', 1) 
-                ->count(); // Total number of all exams (published or not)
-
         // Calculate totals and counts
+        $totalExams = \DB::table('tblschedule')
+            ->where('classtable_id', $classtable_id)
+            ->where('tblschedule.status', 1)
+            ->count(); // Total number of all exams (published or not)
+
         $totalMissing = $exams->where('status', 'Missing')->count();
         $totalPending = $exams->where('status', 'Pending')->count();
         $totalScore = $exams->filter(function ($exam) {
             return $exam->total_score !== 'Unfinished';
-})->sum('total_score');
+        })->sum('total_score');
         $numberOfFinishedExams = $exams->where('total_score', '!=', 'Unfinished')->count();
 
         // Check if no exams are found
@@ -890,7 +899,6 @@ public function viewAllExamsInClass2($classtable_id)
                 'total_exams' => $totalExams,
                 'total_missing' => $totalMissing,
                 'total_pending' => $totalPending,
-              //  'total_score' => $totalScore,
                 'number_of_finished_exams' => $numberOfFinishedExams
             ]
         ], 200);
@@ -900,6 +908,8 @@ public function viewAllExamsInClass2($classtable_id)
         return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
     }
 }
+
+
 
 public function viewAllExamsInAllClasses()
 {
