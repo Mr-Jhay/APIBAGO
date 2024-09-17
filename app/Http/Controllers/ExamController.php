@@ -792,14 +792,52 @@ public function viewAllExams2($class_id)
 public function viewAllExamsInClass2($classtable_id)
 {
     try {
+        // Get the authenticated user
+        $user = auth()->user();
+
+        // Ensure only students can view exams
+        if (!$user || $user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+        }
+
         // Ensure the class exists
         $class = tblclass::findOrFail($classtable_id);
 
         // Retrieve exams that are published (status = 1) and belong to the specified class
-        $exams = Exam::with(['questions.correctAnswers'])
-            ->where('classtable_id', $classtable_id)
-            ->where('status', 1) // Ensure only published exams are shown
-            ->get();
+        $exams = \DB::table('tblschedule')
+            ->leftJoin('tblresult', function ($join) use ($user) {
+                $join->on('tblschedule.id', '=', 'tblresult.exam_id')
+                     ->where('tblresult.users_id', '=', $user->id);  // Filter by authenticated user
+            })
+            ->where('tblschedule.classtable_id', $classtable_id)
+            ->where('tblschedule.status', 1) // Only published exams
+            ->select(
+                'tblschedule.id',
+                'tblschedule.title',
+                'tblschedule.quarter',
+                'tblschedule.start',
+                'tblschedule.end',
+                'tblresult.total_score', // Include the student's result score
+                'tblresult.status' // Include the result status
+            )
+            ->orderBy('tblschedule.created_at', 'desc')
+            ->get()
+            ->map(function ($exam) {
+                $currentDateTime = now(); // Get the current date and time
+
+                // Convert total_score to whole number or mark as "Unfinished" if null
+                $exam->total_score = $exam->total_score === null ? 'Unfinished' : (int)round($exam->total_score);
+
+                // Check if the exam's end time has passed
+                if ($currentDateTime->greaterThan($exam->end)) {
+                    $exam->status = 'Missing';
+                } else {
+                    // Convert status to meaningful label, including 'Pending' for null
+                    $exam->status = $exam->status === null ? 'Pending' : ($exam->status == 1 ? 'Passed' : 'Failed');
+                }
+
+                return $exam;
+            });
 
         // Check if no exams are found
         if ($exams->isEmpty()) {
@@ -808,11 +846,16 @@ public function viewAllExamsInClass2($classtable_id)
 
         // Process the exams to include total points and total questions
         $examsWithDetails = $exams->map(function ($exam) {
-            $totalPoints = $exam->questions->reduce(function ($carry, $question) {
-                return $carry + $question->correctAnswers->sum('points');
-            }, 0);
+            // Get total points from the questions
+            $totalPoints = \DB::table('tblquestion')
+                ->join('correctanswer', 'tblquestion.id', '=', 'correctanswer.tblquestion_id')
+                ->where('tblquestion.tblschedule_id', $exam->id)
+                ->sum('correctanswer.points');  // Assuming there is a `points` column for the correct answer
 
-            $totalQuestions = $exam->questions->count();
+            // Get total number of questions
+            $totalQuestions = \DB::table('tblquestion')
+                ->where('tblquestion.tblschedule_id', $exam->id)
+                ->count();
 
             return [
                 'id' => $exam->id,
@@ -820,6 +863,7 @@ public function viewAllExamsInClass2($classtable_id)
                 'quarter' => $exam->quarter,
                 'start' => $exam->start,
                 'end' => $exam->end,
+                'total_score' => $exam->total_score,
                 'status' => $exam->status,
                 'total_points' => $totalPoints,
                 'total_questions' => $totalQuestions
@@ -827,11 +871,14 @@ public function viewAllExamsInClass2($classtable_id)
         });
 
         return response()->json(['exams' => $examsWithDetails], 200);
+
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exams: ' . $e->getMessage());
         return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
     }
 }
+
+
 
 
 
