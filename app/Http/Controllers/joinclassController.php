@@ -205,7 +205,7 @@ class joinclassController extends Controller
       //  ]);
     
         // Get the authenticated user
-        $user = Auth::user();
+        $user = $request->user();
     
         // Check if the user is authorized
         if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
