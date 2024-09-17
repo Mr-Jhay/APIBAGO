@@ -2076,6 +2076,13 @@ public function itemAnalysis(Request $request)
         $correctAnswer = CorrectAnswer::where('tblquestion_id', $questionId)->first();
         $correctAnswerText = $correctAnswer && $correctAnswer->addchoices ? $correctAnswer->addchoices->choices : $correctAnswer->correct_answer;
 
+        // Count the number of correct answers
+        $correctAnswersCount = AnsweredQuestion::where('tblquestion_id', $questionId)
+            ->whereHas('addchoices', function ($query) use ($correctAnswer) {
+                $query->where('id', $correctAnswer->addchoices_id ?? 0);
+            })
+            ->count();
+
         // Calculate percentages and format them with %
         $totalAnswered = count($studentsWhoAnswered);
         $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered) {
@@ -2088,11 +2095,15 @@ public function itemAnalysis(Request $request)
             ];
         });
 
+        // Calculate difficulty percentage
+        $difficultyPercentage = $totalAnswered > 0 ? ($correctAnswersCount / $totalAnswered) * 100 : 0;
+
         $itemAnalysis[] = [
             'question_id' => $questionId,
             'question' => $question->question,
             'choices' => $choicesWithPercentage,
             'correct_answer' => $correctAnswerText,
+            'difficulty_percentage' => round($difficultyPercentage, 2) . '%' // Add difficulty percentage to the response
         ];
     }
 
@@ -2101,6 +2112,8 @@ public function itemAnalysis(Request $request)
         'total_students' => $students->count()
     ], 200);
 }
+
+
 
 
 
