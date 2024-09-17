@@ -1464,7 +1464,9 @@ public function getAllExamsByClass($classId)
 {
     try {
         // Fetch exams filtered by the class ID
-        $exams = Exam::where('classtable_id', $classId)->get();
+        $exams = Exam::where('classtable_id', $classId)
+        ->orderBy('tblschedule.created_at', 'desc')
+        ->get();
 
         // Check if any exams were found
         if ($exams->isEmpty()) {
