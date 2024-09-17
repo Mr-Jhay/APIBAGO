@@ -7,11 +7,13 @@ use Illuminate\Http\Request;
 
 class tblyearController extends Controller
 {
+    // Add a new school year
     public function addyear(Request $request)
     {
         // Validate the incoming request data
         $validated = $request->validate([
             'addyear' => 'required|string|max:255',
+            'is_active' => 'boolean' // Adding is_active flag for the year
         ]);
 
         // Check for duplicate year names
@@ -21,6 +23,11 @@ class tblyearController extends Controller
                 'success' => false,
                 'message' => 'Duplicate year detected',
             ], 409); // 409 Conflict status code
+        }
+
+        // Deactivate all other years if this one is marked as active
+        if (isset($validated['is_active']) && $validated['is_active']) {
+            tblyear::where('is_active', true)->update(['is_active' => false]);
         }
 
         // Create a new year record with the validated data
@@ -34,6 +41,7 @@ class tblyearController extends Controller
         ], 201);
     }
 
+    // View all school years
     public function viewyear()
     {
         $years = tblyear::all();
@@ -45,10 +53,12 @@ class tblyearController extends Controller
         ], 200);
     }
 
+    // Update an existing school year
     public function updateyear(Request $request, $id)
     {
         $validated = $request->validate([
             'addyear' => 'required|string|max:255',
+            'is_active' => 'boolean' // Handle the active flag for updating
         ]);
 
         $year = tblyear::find($id);
@@ -57,7 +67,7 @@ class tblyearController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Year not found'
-            ], 404); 
+            ], 404);
         }
 
         // Check for duplicate year names
@@ -69,6 +79,11 @@ class tblyearController extends Controller
             ], 409); // 409 Conflict status code
         }
 
+        // Deactivate all other years if this one is marked as active
+        if (isset($validated['is_active']) && $validated['is_active']) {
+            tblyear::where('is_active', true)->update(['is_active' => false]);
+        }
+
         $year->update($validated);
 
         return response()->json([
@@ -78,6 +93,7 @@ class tblyearController extends Controller
         ], 200);
     }
 
+    // Delete a school year
     public function deleteyear($id)
     {
         $year = tblyear::find($id);
@@ -94,6 +110,33 @@ class tblyearController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Year deleted successfully'
+        ], 200);
+    }
+
+    // Method to toggle active status for a school year
+    public function toggleActive($id)
+    {
+        $year = tblyear::find($id);
+
+        if (!$year) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Year not found'
+            ], 404);
+        }
+
+        // If this year is being activated, deactivate others
+        if (!$year->is_active) {
+            tblyear::where('is_active', true)->update(['is_active' => false]);
+            $year->update(['is_active' => true]);
+        } else {
+            $year->update(['is_active' => false]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Year activation status toggled successfully',
+            'data' => $year
         ], 200);
     }
 }
