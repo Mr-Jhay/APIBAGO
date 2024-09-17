@@ -60,7 +60,7 @@ Route::group([
     Route::get('viewyear', [tblyearController::class, 'viewyear']);//view lahat ng na add na year
     Route::put('updateyear/{id}', [tblyearController::class, 'updateyear']);  // Update an existing year
     Route::delete('deleteyear/{id}', [tblyearController::class, 'deleteyear']);  // Delete a year
-    Route::patch('/toggleyear/{id}', [tblyearController::class, 'toggleActive']);
+    Route::patch('toggleyear/{id}', [tblyearController::class, 'toggleActive']);
 
 
     Route::post('addsubject', [tblsubjectController::class, 'addsubject']);

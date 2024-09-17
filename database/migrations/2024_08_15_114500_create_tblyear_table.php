@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('tblyear', function (Blueprint $table) {
             $table->id();
             $table->string('addyear');
+            $table->boolean('is_active')->default(false); // Add the is_active field with default false
             $table->timestamps();
         });
     }
