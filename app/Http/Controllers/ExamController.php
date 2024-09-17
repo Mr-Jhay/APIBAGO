@@ -236,8 +236,15 @@ class ExamController extends Controller
       
   
     // Publish Exam
-    public function publish($exam_id) {
+    public function publish($exam_id, Request $request) {
+        // Validate the 'name' field from the request
+        $request->validate([
+            'name' => 'required|string'
+        ]);
+    
         try {
+            $name = $request->input('name');
+    
             // Find the exam by ID
             $exam = Exam::find($exam_id);
     
@@ -246,7 +253,7 @@ class ExamController extends Controller
                 return response()->json(['error' => 'Exam not found'], 404);
             }
     
-            // Publish the exam
+            // Publish the exam (set status to 1 for 'published')
             $exam->status = 1;
             $exam->save();
     
@@ -257,22 +264,22 @@ class ExamController extends Controller
             $students = DB::table('users')
                 ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                 ->where('joinclass.class_id', $class_id)
-                ->where('joinclass.status', 1)
+                ->where('joinclass.status', 1)  // Ensure only active students
                 ->where('users.usertype', 'student')
-                ->select('users.id', 'users.fname', 'users.email')
+                ->select('users.email')  // Select only the email
                 ->get();
     
-            // Send welcome email to each student
+            // Send an email to each student
             foreach ($students as $student) {
-                Mail::to($student->email)->send(new WelcomeMail($student->fname));
+                Mail::to($student->email)->send(new WelcomeMail($name));  // Pass the name to the mail
             }
     
             // Return success response
-            return response()->json(['message' => 'Exam published and welcome emails sent successfully'], 200);
+            return response()->json(['message' => 'Exam published and emails sent successfully'], 200);
     
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Log::error('Failed to publish exam: ' . $e->getMessage());  
+            \Log::error('Failed to publish exam: ' . $e->getMessage());
     
             // Return a 500 Internal Server Error
             return response()->json(['error' => 'Internal Server Error'], 500);

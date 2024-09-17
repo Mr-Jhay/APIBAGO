@@ -197,40 +197,42 @@ class joinclassController extends Controller
 
 
 
-    public function listStudentsInClassGendertotal(Request $request, $class_id)
-{
-    $request->validate([
-        'class_id' => 'required|exists:tblclass,id'
-    ]);
-
-    $user = $request->user();
-
-    if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+    public function listStudentsInClassGendertotal( $class_id)
+    {
+        // Validate the class_id parameter
+       // $request->validate([
+       //     'class_id' => 'required|exists:tblclass,id'
+      //  ]);
+    
+        // Get the authenticated user
+        $user = Auth::user();
+    
+        // Check if the user is authorized
+        if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+            return response()->json([
+                'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
+            ], 403);
+        }
+    
+        // Fetch student details
+        $students = DB::table('users')
+                    ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                    ->where('joinclass.class_id', $class_id)
+                    ->where('users.usertype', 'student')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email')
+                    ->get();
+    
+        // Count total students, male and female
+        $genderCounts = [
+            'total' => $students->count(),
+            'male' => $students->where('sex', 'male')->count(),
+            'female' => $students->where('sex', 'female')->count(),
+        ];
+    
         return response()->json([
-            'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
-        ], 403);
+            'gender_counts' => $genderCounts
+        ], 200);
     }
-
-    // Fetch student details
-    $students = DB::table('users')
-                ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
-                ->where('joinclass.class_id', $class_id)
-                ->where('users.usertype', 'student')
-                ->select('users.id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email')
-                ->get();
-
-    // Count total students, male and female
-    $genderCounts = [
-        'total' => $students->count(),
-        'male' => $students->where('sex', 'male')->count(),
-        'female' => $students->where('sex', 'female')->count(),
-    ];
-
-    return response()->json([
-       // 'students' => $students,
-        'gender_counts' => $genderCounts
-    ], 200);
-}
 
 
     // Method to approve a student's request to join a class
