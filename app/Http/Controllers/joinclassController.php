@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\InvitationMail;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
+use App\Mail\TestMail;
+use App\Mail\WelcomeMail;
+
 
 class joinclassController extends Controller
 {
@@ -47,41 +52,58 @@ class joinclassController extends Controller
         return response()->json($joinClass, 201);
     }
 
-    // Method for adding students to a class without gen_code
-    public function addwocode(Request $request)
-    {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'status' => 'nullable|integer',
-        ]);
+// Method for adding students to a class without gen_code
+public function addwocode(Request $request)
+{
+    // Validate incoming request
+    $request->validate([
+        'user_ids' => 'required|array',
+        'user_ids.*' => 'exists:users,id', // Ensure each ID exists in the users table
+        'name' => 'required|string',
+    ]);
 
-        $user = User::find($request->input('user_id'));
-
-        if (!$user) {
-            return response()->json(['error' => 'User not found'], 404);
-        }
-
-        $teacher = auth()->user();
-        $class = DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
-
-        if (!$class) {
-            return response()->json(['error' => 'Class not found'], 404);
-        }
-
-        $status = ($user->usertype === 'student') ? 0 : $request->input('status');
-
-        $joinClass = joinclass::create([
-            'user_id' => $request->input('user_id'),
-            'class_id' => $class->id,
-            'status' => $status,
-        ]);
-
-        if ($user->usertype === 'student') {
-            Mail::to($user->email)->send(new InvitationMail($class, $user));
-        }
-
-        return response()->json($joinClass, 201);
+    $name = $request->input('name');
+    
+    // Get the currently authenticated teacher
+    $teacher = auth()->user();
+    
+    // Find the class associated with the teacher
+    $class = DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
+    
+    // Check if the class exists
+    if (!$class) {
+        return response()->json(['error' => 'Class not found'], 404);
     }
+    
+    // Initialize an array to store the joinclass records
+    $joinClasses = [];
+    
+    // Loop through each user_id to create a joinclass record
+    foreach ($request->input('user_ids') as $userId) {
+        $user = User::find($userId);
+
+        if ($user) {
+            // Create joinclass record
+            $joinClasses[] = joinclass::create([
+                'user_id' => $userId,
+                'class_id' => $class->id,
+                'status' => 1, // Set status to 1
+            ]);
+            
+            // Send email to the student
+            try {
+                Mail::to($user->email)->send(new WelcomeMail($name));
+            } catch (\Exception $e) {
+                // Log the error or handle it as needed
+                \Log::error('Failed to send email to user ID '.$userId.': '.$e->getMessage());
+            }
+        }
+    }
+    
+    // Return the newly created joinclass records
+    return response()->json($joinClasses, 201);
+}
+    
 
     // Method for students to join a class using gen_code only
     public function jcstudent2(Request $request)
