@@ -923,6 +923,9 @@ public function viewAllExamsInAllClasses()
             return response()->json(['message' => 'The student is not enrolled in any classrooms.'], 404);
         }
 
+        // Count the total number of distinct classes the student is enrolled in
+        $totalClasses = $classIds->count();
+
         // Retrieve exams from these classrooms
         $exams = \DB::table('tblschedule')
             ->leftJoin('tblresult', function ($join) use ($user) {
@@ -991,7 +994,7 @@ public function viewAllExamsInAllClasses()
                 ->count();
 
             return [
-                'id' => $exam->id,
+               'id' => $exam->id,
                 'title' => $exam->title,
                 'quarter' => $exam->quarter,
                 'start' => $exam->start,
@@ -1009,8 +1012,9 @@ public function viewAllExamsInAllClasses()
                 'total_exams' => $totalExams,
                 'total_missing' => $totalMissing,
                 'total_pending' => $totalPending,
-                'total_score' => $totalScore,
-                'number_of_finished_exams' => $numberOfFinishedExams
+              //  'total_score' => $totalScore,
+                'number_of_finished_exams' => $numberOfFinishedExams,
+                'total_classes' => $totalClasses // Include the total number of classes
             ]
         ], 200);
 
