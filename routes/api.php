@@ -219,6 +219,7 @@ Route::get('/tblclass/{id}/exams', [ExamController::class, 'viewAllExamsInClass'
 
 // Fetch all exams for a specific class
 Route::get('/tblclass/{id}/exams2', [ExamController::class, 'viewAllExamsInClass2']);
+Route::get('viewAllExamsInAllClasses', [ExamController::class, 'viewAllExamsInAllClasses']);
 
 // Create a new exam
 Route::post('/addExam2', [ExamController::class, 'addExam2']);

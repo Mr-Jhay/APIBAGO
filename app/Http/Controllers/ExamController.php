@@ -839,6 +839,20 @@ public function viewAllExamsInClass2($classtable_id)
                 return $exam;
             });
 
+                // Calculate totals and counts
+                $totalExams = \DB::table('tblschedule')
+                ->where('classtable_id', $classtable_id)
+                ->where('tblschedule.status', 1) 
+                ->count(); // Total number of all exams (published or not)
+
+        // Calculate totals and counts
+        $totalMissing = $exams->where('status', 'Missing')->count();
+        $totalPending = $exams->where('status', 'Pending')->count();
+        $totalScore = $exams->filter(function ($exam) {
+            return $exam->total_score !== 'Unfinished';
+})->sum('total_score');
+        $numberOfFinishedExams = $exams->where('total_score', '!=', 'Unfinished')->count();
+
         // Check if no exams are found
         if ($exams->isEmpty()) {
             return response()->json(['message' => 'No published exams found for this class'], 404);
@@ -870,13 +884,143 @@ public function viewAllExamsInClass2($classtable_id)
             ];
         });
 
-        return response()->json(['exams' => $examsWithDetails], 200);
+        return response()->json([
+            'exams' => $examsWithDetails,
+            'totals' => [
+                'total_exams' => $totalExams,
+                'total_missing' => $totalMissing,
+                'total_pending' => $totalPending,
+              //  'total_score' => $totalScore,
+                'number_of_finished_exams' => $numberOfFinishedExams
+            ]
+        ], 200);
 
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exams: ' . $e->getMessage());
         return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
     }
 }
+
+public function viewAllExamsInAllClasses()
+{
+    try {
+        // Get the authenticated user
+        $user = auth()->user();
+
+        // Ensure only students can view exams
+        if (!$user || $user->usertype !== 'student') {
+            return response()->json(['error' => 'Unauthorized: Only students can view exams.'], 403);
+        }
+
+        // Fetch the student’s enrolled classroom IDs
+        $classIds = DB::table('joinclass')
+            ->where('user_id', $user->id)
+            ->where('status', 1) // Status 1 means the student is approved
+            ->pluck('class_id'); // Get all class IDs the student is enrolled in
+
+        // Check if the student is enrolled in any classrooms
+        if ($classIds->isEmpty()) {
+            return response()->json(['message' => 'The student is not enrolled in any classrooms.'], 404);
+        }
+
+        // Retrieve exams from these classrooms
+        $exams = \DB::table('tblschedule')
+            ->leftJoin('tblresult', function ($join) use ($user) {
+                $join->on('tblschedule.id', '=', 'tblresult.exam_id')
+                     ->where('tblresult.users_id', '=', $user->id);  // Filter by authenticated user
+            })
+            ->whereIn('tblschedule.classtable_id', $classIds)
+            ->where('tblschedule.status', 1) // Only published exams
+            ->select(
+                'tblschedule.id',
+                'tblschedule.title',
+                'tblschedule.quarter',
+                'tblschedule.start',
+                'tblschedule.end',
+                'tblresult.total_score', // Include the student's result score
+                'tblresult.status' // Include the result status
+            )
+            ->orderBy('tblschedule.created_at', 'desc')
+            ->get()
+            ->map(function ($exam) {
+                $currentDateTime = now(); // Get the current date and time
+
+                // Convert total_score to whole number or mark as "Unfinished" if null
+                $exam->total_score = $exam->total_score === null ? 'Unfinished' : (int)round($exam->total_score);
+
+                // Check if the exam's end time has passed
+                if ($currentDateTime->greaterThan($exam->end)) {
+                    $exam->status = 'Missing';
+                } else {
+                    // Convert status to meaningful label, including 'Pending' for null
+                    $exam->status = $exam->status === null ? 'Pending' : ($exam->status == 1 ? 'Passed' : 'Failed');
+                }
+
+                return $exam;
+            });
+
+        // Calculate totals and counts
+        $totalExams = \DB::table('tblschedule')
+            ->whereIn('tblschedule.classtable_id', $classIds)
+            ->where('tblschedule.status', 1) 
+            ->count(); // Total number of all exams (published or not)
+
+        $totalMissing = $exams->where('status', 'Missing')->count();
+        $totalPending = $exams->where('status', 'Pending')->count();
+        $totalScore = $exams->filter(function ($exam) {
+            return $exam->total_score !== 'Unfinished';
+        })->sum('total_score');
+        $numberOfFinishedExams = $exams->where('total_score', '!=', 'Unfinished')->count();
+
+        // Check if no exams are found
+        if ($exams->isEmpty()) {
+            return response()->json(['message' => 'No published exams found for the enrolled classrooms.'], 404);
+        }
+
+        // Process the exams to include total points and total questions
+        $examsWithDetails = $exams->map(function ($exam) {
+            // Get total points from the questions
+            $totalPoints = \DB::table('tblquestion')
+                ->join('correctanswer', 'tblquestion.id', '=', 'correctanswer.tblquestion_id')
+                ->where('tblquestion.tblschedule_id', $exam->id)
+                ->sum('correctanswer.points');  // Assuming there is a `points` column for the correct answer
+
+            // Get total number of questions
+            $totalQuestions = \DB::table('tblquestion')
+                ->where('tblquestion.tblschedule_id', $exam->id)
+                ->count();
+
+            return [
+                'id' => $exam->id,
+                'title' => $exam->title,
+                'quarter' => $exam->quarter,
+                'start' => $exam->start,
+                'end' => $exam->end,
+                'total_score' => $exam->total_score,
+                'status' => $exam->status,
+                'total_points' => $totalPoints,
+                'total_questions' => $totalQuestions
+            ];
+        });
+
+        return response()->json([
+            'exams' => $examsWithDetails,
+            'totals' => [
+                'total_exams' => $totalExams,
+                'total_missing' => $totalMissing,
+                'total_pending' => $totalPending,
+                'total_score' => $totalScore,
+                'number_of_finished_exams' => $numberOfFinishedExams
+            ]
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Failed to retrieve exams: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal server error. Please try again later.' . $e->getMessage()], 500);
+    }
+}
+
+
 
 
 
