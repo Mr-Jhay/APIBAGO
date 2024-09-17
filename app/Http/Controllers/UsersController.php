@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\DB;
@@ -83,11 +84,32 @@ class UsersController extends Controller
             'password' => ['required', 'string', 'min:8'],
         ]);
     
-        $user = User::where('email', $request->email)->first();
+        $email = $request->email;
+        $key = 'login_attempts_' . $email;
+    
+        // Get the number of attempts and the timestamp of the last attempt
+        $attempts = Cache::get($key . '_count', 0);
+        $lastAttemptTime = Cache::get($key . '_time', now());
+    
+        if ($attempts >= 3 && now()->diffInMinutes($lastAttemptTime) < 1) {
+            // User has exceeded the maximum number of attempts and hasn't waited long enough
+            $waitTime = 1 - now()->diffInMinutes($lastAttemptTime);
+            return response()->json(['message' => "Too many login attempts. Please try again in $waitTime minutes."], 429);
+        }
+    
+        $user = User::where('email', $email)->first();
     
         if (!$user || !Hash::check($request->password, $user->password)) {
+            // Increment the attempt count and update the timestamp
+            Cache::put($key . '_count', $attempts + 1, now()->addMinutes(1));
+            Cache::put($key . '_time', now(), now()->addMinutes(1));
+    
             return response()->json(['message' => 'Invalid credentials'], 401);
         }
+    
+        // Reset the attempt count on successful login
+        Cache::forget($key . '_count');
+        Cache::forget($key . '_time');
     
         $token = $user->createToken('auth_token')->plainTextToken;
     
