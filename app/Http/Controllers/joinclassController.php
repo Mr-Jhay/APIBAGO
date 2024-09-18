@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\joinclass;
 use App\Models\tblclass;
 use App\Models\User;
+use App\Models\tblstudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -392,11 +393,22 @@ public function addwocode(Request $request)
         }
 
         // Fetch students who are approved (status = 1)
-        $approvedStudents = DB::table('joinclass')
-            ->join('users', 'joinclass.user_id', '=', 'users.id')
+    //    $approvedStudents = DB::table('joinclass')
+        //    ->join('users', 'joinclass.user_id', '=', 'users.id')
+         //   ->where('joinclass.class_id', $request->class_id)
+         //   ->where('joinclass.status', 1) // Status 1 means approved
+          //  ->select('users.id', 'users.email')
+          //  ->get();
+
+
+            $approvedStudents = tblstudent::with(['user', 'strands', 'section'])
+            ->join('users', 'tblstudent.user_id', '=', 'users.id')
+            ->join('joinclass', 'tblstudent.user_id', '=', 'joinclass.user_id')
             ->where('joinclass.class_id', $request->class_id)
             ->where('joinclass.status', 1) // Status 1 means approved
-            ->select('users.id', 'users.email')
+            ->where('users.usertype', 'student')
+            ->orderBy('users.lname', 'asc')
+            ->select('tblstudent.*', 'users.id as user_id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email') // Include additional fields
             ->get();
 
         return response()->json(['students' => $approvedStudents], 200);
