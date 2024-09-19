@@ -32,7 +32,7 @@ class tblclass extends Model
         'year_id',
         'semester',
         'class_desc',
-        'image',
+        'profile_img',
         'gen_code',
         'user_id',
     ];

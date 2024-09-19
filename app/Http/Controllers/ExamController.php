@@ -1286,7 +1286,7 @@ public function getResultswithtestbank(Request $request, $examId)
         $average = $totalPossiblePoints > 0 ? ($totalScore / $totalPossiblePoints) * 100 : 0; // Percentage
 
         // Calculate passing or failing status
-        $passingThreshold = $totalPossiblePoints * 0.75; // 75% of total possible points
+        $passingThreshold = $totalPossiblePoints * 0.50; // 75% of total possible points
         $status = $totalScore >= $passingThreshold ? 1 : 0;
 
         // Save or update the result in tblresult
