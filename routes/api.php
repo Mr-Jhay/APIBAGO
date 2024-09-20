@@ -332,7 +332,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  //analysisStudent
 
  Route::put('updateQuestionsInExam/{id}', [ExamController::class, 'updateQuestionsInExam']);//pag update ng exam
- Route::post('createAndPublishExam/{id}', [ExamController::class, 'createAndPublishExam']);//update sa bago whout clicking the publish
+ Route::post('createAndPublishExam', [ExamController::class, 'createAndPublishExam']);//update sa bago whout clicking the publish
  
 
    
