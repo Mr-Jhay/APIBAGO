@@ -162,7 +162,7 @@ Route::group([
 
     
 
-
+   Route::put('updateClassStatus/{id}', [tblclassController::class, 'updateClassStatus']);//archive
    Route::put('updateaddclass/{id}', [tblclassController::class, 'updateaddclass']);//pag update ng class
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS

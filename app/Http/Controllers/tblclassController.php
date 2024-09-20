@@ -118,7 +118,22 @@ public function updateaddclass(Request $request, $id)
     }
 }
     
+public function updateClassStatus(Request $request, $classId)
+{
+    // Validate the request to ensure status is either 1 or omitted (default to 0)
+    $request->validate([
+        'status' => 'nullable|integer|in:0,1'  // Nullable, as it will default to 0
+    ]);
 
+    // Retrieve the class by its ID
+    $class = tblclass::findOrFail($classId);
+
+    // Automatically set the status to 0 if it's not provided in the request
+    $class->status = $request->input('status', 0); // Defaults to 0 if status is not provided
+    $class->save();
+
+    return response()->json(['message' => 'Class status updated successfully'], 200);
+}
  
     public function viewAllClassDetails(Request $request)
     {
@@ -130,6 +145,7 @@ public function updateaddclass(Request $request, $id)
             // Retrieve all classes created by this teacher with related data
             $classes = tblclass::with(['strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
                             ->where('user_id', $user->id)
+                            ->where('status', 1)  
                             ->get();
 
             if ($classes->isNotEmpty()) {
@@ -385,6 +401,7 @@ public function updateaddclass(Request $request, $id)
                     ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
                     ->where('joinclass.user_id', $user->id)
                     ->where('joinclass.status', 1) // Ensure the status is approved
+                    ->where('tblclass.status', 1)  
                     ->select(
                         'tblclass.id as class_id',
                         'tblclass.class_desc as class_description',
@@ -506,6 +523,7 @@ public function getSingleClassroomDetails($class_id)
             $class = tblclass::with(['strand', 'section', 'subject', 'year']) // Adjust relations as necessary
                             ->where('id', $class_id)
                             ->where('user_id', $user->id)
+                            ->where('tblclass.status', 1)  
                             ->first();
 
             if ($class) {
