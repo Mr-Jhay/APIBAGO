@@ -1694,8 +1694,6 @@ public function updateQuestionsInExam(Request $request, $examId)
         DB::beginTransaction();
 
         $exam = Exam::findOrFail($examId);
-
-        // Update exam details if provided
         $exam->update($request->only(['title', 'quarter', 'start', 'end', 'points_exam']));
 
         $totalPoints = 0;
@@ -1712,10 +1710,13 @@ public function updateQuestionsInExam(Request $request, $examId)
             }
         }
 
+        // Collect existing question IDs to determine which ones to delete
+        $existingQuestionIds = Question::where('tblschedule_id', $examId)->pluck('id')->toArray();
+        $newQuestionIds = [];
+
         // Process each question
         foreach ($request->input('questions', []) as $qData) {
             $totalQuestions++;
-
             if (isset($qData['id'])) {
                 // Update existing question
                 $question = Question::findOrFail($qData['id']);
@@ -1723,6 +1724,7 @@ public function updateQuestionsInExam(Request $request, $examId)
                     'question_type' => $qData['question_type'],
                     'question' => $qData['question']
                 ]);
+                $newQuestionIds[] = $question->id; // Keep track of updated question IDs
             } else {
                 // Create new question
                 $question = Question::create([
@@ -1730,6 +1732,7 @@ public function updateQuestionsInExam(Request $request, $examId)
                     'question_type' => $qData['question_type'],
                     'question' => $qData['question']
                 ]);
+                $newQuestionIds[] = $question->id; // Keep track of new question IDs
             }
 
             // Map to store choice IDs
@@ -1770,6 +1773,12 @@ public function updateQuestionsInExam(Request $request, $examId)
             }
         }
 
+        // Delete questions that were not included in the update request
+        $questionsToDelete = array_diff($existingQuestionIds, $newQuestionIds);
+        if ($questionsToDelete) {
+            Question::destroy($questionsToDelete);
+        }
+
         DB::commit();
 
         return response()->json([
@@ -1783,6 +1792,7 @@ public function updateQuestionsInExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to update exam and related data.'], 500);
     }
 }
+
 
 
 public function storetestbank(Request $request)

@@ -163,7 +163,7 @@ Route::group([
     
 
 
-
+   Route::put('updateaddclass/{id}', [tblclassController::class, 'updateaddclass']);//pag update ng class
     Route::post('addclass', [tblclassController::class, 'addclass']);//add class in teacher side
     Route::get('viewAllClassDetails', [tblclassController::class, 'viewAllClassDetails']);//ALL NG NI CREATE NI TEACHER NA CLASS
     Route::get('class/{id}', [tblclassController::class, 'showClass']);// PAG VIEW NG SPECIFIC CLASS
