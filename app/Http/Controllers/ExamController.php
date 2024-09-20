@@ -22,6 +22,7 @@ use App\Mail\TestMail;
 use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
+use Carbon\Carbon;
 
 class ExamController extends Controller
 {
@@ -2295,6 +2296,80 @@ public function analysisStudent(Request $request, $examId)
     }
 }
 
+public function createAndPublishExam(Request $request)
+{
+    // Validate the request data
+    $request->validate([
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+        'points_exam' => 'required|numeric',
+        'name' => 'required|string'  // Validate the 'name' field as well
+    ]);
+
+    try {
+        $name = $request->input('name');
+
+        // Create the exam and set status to 0 (not published yet)
+        $exam = Exam::create([
+            'classtable_id' => $request->input('classtable_id'),
+            'title' => $request->input('title'),
+            'quarter' => $request->input('quarter'),
+            'start' => $request->input('start'),
+            'end' => $request->input('end'),
+            'points_exam' => $request->input('points_exam'),
+            'status' => 0 // Initially not published
+        ]);
+
+        // Retrieve class_id from the newly created exam
+        $class_id = $exam->classtable_id;
+
+        // Get students enrolled in the class
+        $students = DB::table('users')
+            ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+            ->where('joinclass.class_id', $class_id)
+            ->where('joinclass.status', 1)  // Ensure only active students
+            ->where('users.usertype', 'student')
+            ->select('users.email')  // Select only the email
+            ->get();
+
+        // Notify students that the exam is created but not yet published
+        foreach ($students as $student) {
+            Mail::to($student->email)->send(new WelcomeMail($name));
+        }
+
+        // Check if the current date/time is greater than or equal to the start date
+        $currentDateTime = Carbon::now();
+        $examStartDateTime = Carbon::parse($exam->start);
+
+        if ($currentDateTime->greaterThanOrEqualTo($examStartDateTime)) {
+            // If the current time is greater than or equal to the start time, publish the exam
+            $exam->status = 1;
+            $exam->save();
+
+            // Return success response
+            return response()->json([
+                'message' => 'Exam created, published, and emails sent successfully',
+                'exam' => $exam
+            ], 201);
+        }
+
+        // Return response indicating that the exam has been created but not yet published
+        return response()->json([
+            'message' => 'Exam created successfully but not yet published. Students have been notified.',
+            'exam' => $exam
+        ], 201);
+
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        Log::error('Failed to create and publish exam: ' . $e->getMessage());
+
+        // Return a 500 Internal Server Error
+        return response()->json(['error' => 'Failed to create and publish exam.'], 500);
+    }
+}
 
 
 }
