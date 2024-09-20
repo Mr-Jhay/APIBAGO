@@ -20,74 +20,67 @@ use Illuminate\Support\Facades\Log;
 class tblclassController extends Controller
 {
     public function addclass(Request $request)
-    {
-        // Validate the request data
-        $validatedData = $request->validate([
-            'strand_id' => 'required|exists:tblstrand,id',
-            'section_id' => 'required|exists:tblsection,id',
-            'subject_id' => 'required|exists:tblsubject,id',
-            'year_id' => 'required|exists:tblyear,id',
-            'semester' => 'required|string|max:255',
-            'class_desc' => 'nullable|string',
-            'profile_img' => 'nullable|string', // Base64 encoded image
-            'gen_code' => 'required|string|max:255',
-        ]);
-    
-        // Get the authenticated user
-        $user = $request->user();
-    
-        // Check if the user is authorized
-        if ($user && $user->usertype === 'teacher') {
-            // Check if a class with the same details already exists
-            $existingClass = tblclass::where([
-                'strand_id' => $validatedData['strand_id'],
-                'section_id' => $validatedData['section_id'],
-                'subject_id' => $validatedData['subject_id'],
-                'year_id' => $validatedData['year_id'],
-                'semester' => $validatedData['semester'],
-            ])->first();
-    
-            if ($existingClass) {
-                // Return conflict response
-                return response()->json(['message' => 'Class with these details already exists.'], 409);
-            }
-    
-            // Handle base64 image upload
-            if (!empty($validatedData['profile_img'])) {
-                // Decode the base64 image
-                $decodedImage = base64_decode($validatedData['profile_img'], true);
-                if ($decodedImage === false) {
-                    Log::error('Invalid base64 image');
-                    return response()->json(['message' => 'Invalid base64 image'], 400);
-                }
-    
-                // Save the decoded image
-                $imageName = time() . '.png';  // Create a unique filename
-                $isSaved = Storage::disk('public')->put('photos/projects/' . $imageName, $decodedImage);
-    
-                if (!$isSaved) {
-                    Log::error('Failed to save image');
-                    return response()->json(['message' => 'Failed to save image'], 500);
-                }
-    
-                // Store the image path
-                $photoPath = asset('storage/photos/projects/' . $imageName);
-                $validatedData['profile_img'] = $photoPath;
-            }
-    
-            // Create the class entry with the validated data and user ID
-            $class = tblclass::create(array_merge($validatedData, ['user_id' => $user->id]));
-    
-            return response()->json(['message' => 'Class created successfully.', 'data' => $class], 201);
-        } else {
-            // Return unauthorized response if the user is not a teacher
-            return response()->json(['message' => 'Unauthorized'], 403);
+{
+    // Validate the request data
+    $validatedData = $request->validate([
+        'strand_id' => 'required|exists:tblstrand,id',
+        'section_id' => 'required|exists:tblsection,id',
+        'subject_id' => 'required|exists:tblsubject,id',
+        'year_id' => 'required|exists:tblyear,id',
+        'semester' => 'required|string|max:255',
+        'class_desc' => 'nullable|string',
+        'profile_img' => 'nullable|file|mimes:jpg,png,jpeg,gif|max:2048', // Image validation
+        'gen_code' => 'required|string|max:255',
+    ]);
+
+    // Get the authenticated user
+    $user = $request->user();
+
+    // Check if the user is authorized (assuming only teachers can add classes)
+    if ($user && $user->usertype === 'teacher') {
+        // Check if a class with the same details already exists
+        $existingClass = tblclass::where([
+            'strand_id' => $validatedData['strand_id'],
+            'section_id' => $validatedData['section_id'],
+            'subject_id' => $validatedData['subject_id'],
+            'year_id' => $validatedData['year_id'],
+            'semester' => $validatedData['semester'],
+        ])->first();
+
+        if ($existingClass) {
+            // Return conflict response if the class already exists
+            return response()->json(['message' => 'Class with these details already exists.'], 409);
         }
+
+        // Handle file upload if an image is provided
+        if ($request->hasFile('profile_img')) {
+            // Get the uploaded image file
+            $file = $request->file('profile_img');
+            // Generate a unique name for the image
+            $imageName = time() . '.' . $file->getClientOriginalExtension();
+            // Store the image in the public storage folder
+            $filePath = $file->storeAs('photos/projects', $imageName, 'public');
+            // Save the file path as '/storage/photos/projects/{filename}'
+            $validatedData['profile_img'] = '/storage/' . $filePath;
+        }
+
+        // Create the class entry with the validated data and user ID
+        $class = tblclass::create(array_merge($validatedData, ['user_id' => $user->id]));
+
+        // Return success response along with the created class data (including the image URL)
+        return response()->json([
+            'message' => 'Class created successfully.',
+            'data' => $class  // Send back full class details, including profile_img
+        ], 201);
+
+    } else {
+        // Return unauthorized response if the user is not a teacher
+        return response()->json(['message' => 'Unauthorized'], 403);
     }
-    
+}
     
 
-
+ 
     public function viewAllClassDetails(Request $request)
     {
         // Get the authenticated user
