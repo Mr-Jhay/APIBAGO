@@ -825,8 +825,10 @@ public function viewAllExamsInClass2($classtable_id)
                 'tblschedule.quarter',
                 'tblschedule.start',
                 'tblschedule.end',
+                'tblschedule.points_exam',
                 'tblresult.total_score', // Include the student's result score
-                'tblresult.status' // Include the result status from tblresult
+                'tblresult.status', // Include the result status from tblresult
+                'tblresult.average',
             )
             ->orderBy('tblschedule.created_at', 'desc')
             ->get()
@@ -846,7 +848,7 @@ public function viewAllExamsInClass2($classtable_id)
 
                 // If the result exists, mark the exam as "Done"
                 if ($exam->total_score !== 'Unfinished') {
-                    $exam->status = 'Finish';
+                    $exam->status = 'Finish' == 1 ? 'Passed' : 'Failed';
                 }
 
                 // If no result and the exam's end time has passed, mark it as "Missing"
@@ -894,10 +896,13 @@ public function viewAllExamsInClass2($classtable_id)
                 'quarter' => $exam->quarter,
                 'start' => $exam->start,
                 'end' => $exam->end,
-                'total_score' => $exam->total_score,
+                'points_exam' => $exam->points_exam,
+                //'total_exam' => $exam->total_exam,
                 'status' => $exam->status,
                 'total_points' => $totalPoints,
-                'total_questions' => $totalQuestions
+                'total_questions' => $totalQuestions,
+                'average' => $exam->average,
+              
             ];
         });
 
@@ -913,7 +918,7 @@ public function viewAllExamsInClass2($classtable_id)
 
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exams: ' . $e->getMessage());
-        return response()->json(['error' => 'Internal server error. Please try again later.'], 500);
+        return response()->json(['error' => 'Internal server error. Please try again later.'. $e->getMessage()], 500);
     }
 }
 
@@ -2171,6 +2176,7 @@ public function getResultsallexam2(Request $request)
                 'tblschedule.title AS exam_title',
                 'tblschedule.start',
                 'tblschedule.end',
+                'tblschedule.points_exam',
                 'tblschedule.classtable_id',
                 'tblresult.total_score',
                 'tblresult.average',
