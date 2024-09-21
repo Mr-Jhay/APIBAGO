@@ -81,43 +81,52 @@ class tblclassController extends Controller
 
 
 public function updateaddclass(Request $request, $id)
-{
-    $class = tblclass::find($id);
-    if (!$class) {
-        return response()->json(['message' => 'Class not found.'], 404);
-    }
-
-    $validatedData = $request->validate([
-        'strand_id' => 'nullable|exists:tblstrand,id',
-        'section_id' => 'nullable|exists:tblsection,id',
-        'subject_id' => 'nullable|exists:tblsubject,id',
-        'year_id' => 'nullable|exists:tblyear,id',
-        'semester' => 'nullable|string|max:255',
-        'class_desc' => 'nullable|string',
-        'profile_img' => 'nullable|file|mimes:jpg,png,jpeg,gif|max:2048', // Image validation
-        'gen_code' => 'nullable|string|max:255',
-    ]);
-
-    $user = $request->user();
-
-    if ($user && $user->usertype === 'teacher') {
-        // Handle file upload if an image is provided
-        if ($request->hasFile('profile_img')) {
-            $file = $request->file('profile_img');
-            $imageName = time() . '.' . $file->getClientOriginalExtension();
-            $filePath = $file->storeAs('photos/projects', $imageName, 'public');
-            $validatedData['profile_img'] = '/storage/' . $filePath;
+    {
+        // Find the class by ID
+        $class = tblclass::find($id);
+        if (!$class) {
+            return response()->json(['message' => 'Class not found.'], 404);
         }
 
-        // Only update the fields that are provided
-        $class->update(array_filter(array_merge($validatedData, ['user_id' => $user->id])));
+        // Validate the request data
+        $validatedData = $request->validate([
+            'strand_id' => 'nullable|exists:tblstrand,id',
+            'section_id' => 'nullable|exists:tblsection,id',
+            'subject_id' => 'nullable|exists:tblsubject,id',
+            'year_id' => 'nullable|exists:tblyear,id',
+            'semester' => 'nullable|string|max:255',
+            'class_desc' => 'nullable|string',
+            'profile_img' => 'nullable|file|mimes:jpg,png,jpeg,gif|max:2048',
+            'gen_code' => 'nullable|string|max:255',
+        ]);
 
-        return response()->json(['message' => 'Class updated successfully.', 'data' => $class], 200);
-    } else {
-        return response()->json(['message' => 'Unauthorized'], 403);
+        $user = $request->user();
+
+        // Check if the user is a teacher
+        if ($user && $user->usertype === 'teacher') {
+            // If a new image is uploaded, process the file upload
+            if ($request->hasFile('profile_img')) {
+                // Delete the old image if it exists
+                if ($class->profile_img) {
+                    Storage::disk('public')->delete(str_replace('/storage/', '', $class->profile_img));
+                }
+
+                // Upload the new image
+                $file = $request->file('profile_img');
+                $imageName = time() . '.' . $file->getClientOriginalExtension();
+                $filePath = $file->storeAs('photos/projects', $imageName, 'public');
+                $validatedData['profile_img'] = '/storage/' . $filePath;
+            }
+
+            // Update the class with validated data
+            $class->update($validatedData);
+
+            // Respond with success
+            return response()->json(['message' => 'Class updated successfully.', 'data' => $class], 200);
+        } else {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
     }
-}
-    
 public function updateClassStatus(Request $request, $classId)
 {
     // Validate the request to ensure status is either 1 or omitted (default to 0)
