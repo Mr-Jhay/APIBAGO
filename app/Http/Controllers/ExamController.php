@@ -1310,6 +1310,7 @@ public function getResultswithtestbank(Request $request, $examId)
             'results' => $questionScores,
             'total_score' => $totalScore,
             'total_possible_points' => $totalPossiblePoints,
+            'average' => $average,
             'status' => $status
         ], 200);
     } catch (\Exception $e) {
