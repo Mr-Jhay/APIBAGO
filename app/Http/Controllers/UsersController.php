@@ -19,6 +19,10 @@ use App\Models\tblposition;
 use App\Models\tblteacher;
 use App\Models\teacher_strand;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Session;
+use App\Mail\PasswordVerificationCode;
+use Illuminate\Support\Str;
 
 
 class UsersController extends Controller
@@ -826,6 +830,78 @@ public function getAllStudentsWithStrands()
         'data' => $groupedByStrand,
     ], 200);
 }
+
+
+public function sendVerificationCode(Request $request)
+{
+    // Validate the email
+    $request->validate([
+        'email' => 'required|email|exists:users,email',
+    ]);
+
+    // Find the user by email
+    $user = User::where('email', $request->email)->first();
+
+    // Generate a random 6-digit verification code
+    $verificationCode = Str::random(6);
+
+    $user->verification_code = $verificationCode;
+    $user->save();
+
+    // Store the code in the session or database
+    // Session::put('password_verification_code', $verificationCode);
+    // Session::put('email_for_password_reset', $user->email); // store the email for validation later
+
+    // Send email with the verification code
+    Mail::to($user->email)->send(new PasswordVerificationCode($verificationCode));
+
+    return response()->json(['message' => 'Verification code sent to your email.'], 200);
+}
+
+public function updatePassword(Request $request)
+{
+    // Validate the new password and verification code
+    $validator = Validator::make($request->all(), [
+        'email' => 'required|email|exists:users,email',
+        'verification_code' => 'required',
+        'new_password' => [
+            'required',
+            'string',
+            'min:8',
+            'confirmed',
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+        ],
+    ], [
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    // Find the user by email
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found.'], 404);
+    }
+
+    // Check if the provided verification code matches the one in the database
+    if ($request->verification_code !== $user->verification_code) {
+        return response()->json(['message' => 'Invalid verification code.'], 401);
+    }
+
+    // Update the user's password
+    $user->password = Hash::make($request->new_password);
+    // Clear the verification code after password update
+    $user->verification_code = null;
+    $user->save();
+
+    return response()->json(['message' => 'Password updated successfully.'], 200);
+}
+
+
+
 
 
 }
