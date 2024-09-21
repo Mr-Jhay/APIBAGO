@@ -46,6 +46,8 @@ Route::post('sendSms2', [smsController::class, 'sendSms2']);
 Route::post('/send-welcome-mail', [MailController::class, 'sendWelcomeMail']);
 
 Route::post('/inviteStudentByEmail', [MailController::class, 'inviteStudentByEmail']);
+Route::post('sendVerificationCode', [UsersController::class, 'sendVerificationCode']);
+Route::post('updatePassword', [UsersController::class, 'updatePassword']);
 
 
 
