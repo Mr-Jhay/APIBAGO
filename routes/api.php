@@ -335,9 +335,8 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
 
  Route::put('updateQuestionsInExam/{id}', [ExamController::class, 'updateQuestionsInExam']);//pag update ng exam
  Route::post('createAndPublishExam', [ExamController::class, 'createAndPublishExam']);//update sa bago whout clicking the publish
- 
+ Route::delete('deleteMultipleQuestions/{id}', [ExamController::class, 'deleteMultipleQuestions']);
 
-   
    
     //STUDENTS
 

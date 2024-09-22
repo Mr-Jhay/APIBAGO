@@ -1664,138 +1664,179 @@ public function getExamInstructionAndCorrectAnswers($exam_id)
 
 
 
-
-
-
-
-
-
-
 public function updateQuestionsInExam(Request $request, $examId)
 {
+    // Validate the request data
     $request->validate([
-        'title' => 'nullable|string',
-        'quarter' => 'nullable|string',
-        'start' => 'nullable|date_format:Y-m-d H:i:s',
-        'end' => 'nullable|date_format:Y-m-d H:i:s',
-        'points_exam' => 'nullable|numeric',
-        'instructions' => 'nullable|array',
-        'instructions.*.id' => 'required|exists:instructions,id',
-        'instructions.*.instruction' => 'nullable|string',
-        'instructions.*.question_type' => 'nullable|string',
-        'questions' => 'nullable|array',
-        'questions.*.id' => 'nullable|exists:questions,id',
-        'questions.*.question_type' => 'required|string',
-        'questions.*.question' => 'required|string',
-        'questions.*.choices' => 'nullable|array',
-        'questions.*.choices.*' => 'string',
-        'questions.*.correct_answers' => 'nullable|array',
-        'questions.*.correct_answers.*.id' => 'nullable|exists:correct_answers,id',
-        'questions.*.correct_answers.*.correct_answer' => 'nullable|string',
-        'questions.*.correct_answers.*.points' => 'nullable|integer',
-        'questions.*.correct_answers.*.choice_id' => 'nullable|exists:choices,id',
+        'classtable_id' => 'required|exists:tblclass,id',
+        'title' => 'required|string',
+        'quarter' => 'required|string',
+        'start' => 'required|date_format:Y-m-d H:i:s',
+        'end' => 'required|date_format:Y-m-d H:i:s',
+        'points_exam' => 'required|numeric',
+        'instructions' => 'required|array',
+        'instructions.*.instruction' => 'required|string',
+        'instructions.*.question_type' => 'required|string',
+        'instructions.*.questions' => 'required|array',
+        'instructions.*.questions.*.question' => 'required|string',
+        'instructions.*.questions.*.choices' => 'nullable|array',
+        'instructions.*.questions.*.choices.*' => 'string',
+        'instructions.*.questions.*.correct_answers' => 'nullable|array',
+        'instructions.*.questions.*.correct_answers.*.correct_answer' => 'nullable|string',
+        'instructions.*.questions.*.correct_answers.*.points' => 'nullable|integer',
     ]);
 
     try {
         DB::beginTransaction();
 
+        // Fetch the existing exam
         $exam = Exam::findOrFail($examId);
-        $exam->update($request->only(['title', 'quarter', 'start', 'end', 'points_exam']));
+
+        // Update the exam details
+        $exam->update($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'points_exam']));
 
         $totalPoints = 0;
         $totalQuestions = 0;
+        $groupedQuestions = [];
 
-        // Update instructions if provided
-        if ($request->has('instructions')) {
-            foreach ($request->input('instructions') as $instData) {
-                $instruction = Instruction::findOrFail($instData['id']);
-                $instruction->update([
-                    'instruction' => $instData['instruction'] ?? $instruction->instruction,
-                    'question_type' => $instData['question_type'] ?? $instruction->question_type
-                ]);
-            }
-        }
+        // Loop through each instruction and its questions
+        foreach ($request->input('instructions') as $instructionData) {
+            // Check if the instruction already exists or create a new one
+            $instruction = Instruction::updateOrCreate(
+                [
+                    'schedule_id' => $examId,
+                    'instruction' => $instructionData['instruction'],
+                    'question_type' => $instructionData['question_type']
+                ],
+                $instructionData
+            );
 
-        // Collect existing question IDs to determine which ones to delete
-        $existingQuestionIds = Question::where('tblschedule_id', $examId)->pluck('id')->toArray();
-        $newQuestionIds = [];
+            $groupedQuestions[$instructionData['question_type']] = [];
 
-        // Process each question
-        foreach ($request->input('questions', []) as $qData) {
-            $totalQuestions++;
-            if (isset($qData['id'])) {
-                // Update existing question
-                $question = Question::findOrFail($qData['id']);
-                $question->update([
-                    'question_type' => $qData['question_type'],
-                    'question' => $qData['question']
-                ]);
-                $newQuestionIds[] = $question->id; // Keep track of updated question IDs
-            } else {
-                // Create new question
-                $question = Question::create([
-                    'tblschedule_id' => $exam->id,
-                    'question_type' => $qData['question_type'],
-                    'question' => $qData['question']
-                ]);
-                $newQuestionIds[] = $question->id; // Keep track of new question IDs
-            }
+            foreach ($instructionData['questions'] as $qData) {
+                // Find or create the question
+                $question = Question::updateOrCreate(
+                    [
+                        'tblschedule_id' => $exam->id,
+                        'question' => $qData['question'],
+                    ],
+                    [
+                        'question_type' => $instructionData['question_type'],
+                    ]
+                );
 
-            // Map to store choice IDs
-            $choiceMap = [];
+                $choiceMap = [];
 
-            if (isset($qData['choices'])) {
-                foreach ($qData['choices'] as $index => $choice) {
-                    // Update or create choices
-                    $choiceRecord = Choice::updateOrCreate(
-                        ['tblquestion_id' => $question->id, 'choices' => $choice],
-                        ['tblquestion_id' => $question->id, 'choices' => $choice]
-                    );
-                    $choiceMap[$index] = $choiceRecord->id; // Store the ID in the map
+                // Update or create the choices if they exist
+                if (isset($qData['choices'])) {
+                    foreach ($qData['choices'] as $index => $choice) {
+                        $newChoice = Choice::updateOrCreate(
+                            [
+                                'tblquestion_id' => $question->id,
+                                'choices' => $choice,
+                            ],
+                            [
+                                'choices' => $choice,
+                            ]
+                        );
+                        $choiceMap[$index] = $newChoice->id;
+                    }
                 }
-            }
 
-            // Handle correct answers
-            if (isset($qData['correct_answers'])) {
-                foreach ($qData['correct_answers'] as $ansData) {
-                    $points = $ansData['points'] ?? 0;
-                    $totalPoints += $points;
+                // Update or create the correct answers if they exist
+                if (isset($qData['correct_answers'])) {
+                    foreach ($qData['correct_answers'] as $ansData) {
+                        $points = $ansData['points'] ?? 0;
+                        $totalPoints += $points;
 
-                    // Map correct answers to the choice IDs
-                    $correctAnswerChoiceId = isset($ansData['choice_id']) ? $choiceMap[$ansData['choice_id']] ?? null : null;
+                        $correctAnswerChoiceId = null;
+                        if (isset($qData['choices'])) {
+                            foreach ($qData['choices'] as $index => $choice) {
+                                if ($choice === $ansData['correct_answer']) {
+                                    $correctAnswerChoiceId = $choiceMap[$index] ?? null;
+                                    break;
+                                }
+                            }
+                        }
 
-                    // Update or create correct answer
-                    CorrectAnswer::updateOrCreate(
-                        [
-                            'tblquestion_id' => $question->id,
-                            'addchoices_id' => $correctAnswerChoiceId
-                        ],
-                        [
-                            'correct_answer' => $ansData['correct_answer'] ?? null,
-                            'points' => $points
-                        ]
-                    );
+                        // Update or create the correct answer
+                        CorrectAnswer::updateOrCreate(
+                            [
+                                'tblquestion_id' => $question->id,
+                                'addchoices_id' => $correctAnswerChoiceId,
+                            ],
+                            [
+                                'correct_answer' => $ansData['correct_answer'] ?? null,
+                                'points' => $points,
+                            ]
+                        );
+                    }
                 }
-            }
-        }
 
-        // Delete questions that were not included in the update request
-        $questionsToDelete = array_diff($existingQuestionIds, $newQuestionIds);
-        if ($questionsToDelete) {
-            Question::destroy($questionsToDelete);
+                $groupedQuestions[$instructionData['question_type']][] = $question;
+                $totalQuestions++;
+            }
         }
 
         DB::commit();
 
         return response()->json([
-            'message' => 'Exam and related data updated successfully',
+            'message' => 'Exam, instructions, and questions updated successfully',
             'total_points' => $totalPoints,
-            'total_questions' => $totalQuestions
+            'total_questions' => $totalQuestions,
+            'grouped_questions' => $groupedQuestions
         ], 200);
     } catch (\Exception $e) {
         DB::rollBack();
-        Log::error('Failed to update exam and related data: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to update exam and related data.'], 500);
+        Log::error('Failed to update exam: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update exam.'], 500);
+    }
+}
+
+public function deleteMultipleQuestions(Request $request, $examId)
+{
+    // Validate that question_ids is an array and contains valid IDs
+    $request->validate([
+        'question_ids' => 'required|array',
+        'question_ids.*' => 'exists:tblquestion,id'
+    ]);
+
+    try {
+        // Find the exam
+        $exam = Exam::findOrFail($examId);
+
+        // Begin a transaction to ensure all deletions happen together
+        DB::beginTransaction();
+
+        // Loop through all provided question IDs
+        foreach ($request->input('question_ids') as $questionId) {
+            // Find each question
+            $question = Question::where('tblschedule_id', $exam->id)
+                                ->where('id', $questionId)
+                                ->firstOrFail();
+
+            // Delete associated choices
+            Choice::where('tblquestion_id', $question->id)->delete();
+
+            // Delete associated correct answers
+            CorrectAnswer::where('tblquestion_id', $question->id)->delete();
+
+            // Delete the question itself
+            $question->delete();
+        }
+
+        // Commit the transaction if everything is successful
+        DB::commit();
+
+        return response()->json([
+            'message' => 'Questions deleted successfully.'
+        ], 200);
+
+    } catch (\Exception $e) {
+        // Roll back the transaction in case of an error
+        DB::rollBack();
+        Log::error('Failed to delete questions: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to delete questions.'], 500);
     }
 }
 
