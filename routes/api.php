@@ -326,6 +326,7 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  Route::get('getAllStudentResults', [ExamController::class, 'getAllStudentResults']);
 
  Route::get('getComments', [FeedbackController::class, 'getComments']); //getComments
+ Route::get('getComments2', [FeedbackController::class, 'getComments2']); //get comment in specific exam
 
 
  //item analysis

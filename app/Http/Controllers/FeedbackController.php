@@ -256,6 +256,69 @@ class FeedbackController extends Controller
         }
     }
     
-    
+    public function getComments2(Request $request)
+{
+    try {
+        // Validate the request data
+        $request->validate([
+            'exam_id' => 'required|integer' // Now validating based on exam_id
+        ]);
+
+        // Retrieve comments and associated student details for the specified exam
+        $results = DB::table('tblschedule')
+            ->join('joinclass', 'tblschedule.classtable_id', '=', 'joinclass.class_id')
+            ->join('users', 'joinclass.user_id', '=', 'users.id')
+            ->leftJoin('recomendation_suggestion', function ($join) {
+                $join->on('recomendation_suggestion.user_id', '=', 'users.id')
+                     ->on('recomendation_suggestion.exam_id', '=', 'tblschedule.id');
+            })
+            ->select(
+                'tblschedule.title',
+                'users.id AS student_id',
+                'users.lname AS student_name',
+                'users.fname',
+                'users.mname',
+                'recomendation_suggestion.comment'
+            )
+            ->where('tblschedule.id', $request->exam_id) // Filter by exam_id
+            ->where('joinclass.status', 1) // Ensure the student is actively joined
+            ->orderBy('users.lname', 'asc') // Sort by student name (lname) alphabetically
+            ->get();
+
+        // Initialize the array for results
+        $examComments = [
+            'title' => $results->isEmpty() ? 'Exam Not Found' : $results[0]->title,
+            'comments' => []
+        ];
+
+        // Group comments for the single exam
+        foreach ($results as $result) {
+            if ($result->comment) {
+                $examComments['comments'][] = [
+                    'student_id' => $result->student_id,
+                    'student_name' => $result->student_name,
+                    'fname' => $result->fname,
+                    'mname' => $result->mname,
+                    'comment' => $result->comment
+                ];
+            }
+        }
+
+        // If no comments were found, add a "No comment" response
+        if (empty($examComments['comments'])) {
+            $examComments['comments'] = 'No comment';
+        }
+
+        // Return the response
+        return response()->json([
+            'exam' => $examComments
+        ], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Error retrieving comments: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to retrieve comments. Please try again later.'], 500);
+    }
+}
+
 
 }
