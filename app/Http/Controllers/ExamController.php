@@ -2002,12 +2002,7 @@ public function getAllStudentResults(Request $request)
             ->where('tblschedule.id', '!=', null)  // Ensure schedule ID exists
             ->orderBy('users.lname')  // Sort by student last name (lname) alphabetically
             ->orderBy('users.fname')  // Then sort by student first name (fname) alphabetically
-            ->get()
-            ->map(function ($result) {
-                // Transform status code to meaningful labels
-                $result->status = $result->status === null ? 'N/A' : ($result->status == 1 ? 'Passed' : 'Failed');
-                return $result;
-            });
+            ->get();
 
         // Check if results are empty
         if ($results->isEmpty()) {
@@ -2017,31 +2012,88 @@ public function getAllStudentResults(Request $request)
             ], 404);
         }
 
-        // Calculate total finished and unfinished students per exam
-        $resultsByExam = $results->groupBy('exam_title')->map(function ($examResults) {
-            $finishedStudentsCount = $examResults->where('status', 'Passed','Failed')->count();
-            $unfinishedStudentsCount = $examResults->where('status', 'N/A')->count();
-            $allScores = $examResults->map(function ($result) {
-                return [
-                    'student_id' => $result->student_id,
-                    'Lrn_id' => $result->Lrn_id,
-                    'Last_name' => $result->Last_name,
-                    'First_name' => $result->First_name,
-                    'Middle_i' => $result->Middle_i,
-                    'total_score' => $result->total_score,
-                    'total_exam' => $result->total_exam,
-                    'exam_start' => $result->start,
-                    'exam_end' => $result->end,
-                    'status' => $result->status
-                ];
-            });
+        // Prepare data structure for results by exam
+        $resultsByExam = [];
 
-            return [
-                'exam_results' => $allScores,
-                'finished_students' => $finishedStudentsCount,
-                'unfinished_students' => $unfinishedStudentsCount
+        foreach ($results as $result) {
+            $examTitle = $result->exam_title;
+
+            // Initialize the exam if not set
+            if (!isset($resultsByExam[$examTitle])) {
+                $resultsByExam[$examTitle] = [
+                    'exam_results' => [],
+                    'finished_students' => 0,
+                    'unfinished_students' => 0,
+                    'scores' => []
+                ];
+            }
+
+            // Status transformation
+            $status = ($result->status === null) ? 'N/A' : (($result->status == 1) ? 'Passed' : 'Failed');
+
+            // Add each result to the exam_results array
+            $resultsByExam[$examTitle]['exam_results'][] = [
+                'student_id' => $result->student_id,
+                'Lrn_id' => $result->Lrn_id,
+                'Last_name' => $result->Last_name,
+                'First_name' => $result->First_name,
+                'Middle_i' => $result->Middle_i,
+                'total_score' => $result->total_score,
+                'total_exam' => $result->total_exam,
+                'exam_start' => $result->start,
+                'exam_end' => $result->end,
+                'status' => $status
             ];
-        });
+
+            // Count finished and unfinished students
+            if ($status === 'N/A') {
+                $resultsByExam[$examTitle]['unfinished_students']++;
+            } else {
+                $resultsByExam[$examTitle]['finished_students']++;
+            }
+
+            // Collect scores for statistical analysis
+            if ($result->total_score !== null) {
+                $resultsByExam[$examTitle]['scores'][] = $result->total_score;
+            }
+        }
+
+        // Calculate statistics (mean, median, mode, range) for each exam
+        foreach ($resultsByExam as $examTitle => &$examData) {
+            $scores = $examData['scores'];
+            $scoreCount = count($scores);
+
+            if ($scoreCount > 0) {
+                // Mean
+                $mean = number_format(array_sum($scores) / $scoreCount, 2);
+
+                // Median
+                sort($scores);
+                if ($scoreCount % 2 == 0) {
+                    $median = ($scores[$scoreCount / 2 - 1] + $scores[$scoreCount / 2]) / 2;
+                } else {
+                    $median = $scores[floor($scoreCount / 2)];
+                }
+
+                // Mode
+                $scoreCounts = array_count_values($scores);
+                $mode = array_search(max($scoreCounts), $scoreCounts);
+
+                // Range
+                $range = max($scores) - min($scores);
+            } else {
+                $mean = null;
+                $median = null;
+                $mode = null;
+                $range = null;
+            }
+
+            // Add calculated stats to the results
+            $examData['mean_score'] = $mean;
+            $examData['median_score'] = $median;
+            $examData['mode_score'] = $mode;
+            $examData['score_range'] = $range;
+        }
 
         return response()->json([
             'results' => $resultsByExam
