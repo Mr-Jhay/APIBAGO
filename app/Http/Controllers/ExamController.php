@@ -1663,24 +1663,23 @@ public function getExamInstructionAndCorrectAnswers($exam_id)
 
 
 
-
 public function updateQuestionsInExam(Request $request, $examId)
 {
     // Validate the request data
     $request->validate([
         'classtable_id' => 'required|exists:tblclass,id',
-        'title' => 'required|string',
-        'quarter' => 'required|string',
-        'start' => 'required|date_format:Y-m-d H:i:s',
-        'end' => 'required|date_format:Y-m-d H:i:s',
-        'points_exam' => 'required|numeric',
-        'instructions' => 'required|array',
-        'instructions.*.instruction' => 'required|string',
-        'instructions.*.question_type' => 'required|string',
-        'instructions.*.questions' => 'required|array',
-        'instructions.*.questions.*.question' => 'required|string',
+        'title' => 'nullable|string',
+        'quarter' => 'nullable|string',
+        'start' => 'nullable|date_format:Y-m-d H:i:s',
+        'end' => 'nullable|date_format:Y-m-d H:i:s',
+        'points_exam' => 'nullable|numeric',
+        'instructions' => 'nullable|array',
+        'instructions.*.instruction' => 'nullable|string',
+        'instructions.*.question_type' => 'nullable|string',
+        'instructions.*.questions' => 'nullable|array',
+        'instructions.*.questions.*.question' => 'nullable|string',
         'instructions.*.questions.*.choices' => 'nullable|array',
-        'instructions.*.questions.*.choices.*' => 'string',
+        'instructions.*.questions.*.choices.*' => 'nullable|string',
         'instructions.*.questions.*.correct_answers' => 'nullable|array',
         'instructions.*.questions.*.correct_answers.*.correct_answer' => 'nullable|string',
         'instructions.*.questions.*.correct_answers.*.points' => 'nullable|integer',
@@ -1692,89 +1691,93 @@ public function updateQuestionsInExam(Request $request, $examId)
         // Fetch the existing exam
         $exam = Exam::findOrFail($examId);
 
-        // Update the exam details
+        // Update the exam details with the nullable fields
         $exam->update($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'points_exam']));
 
         $totalPoints = 0;
         $totalQuestions = 0;
         $groupedQuestions = [];
 
-        // Loop through each instruction and its questions
-        foreach ($request->input('instructions') as $instructionData) {
-            // Check if the instruction already exists or create a new one
-            $instruction = Instruction::updateOrCreate(
-                [
-                    'schedule_id' => $examId,
-                    'instruction' => $instructionData['instruction'],
-                    'question_type' => $instructionData['question_type']
-                ],
-                $instructionData
-            );
-
-            $groupedQuestions[$instructionData['question_type']] = [];
-
-            foreach ($instructionData['questions'] as $qData) {
-                // Find or create the question
-                $question = Question::updateOrCreate(
+        // Loop through each instruction and its questions if provided
+        if ($request->has('instructions')) {
+            foreach ($request->input('instructions') as $instructionData) {
+                // Update or create instructions
+                $instruction = Instruction::updateOrCreate(
                     [
-                        'tblschedule_id' => $exam->id,
-                        'question' => $qData['question'],
+                        'schedule_id' => $examId,
+                        'instruction' => $instructionData['instruction'] ?? null,
+                        'question_type' => $instructionData['question_type'] ?? null
                     ],
-                    [
-                        'question_type' => $instructionData['question_type'],
-                    ]
+                    $instructionData
                 );
 
-                $choiceMap = [];
+                $groupedQuestions[$instructionData['question_type'] ?? ''] = [];
 
-                // Update or create the choices if they exist
-                if (isset($qData['choices'])) {
-                    foreach ($qData['choices'] as $index => $choice) {
-                        $newChoice = Choice::updateOrCreate(
+                if (isset($instructionData['questions'])) {
+                    foreach ($instructionData['questions'] as $qData) {
+                        // Update or create the question
+                        $question = Question::updateOrCreate(
                             [
-                                'tblquestion_id' => $question->id,
-                                'choices' => $choice,
+                                'tblschedule_id' => $exam->id,
+                                'question' => $qData['question'] ?? null,
                             ],
                             [
-                                'choices' => $choice,
+                                'question_type' => $instructionData['question_type'] ?? null,
                             ]
                         );
-                        $choiceMap[$index] = $newChoice->id;
-                    }
-                }
 
-                // Update or create the correct answers if they exist
-                if (isset($qData['correct_answers'])) {
-                    foreach ($qData['correct_answers'] as $ansData) {
-                        $points = $ansData['points'] ?? 0;
-                        $totalPoints += $points;
+                        $choiceMap = [];
 
-                        $correctAnswerChoiceId = null;
+                        // Update or create choices if provided
                         if (isset($qData['choices'])) {
                             foreach ($qData['choices'] as $index => $choice) {
-                                if ($choice === $ansData['correct_answer']) {
-                                    $correctAnswerChoiceId = $choiceMap[$index] ?? null;
-                                    break;
-                                }
+                                $newChoice = Choice::updateOrCreate(
+                                    [
+                                        'tblquestion_id' => $question->id,
+                                        'choices' => $choice,
+                                    ],
+                                    [
+                                        'choices' => $choice,
+                                    ]
+                                );
+                                $choiceMap[$index] = $newChoice->id;
                             }
                         }
 
-                        // Update or create the correct answer
-                        CorrectAnswer::updateOrCreate(
-                            [
-                                'tblquestion_id' => $question->id,
-                                'addchoices_id' => $correctAnswerChoiceId,
-                            ],
-                            [
-                                'correct_answer' => $ansData['correct_answer'] ?? null,
-                                'points' => $points,
-                            ]
-                        );
+                        // Update or create correct answers if provided
+                        if (isset($qData['correct_answers'])) {
+                            foreach ($qData['correct_answers'] as $ansData) {
+                                $points = $ansData['points'] ?? 0;
+                                $totalPoints += $points;
+
+                                $correctAnswerChoiceId = null;
+                                if (isset($qData['choices'])) {
+                                    foreach ($qData['choices'] as $index => $choice) {
+                                        if ($choice === $ansData['correct_answer']) {
+                                            $correctAnswerChoiceId = $choiceMap[$index] ?? null;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Update or create the correct answer
+                                CorrectAnswer::updateOrCreate(
+                                    [
+                                        'tblquestion_id' => $question->id,
+                                        'addchoices_id' => $correctAnswerChoiceId,
+                                    ],
+                                    [
+                                        'correct_answer' => $ansData['correct_answer'] ?? null,
+                                        'points' => $points,
+                                    ]
+                                );
+                            }
+                        }
+
+                        $groupedQuestions[$instructionData['question_type'] ?? ''][] = $question;
+                        $totalQuestions++;
                     }
                 }
-
-                $groupedQuestions[$instructionData['question_type']][] = $question;
-                $totalQuestions++;
             }
         }
 
@@ -1792,6 +1795,8 @@ public function updateQuestionsInExam(Request $request, $examId)
         return response()->json(['error' => 'Failed to update exam.'], 500);
     }
 }
+
+
 
 public function deleteMultipleQuestions(Request $request, $examId)
 {
