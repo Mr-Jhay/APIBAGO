@@ -2456,8 +2456,8 @@ public function createAndPublishExam(Request $request)
         }
 
         // Check if the current date/time is greater than or equal to the start date
-        $currentDateTime = Carbon::now();
-        $examStartDateTime = Carbon::parse($exam->start);
+        $currentDateTime = Carbon::now('Asia/Manila');
+        $examStartDateTime = Carbon::parse($exam->start)->setTimezone('Asia/Manila');
 
         if ($currentDateTime->greaterThanOrEqualTo($examStartDateTime)) {
             // If the current time is greater than or equal to the start time, publish the exam
