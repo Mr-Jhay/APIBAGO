@@ -860,10 +860,9 @@ public function sendVerificationCode(Request $request)
 
 public function updatePassword(Request $request)
 {
-    // Validate the new password and verification code
+    // Validate the verification code and new password
     $validator = Validator::make($request->all(), [
-        'email' => 'required|email|exists:users,email',
-        'verification_code' => 'required',
+        'verification_code' => 'required|exists:users,verification_code',
         'new_password' => [
             'required',
             'string',
@@ -879,15 +878,10 @@ public function updatePassword(Request $request)
         return response()->json($validator->errors(), 422);
     }
 
-    // Find the user by email
-    $user = User::where('email', $request->email)->first();
+    // Find the user by verification code
+    $user = User::where('verification_code', $request->verification_code)->first();
 
     if (!$user) {
-        return response()->json(['message' => 'User not found.'], 404);
-    }
-
-    // Check if the provided verification code matches the one in the database
-    if ($request->verification_code !== $user->verification_code) {
         return response()->json(['message' => 'Invalid verification code.'], 401);
     }
 
@@ -899,6 +893,7 @@ public function updatePassword(Request $request)
 
     return response()->json(['message' => 'Password updated successfully.'], 200);
 }
+
 
 
 
