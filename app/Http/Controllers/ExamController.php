@@ -2274,7 +2274,7 @@ public function itemAnalysis(Request $request)
         });
 
         // Calculate difficulty percentage
-        $difficultyPercentage = $totalAnswered > 0 ? ($correctAnswersCount / $totalAnswered) * 100 : 0;
+        $difficultyPercentage = $totalAnswered > 0 ? (1 - ($correctAnswersCount / $totalAnswered)) * 100 : 0;
 
         $itemAnalysis[] = [
             'question_id' => $questionId,
