@@ -1526,6 +1526,7 @@ public function getAllExamsByClass($classId)
                 'end' => $exam->end,
                 'points_exam' => $exam->points_exam,
                 'students_completed' => $studentsCompletedCount,
+                'total_students' => $totalStudents,
                 'completion_percentage' => round($completionPercentage, 2) . '%', // Add completion percentage to the response
             ];
         });
