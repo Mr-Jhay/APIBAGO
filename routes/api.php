@@ -200,7 +200,7 @@ Route::group([
    // g'getCurriculumDetails{$id}'
 
     
-   Route::post('addStudentToClass', [joinclassController::class, 'addStudentToClass']);//join ng teacher matic
+   Route::post('addwocode', [joinclassController::class, 'addwocode']);//join ng teacher matic
    Route::post('approveStudentJoinRequest', [joinclassController::class, 'approveStudentJoinRequest']);// Teacher approves or rejects a join request
    Route::get('listStudentsInClass', [joinclassController::class, 'listStudentsInClass']);//list of Students In Class
    Route::get('listStudentsInClassGendertotal/{id}', [joinclassController::class, 'listStudentsInClassGendertotal']);//list of total with gender
