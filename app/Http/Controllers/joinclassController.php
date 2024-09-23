@@ -230,7 +230,41 @@ public function addwocode(Request $request)
         return response()->json($students, 200);
     }
 
-
+    public function kickStudentFromClass(Request $request, $class_id, $student_id)
+    {
+        // Validate incoming request
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id',
+            'student_id' => 'required|exists:users,id',
+        ]);
+    
+        $user = $request->user();
+    
+        // Check if the user is authorized to kick students
+        if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+            return response()->json([
+                'error' => 'Unauthorized: Only teachers and admins can kick students from a class.'
+            ], 403);
+        }
+    
+        // Check if the student is part of the class
+        $joinClass = joinclass::where('class_id', $class_id)->where('user_id', $student_id)->first();
+    
+        if (!$joinClass) {
+            return response()->json([
+                'error' => 'Student is not part of this class.'
+            ], 404);
+        }
+    
+        // Delete the joinclass record to kick the student
+        $joinClass->delete();
+    
+        return response()->json([
+            'message' => 'Student kicked from the class successfully.',
+            'student_id' => $student_id,
+        ], 200);
+    }
+    
 
 
     public function listStudentsInClassGendertotal( $class_id)
