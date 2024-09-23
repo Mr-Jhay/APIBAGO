@@ -1489,8 +1489,8 @@ public function getAllExamsByClass($classId)
     try {
         // Fetch exams filtered by the class ID
         $exams = Exam::where('classtable_id', $classId)
-        ->orderBy('tblschedule.created_at', 'desc')
-        ->get();
+            ->orderBy('created_at', 'desc')
+            ->get();
 
         // Check if any exams were found
         if ($exams->isEmpty()) {
@@ -1499,8 +1499,38 @@ public function getAllExamsByClass($classId)
             ], 404);
         }
 
+        // Retrieve all students in the class
+        $students = joinclass::where('class_id', $classId)
+            ->where('status', 1) // Only get active students
+            ->get();
+        $totalStudents = $students->count(); // Total number of students in the class
+
+        $examsWithCompletion = $exams->map(function ($exam) use ($totalStudents) {
+            // Retrieve students who completed the exam
+            $studentsWhoCompleted = AnsweredQuestion::whereHas('tblquestion', function ($query) use ($exam) {
+                $query->where('tblschedule_id', $exam->id);
+            })
+            ->groupBy('users_id')
+            ->pluck('users_id');
+
+            $studentsCompletedCount = $studentsWhoCompleted->count(); // Number of students who completed the exam
+
+            // Calculate the completion percentage
+            $completionPercentage = $totalStudents > 0 ? ($studentsCompletedCount / $totalStudents) * 100 : 0;
+
+            return [
+                'exam_id' => $exam->id,
+                'title' => $exam->title,
+                'quarter' => $exam->quarter,
+                'start' => $exam->start,
+                'end' => $exam->end,
+                'students_completed' => $studentsCompletedCount,
+                'completion_percentage' => round($completionPercentage, 2) . '%', // Add completion percentage to the response
+            ];
+        });
+
         return response()->json([
-            'exams' => $exams
+            'exams' => $examsWithCompletion
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exams for class: ' . $e->getMessage());
