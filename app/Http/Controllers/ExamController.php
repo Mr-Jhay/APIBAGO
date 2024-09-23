@@ -1667,7 +1667,6 @@ public function updateQuestionsInExam(Request $request, $examId)
 {
     // Validate the request data
     $request->validate([
-        'classtable_id' => 'required|exists:tblclass,id',
         'title' => 'nullable|string',
         'quarter' => 'nullable|string',
         'start' => 'nullable|date_format:Y-m-d H:i:s',
@@ -1692,7 +1691,7 @@ public function updateQuestionsInExam(Request $request, $examId)
         $exam = Exam::findOrFail($examId);
 
         // Update the exam details with the nullable fields
-        $exam->update($request->only(['classtable_id', 'title', 'quarter', 'start', 'end', 'points_exam']));
+        $exam->update($request->only([ 'title', 'quarter', 'start', 'end', 'points_exam']));
 
         $totalPoints = 0;
         $totalQuestions = 0;
