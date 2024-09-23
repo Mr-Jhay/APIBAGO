@@ -2535,4 +2535,137 @@ public function createAndPublishExam(Request $request)
 }
 
 
+
+public function viewquestion(Request $request, $questionId)
+{
+    // Get the question and its related choices, including the correct answer
+    $questionData = DB::table('tblquestion')
+        ->leftJoin('addchoices', 'tblquestion.id', '=', 'addchoices.tblquestion_id') // Join with choices
+        ->leftJoin('correctanswer', 'tblquestion.id', '=', 'correctanswer.tblquestion_id') // Join with correct answer
+        ->where('tblquestion.id', $questionId) // Match the question ID
+        ->select(
+            'tblquestion.id as question_id',        // Select question ID
+            'tblquestion.question',
+            'addchoices.id as choice_id',           // Select choice ID
+            'addchoices.choices',
+            'correctanswer.addchoices_id as correct_choice_id', // Get the ID of the correct choice
+            'correctanswer.correct_answer',          // Get the correct answer text
+            'correctanswer.points'                    // Get points for the correct answer
+        )
+        ->get();
+
+    // Check if the question exists
+    if ($questionData->isEmpty()) {
+        return response()->json([
+            'message' => 'Question not found.'
+        ], 404);
+    }
+
+    // Structure the response
+    $response = [
+        'question_id' => $questionData->first()->question_id, // Get the question ID
+        'question' => $questionData->first()->question,        // Get the question text
+        'choices' => $questionData->map(function ($item) {
+            return [
+                'choice_id' => $item->choice_id,   // Include choice ID
+                'choice' => $item->choices          // Include choice text
+            ];
+        }),
+        'correct_answer' => $questionData->first()->correct_answer, // Get correct answer
+        'correct_choice_id' => $questionData->first()->correct_choice_id, // Get correct choice ID
+        'points' => $questionData->first()->points      // Get points for the correct answer
+    ];
+
+    return response()->json($response, 200);
+}
+
+
+
+public function updateQuestion(Request $request, $questionId)
+{
+    // Validation rules for question only
+    $request->validate([
+        'question' => 'sometimes|string',  // Only validate the question
+    ]);
+
+    try {
+        // Find the question by ID
+        $question = Question::find($questionId);
+
+        // Return 404 if question is not found
+        if (!$question) {
+            return response()->json(['message' => 'Question not found.'], 404);
+        }
+
+        // Update the question fields if provided
+        $question->update($request->only(['question']));
+
+        return response()->json(['message' => 'Question updated successfully.'], 200);
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        Log::error('Failed to update question: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update question.'], 500);
+    }
+}
+
+public function updateChoice(Request $request, $questionId, $choiceId)
+{
+    // Validation rules for updating a single choice
+    $request->validate([
+        'choice' => 'required|string',  // Ensure the new choice is a string
+    ]);
+
+    try {
+        // Find the question to ensure it exists
+        $question = Question::find($questionId);
+
+        // Return 404 if the question is not found
+        if (!$question) {
+            return response()->json(['message' => 'Question not found.'], 404);
+        }
+
+        // Find the specific choice by ID
+        $choice = Choice::where('tblquestion_id', $questionId)->find($choiceId);
+
+        // Return 404 if the choice is not found
+        if (!$choice) {
+            return response()->json(['message' => "Choice with ID $choiceId not found."], 404);
+        }
+
+        // Update the choice with the new value
+        $choice->update(['choices' => $request->choice]);
+
+        return response()->json(['message' => 'Choice updated successfully.'], 200);
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        Log::error('Failed to update choice: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update choice.'], 500);
+    }
+}
+
+
+public function updateCorrectanswer(Request $request, $id)
+{
+    $request->validate([
+        'correct_answer' => 'sometimes|string',
+        'points' => 'nullable|integer',
+    ]);
+
+    try {
+        $correctAnswer = CorrectAnswer::find($id);
+
+        if (!$correctAnswer) {
+            return response()->json(['message' => 'Correct answer not found.'], 404);
+        }
+
+        // Update only the fields that are present in the request
+        $correctAnswer->update($request->only(['correct_answer', 'points']));
+        
+        return response()->json(['message' => 'Correct answer updated successfully.', 'data' => $correctAnswer], 200);
+    } catch (\Exception $e) {
+        Log::error('Failed to update correct answer: ' . $e->getMessage());
+        return response()->json(['error' => 'Failed to update correct answer.'], 500);
+    }
+}
+
 }

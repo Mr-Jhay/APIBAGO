@@ -338,6 +338,10 @@ Route::get('tblclass/{classtable_id}/exam/{exam_id}', [ExamController::class, 'v
  Route::post('createAndPublishExam', [ExamController::class, 'createAndPublishExam']);//update sa bago whout clicking the publish
  Route::delete('deleteMultipleQuestions/{id}', [ExamController::class, 'deleteMultipleQuestions']);
 
+ Route::get('viewquestion/{id}', [ExamController::class, 'viewquestion']);//pag view ng specific question need lang is yung id nung question
+ Route::put('updateQuestion/{id}', [ExamController::class, 'updateQuestion']);//pag edit ng question need lang is yung id nung question
+ Route::put('updateChoice/{id}/{id2}', [ExamController::class, 'updateChoice']);////pag edit ng choices need lang is yung id nung question
+
    
     //STUDENTS
 
