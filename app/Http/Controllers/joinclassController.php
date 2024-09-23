@@ -58,52 +58,65 @@ public function addwocode(Request $request)
 {
     // Validate incoming request
     $request->validate([
+        'class_id' => 'required|exists:tblclass,id', // Class ID must be provided and exist in tblclass
         'user_ids' => 'required|array',
         'user_ids.*' => 'exists:users,id', // Ensure each ID exists in the users table
-        'name' => 'required|string',
     ]);
 
-    $name = $request->input('name');
+    // Get the class ID from the request
+    $classId = $request->input('class_id');
     
     // Get the currently authenticated teacher
     $teacher = auth()->user();
     
-    // Find the class associated with the teacher
-    $class = DB::table('tblclass')->where('teacher_id', $teacher->id)->first();
+    // Retrieve the class by class_id
+    $class = DB::table('tblclass')->where('id', $classId)->first();
     
-    // Check if the class exists
-    if (!$class) {
-        return response()->json(['error' => 'Class not found'], 404);
+    // Check if the teacher is associated with the class
+    if ($class->user_id != $teacher->id) {
+        return response()->json(['error' => 'Unauthorized: You are not the teacher of this class'], 403);
     }
-    
-    // Initialize an array to store the joinclass records
+
+    // Initialize arrays to store the joinclass records and already joined users
     $joinClasses = [];
-    
+    $alreadyJoinedUsers = [];
+
     // Loop through each user_id to create a joinclass record
     foreach ($request->input('user_ids') as $userId) {
-        $user = User::find($userId);
-
-        if ($user) {
-            // Create joinclass record
-            $joinClasses[] = joinclass::create([
-                'user_id' => $userId,
-                'class_id' => $class->id,
-                'status' => 1, // Set status to 1
-            ]);
-            
-            // Send email to the student
-            try {
-                Mail::to($user->email)->send(new WelcomeMail($name));
-            } catch (\Exception $e) {
-                // Log the error or handle it as needed
-                \Log::error('Failed to send email to user ID '.$userId.': '.$e->getMessage());
-            }
+        // Check if the user is already in the class
+        $existingJoinClass = joinclass::where('user_id', $userId)->where('class_id', $class->id)->first();
+        
+        if ($existingJoinClass) {
+            // If user already joined, add to the alreadyJoinedUsers array
+            $alreadyJoinedUsers[] = $userId;
+            continue; // Skip to the next user_id
         }
+
+        // Create joinclass record
+        $joinClasses[] = joinclass::create([
+            'user_id' => $userId,
+            'class_id' => $class->id,
+            'status' => 1, // Set status to 1
+        ]);
     }
-    
+
+    // If there are already joined users, return an error response
+    if (!empty($alreadyJoinedUsers)) {
+        return response()->json([
+            'message' => 'Some users were not added because they have already joined the class.',
+            'already_joined_users' => array_map(fn($userId) => User::find($userId)->email, $alreadyJoinedUsers),
+        ], 409); // 409 Conflict
+    }
+
     // Return the newly created joinclass records
-    return response()->json($joinClasses, 201);
+    return response()->json([
+        'message' => 'Users added successfully.',
+        'join_classes' => $joinClasses,
+        'added_user_emails' => array_map(fn($userId) => User::find($userId)->email, $request->input('user_ids')),
+    ], 201);
 }
+
+
     
 
     // Method for students to join a class using gen_code only
@@ -217,7 +230,41 @@ public function addwocode(Request $request)
         return response()->json($students, 200);
     }
 
-
+    public function kickStudentFromClass(Request $request, $class_id, $student_id)
+    {
+        // Validate incoming request
+        // $request->validate([
+        //     'class_id' => 'required|exists:tblclass,id',
+        //     'student_id' => 'required|exists:users,id',
+        // ]);
+    
+        $user = $request->user();
+    
+        // Check if the user is authorized to kick students
+        if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
+            return response()->json([
+                'error' => 'Unauthorized: Only teachers and admins can kick students from a class.'
+            ], 403);
+        }
+    
+        // Check if the student is part of the class
+        $joinClass = joinclass::where('class_id', $class_id)->where('user_id', $student_id)->first();
+    
+        if (!$joinClass) {
+            return response()->json([
+                'error' => 'Student is not part of this class.'
+            ], 404);
+        }
+    
+        // Delete the joinclass record to kick the student
+        $joinClass->delete();
+    
+        return response()->json([
+            'message' => 'Student kicked from the class successfully.',
+            'student_id' => $student_id,
+        ], 200);
+    }
+    
 
 
     public function listStudentsInClassGendertotal( $class_id)
