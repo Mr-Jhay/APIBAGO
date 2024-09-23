@@ -1524,6 +1524,7 @@ public function getAllExamsByClass($classId)
                 'quarter' => $exam->quarter,
                 'start' => $exam->start,
                 'end' => $exam->end,
+                'points_exam' => $exam->points_exam,
                 'students_completed' => $studentsCompletedCount,
                 'completion_percentage' => round($completionPercentage, 2) . '%', // Add completion percentage to the response
             ];
