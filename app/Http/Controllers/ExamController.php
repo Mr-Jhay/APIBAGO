@@ -2173,6 +2173,20 @@ public function itemAnalysis(Request $request)
         ->with('user') // Load the related user model
         ->get();
 
+    $totalStudents = $students->count(); // Total number of students in the class
+
+    // Retrieve all students who answered at least one question in the exam
+    $studentsWhoCompleted = AnsweredQuestion::whereHas('tblquestion', function ($query) use ($examId) {
+        $query->where('tblschedule_id', $examId);
+    })
+    ->groupBy('users_id')
+    ->pluck('users_id');
+
+    $studentsCompletedCount = $studentsWhoCompleted->count(); // Number of students who took the exam
+
+    // Calculate the percentage of students who completed the exam
+    $completionPercentage = $totalStudents > 0 ? ($studentsCompletedCount / $totalStudents) * 100 : 0;
+
     // Retrieve all questions for the exam
     $questions = Question::where('tblschedule_id', $examId)
         ->with('addchoices') // Load choices for each question
@@ -2242,9 +2256,12 @@ public function itemAnalysis(Request $request)
 
     return response()->json([
         'item_analysis' => $itemAnalysis,
-        'total_students' => $students->count()
+        'total_students' => $totalStudents,
+        'students_completed_exam' => $studentsCompletedCount,
+        'completion_percentage' => round($completionPercentage, 2) . '%', // Percentage of students who completed the exam
     ], 200);
 }
+
 
 
 
