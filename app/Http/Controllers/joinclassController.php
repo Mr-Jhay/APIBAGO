@@ -233,10 +233,10 @@ public function addwocode(Request $request)
     public function kickStudentFromClass(Request $request, $class_id, $student_id)
     {
         // Validate incoming request
-        $request->validate([
-            'class_id' => 'required|exists:tblclass,id',
-            'student_id' => 'required|exists:users,id',
-        ]);
+        // $request->validate([
+        //     'class_id' => 'required|exists:tblclass,id',
+        //     'student_id' => 'required|exists:users,id',
+        // ]);
     
         $user = $request->user();
     
