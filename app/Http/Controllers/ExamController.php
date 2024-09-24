@@ -848,7 +848,7 @@ public function viewAllExamsInClass2($classtable_id)
 
                 // If the result exists, mark the exam as "Done"
                 if ($exam->total_score !== 'Unfinished') {
-                    $exam->status = $exam->status == 1 ? 'Passed' : 'Failed';
+                    $exam->status == 1 ? 'Passed' : 'Failed';
                 }
 
                 // If no result and the exam's end time has passed, mark it as "Missing"
