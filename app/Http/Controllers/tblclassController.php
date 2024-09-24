@@ -152,9 +152,12 @@ public function updateClassStatus(Request $request, $classId)
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve all classes created by this teacher with related data
-            $classes = tblclass::with(['strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
+            $classes = tblclass::with(['user','strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
                             ->where('user_id', $user->id)
-                            ->where('status', 1)  
+                            ->where('status', 1) 
+                            ->whereHas('year', function ($query) {
+                                $query->where('is_active', 1);  // Filter by inactive year
+                            })
                             ->get();
 
             if ($classes->isNotEmpty()) {
@@ -407,15 +410,29 @@ public function updateClassStatus(Request $request, $classId)
     // Fetch the classes the student has joined where the status is approved (1)
     $classrooms = \DB::table('joinclass')
                     ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsection', 'tblclass.section_id', '=', 'tblsection.id') 
+                    ->Join('tblyear', 'tblclass.year_id', '=', 'tblyear.id') 
+                    ->Join('tblstrand', 'tblclass.strand_id', '=', 'tblstrand.id') 
+                    ->Join('users', 'tblclass.user_id', '=', 'users.id') 
                     ->where('joinclass.user_id', $user->id)
                     ->where('joinclass.status', 1) // Ensure the status is approved
                     ->where('tblclass.status', 1)  
+                    ->where('tblyear.is_active', 1) 
                     ->select(
+
+
                         'tblclass.id as class_id',
                         'tblclass.class_desc as class_description',
+                        'users.lname as teacher_lname',
+                        'users.fname as teacher_fname',
                         'tblclass.gen_code as class_gen_code',
-                        'tblsubject.subjectname as subject_name' // Assuming tblsubject has a 'subjectname' field
+                        'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'subjectname' field
+                        'tblsection.section as section_name', 
+                        'tblyear.addyear as year_name', 
+                        'tblstrand.addstrand as strand_name', 
+                        'tblstrand.grade_level as grade_level', 
+                        'tblyear.addyear as year_name', 
                     )
                     ->get();
 
