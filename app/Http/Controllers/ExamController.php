@@ -2649,25 +2649,32 @@ public function updateChoice(Request $request, $questionId, $choiceId)
 }
 
 
-public function updateCorrectanswer(Request $request, $id)
+public function updateCorrectAnswer(Request $request, $id)
 {
+    // Validate the incoming request
     $request->validate([
+        'addchoices_id' => 'nullable|integer|exists:addchoices,id', // Ensure addchoices_id exists in addchoices table
         'correct_answer' => 'sometimes|string',
         'points' => 'nullable|integer',
     ]);
 
     try {
+        // Find the correct answer by its ID
         $correctAnswer = CorrectAnswer::find($id);
 
         if (!$correctAnswer) {
             return response()->json(['message' => 'Correct answer not found.'], 404);
         }
 
-        // Update only the fields that are present in the request
-        $correctAnswer->update($request->only(['correct_answer', 'points']));
+        // Update the fields that are present in the request
+        $correctAnswer->update($request->only(['addchoices_id','correct_answer', 'points']));
         
-        return response()->json(['message' => 'Correct answer updated successfully.', 'data' => $correctAnswer], 200);
+        return response()->json([
+            'message' => 'Correct answer updated successfully.',
+            'data' => $correctAnswer
+        ], 200);
     } catch (\Exception $e) {
+        // Log the error and return an appropriate response
         Log::error('Failed to update correct answer: ' . $e->getMessage());
         return response()->json(['error' => 'Failed to update correct answer.'], 500);
     }
