@@ -848,7 +848,7 @@ public function viewAllExamsInClass2($classtable_id)
 
                 // If the result exists, mark the exam as "Done"
                 if ($exam->total_score !== 'Unfinished') {
-                    $exam->status = 'Finish' == 1 ? 'Passed' : 'Failed';
+                    $exam->status = $exam->status == 1 ? 'Passed' : 'Failed';
                 }
 
                 // If no result and the exam's end time has passed, mark it as "Missing"
@@ -1295,6 +1295,9 @@ public function getResultswithtestbank(Request $request, $examId)
         $passingThreshold = $totalPossiblePoints * 0.50; // 75% of total possible points
         $status = $totalScore >= $passingThreshold ? 1 : 0;
 
+          // Get time consumed from request (in minutes or seconds)
+          $timeConsumed = $request->input('time_consumed', null); // Ensure this value is provided from the frontend
+
         // Save or update the result in tblresult
         DB::table('tblresult')->updateOrInsert(
             ['users_id' => $user->id, 'exam_id' => $examId],
@@ -1302,7 +1305,8 @@ public function getResultswithtestbank(Request $request, $examId)
                 'total_score' => $totalScore,
                 'total_exam' => $totalPossiblePoints,
                 'average' => $average,
-                'status' => $status
+                'status' => $status,
+                'time_consumed' => $timeConsumed  // Store time consumed
             ]
         );
 
@@ -1311,7 +1315,8 @@ public function getResultswithtestbank(Request $request, $examId)
             'total_score' => $totalScore,
             'total_possible_points' => $totalPossiblePoints,
             'average' => $average,
-            'status' => $status
+            'status' => $status,
+            'time_consumed' => $timeConsumed // Return time consumed
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam results: ' . $e->getMessage());
