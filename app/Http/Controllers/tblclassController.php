@@ -81,7 +81,8 @@ class tblclassController extends Controller
 
 
 public function updateaddclass(Request $request, $id)
-    {
+{
+    try {
         // Find the class by ID
         $class = tblclass::find($id);
         if (!$class) {
@@ -126,7 +127,15 @@ public function updateaddclass(Request $request, $id)
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        \Log::error('Failed to update class: ' . $e->getMessage());
+
+        // Return a 500 error response
+        return response()->json(['message' => 'An error occurred while updating the class. Please try again later.' . $e->getMessage()], 500);
     }
+}
 public function updateClassStatus(Request $request, $classId)
 {
     // Validate the request to ensure status is either 1 or omitted (default to 0)
