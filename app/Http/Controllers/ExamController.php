@@ -2139,6 +2139,7 @@ public function getAllStudentResults(Request $request)
                 'sex' => $result->sex,
                 'strand_name' => $result->strand_name,
                 'gradelevel_name' => $result->gradelevel_name,
+                'points_exam' => $result->points_exam,
                 'total_score' => $result->total_score,
                 'total_exam' => $result->total_exam,
                 'exam_start' => $result->start,
