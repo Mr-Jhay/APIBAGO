@@ -2086,6 +2086,7 @@ public function getAllStudentResults(Request $request)
                 'tblschedule.title AS exam_title',
                 'tblschedule.start',
                 'tblschedule.end',
+                'tblschedule.points_exam',
                 'tblresult.total_score',
                 'tblresult.average',
                 'tblresult.total_exam',
