@@ -2053,21 +2053,28 @@ public function getAllStudentResults(Request $request)
 
         // Retrieve all student results for the specified class
         $results = DB::table('users')
-            ->leftJoin('joinclass', 'users.id', '=', 'joinclass.user_id') // Join with joinclass to get enrolled students
-            ->leftJoin('tblschedule', function ($join) use ($request) {
-                $join->on('tblschedule.classtable_id', '=', 'joinclass.class_id')
-                     ->where('tblschedule.classtable_id', $request->classtable_id); // Filter by class
-            })
-            ->leftJoin('tblresult', function ($join) {
-                $join->on('tblresult.users_id', '=', 'users.id')
-                     ->on('tblresult.exam_id', '=', 'tblschedule.id'); // Match results with students and exams
-            })
+        ->leftJoin('joinclass', 'users.id', '=', 'joinclass.user_id') // Join with joinclass to get enrolled students
+        ->leftJoin('tblschedule', function ($join) use ($request) {
+            $join->on('tblschedule.classtable_id', '=', 'joinclass.class_id')
+                 ->where('tblschedule.classtable_id', $request->classtable_id); // Filter by class
+        })
+        ->leftJoin('tblresult', function ($join) {
+            $join->on('tblresult.users_id', '=', 'users.id')
+                 ->on('tblresult.exam_id', '=', 'tblschedule.id'); // Match results with students and exams
+        })
+       // ->Join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+       // ->Join('tblstudent', 'users.strand_id', '=', 'tblstudent.id')
+       ->leftJoin('tblstudent', 'users.id', '=', 'tblstudent.user_id') // Join users with tblstudent
+       ->leftJoin('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+
             ->select(
                 'users.id AS student_id',
                 'users.idnumber AS Lrn_id',
                 'users.lname AS Last_name',
                 'users.fname AS First_name',
                 'users.mname AS Middle_i',
+                'users.sex AS sex',
+                'tblstrand.addstrand AS strand_name',
                 'tblschedule.title AS exam_title',
                 'tblschedule.start',
                 'tblschedule.end',
@@ -2120,6 +2127,8 @@ public function getAllStudentResults(Request $request)
                 'Last_name' => $result->Last_name,
                 'First_name' => $result->First_name,
                 'Middle_i' => $result->Middle_i,
+                'sex' => $result->sex,
+                'strand_name' => $result->strand_name,
                 'total_score' => $result->total_score,
                 'total_exam' => $result->total_exam,
                 'exam_start' => $result->start,
