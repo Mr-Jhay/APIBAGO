@@ -81,7 +81,8 @@ class tblclassController extends Controller
 
 
 public function updateaddclass(Request $request, $id)
-    {
+{
+    try {
         // Find the class by ID
         $class = tblclass::find($id);
         if (!$class) {
@@ -126,7 +127,15 @@ public function updateaddclass(Request $request, $id)
         } else {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
+
+    } catch (\Exception $e) {
+        // Log the error for debugging
+        \Log::error('Failed to update class: ' . $e->getMessage());
+
+        // Return a 500 error response
+        return response()->json(['message' => 'An error occurred while updating the class. Please try again later.' . $e->getMessage()], 500);
     }
+}
 public function updateClassStatus(Request $request, $classId)
 {
     // Validate the request to ensure status is either 1 or omitted (default to 0)
@@ -152,9 +161,12 @@ public function updateClassStatus(Request $request, $classId)
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve all classes created by this teacher with related data
-            $classes = tblclass::with(['strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
+            $classes = tblclass::with(['user','strand', 'section', 'subject', 'year'])  // Adjust the relations based on your models
                             ->where('user_id', $user->id)
-                            ->where('status', 1)  
+                            ->where('status', 1) 
+                            ->whereHas('year', function ($query) {
+                                $query->where('is_active', 1);  // Filter by inactive year
+                            })
                             ->get();
 
             if ($classes->isNotEmpty()) {
@@ -177,7 +189,7 @@ public function updateClassStatus(Request $request, $classId)
         // Check if the user is authorized and is a teacher
         if ($user && $user->usertype === 'teacher') {
             // Retrieve the class created by this teacher with related data
-            $class = tblclass::with(['strand', 'section', 'subject', 'year']) // Adjust relations as necessary
+            $class = tblclass::with(['user','strand', 'section', 'subject', 'year']) // Adjust relations as necessary
                             ->where('id', $class_id)
                             ->where('user_id', $user->id) // Ensure class belongs to the teacher
                             ->first();
@@ -407,15 +419,30 @@ public function updateClassStatus(Request $request, $classId)
     // Fetch the classes the student has joined where the status is approved (1)
     $classrooms = \DB::table('joinclass')
                     ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsection', 'tblclass.section_id', '=', 'tblsection.id') 
+                    ->Join('tblyear', 'tblclass.year_id', '=', 'tblyear.id') 
+                    ->Join('tblstrand', 'tblclass.strand_id', '=', 'tblstrand.id') 
+                    ->Join('users', 'tblclass.user_id', '=', 'users.id') 
                     ->where('joinclass.user_id', $user->id)
                     ->where('joinclass.status', 1) // Ensure the status is approved
                     ->where('tblclass.status', 1)  
+                    ->where('tblyear.is_active', 1) 
                     ->select(
+
+
                         'tblclass.id as class_id',
                         'tblclass.class_desc as class_description',
+                        'users.lname as teacher_lname',
+                        'users.fname as teacher_fname',
+                        'users.mname as teacher_fname',
                         'tblclass.gen_code as class_gen_code',
-                        'tblsubject.subjectname as subject_name' // Assuming tblsubject has a 'subjectname' field
+                        'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'subjectname' field
+                        'tblsection.section as section_name', 
+                        'tblyear.addyear as year_name', 
+                        'tblstrand.addstrand as strand_name', 
+                        'tblstrand.grade_level as grade_level', 
+                        'tblyear.addyear as year_name', 
                     )
                     ->get();
 
@@ -486,22 +513,32 @@ public function getSingleClassroomDetails($class_id)
         ], 403); // HTTP Forbidden
     }
 
-    // Fetch the specific class the student has joined where the status is approved (1)
+    // Fetch the specific class the student has joined where the status is approved (1)//
     $classroom = \DB::table('joinclass')
                     ->join('tblclass', 'joinclass.class_id', '=', 'tblclass.id')
-                    ->leftJoin('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id')
-                   // ->leftJoin('semester', 'tblclass.subject_id', '=', 'semester.id')
-                    ->leftJoin('tblyear', 'tblclass.year_id', '=', 'tblyear.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsubject', 'tblclass.subject_id', '=', 'tblsubject.id') // Assuming tblclass has a foreign key to tblsubject
+                    ->Join('tblsection', 'tblclass.section_id', '=', 'tblsection.id') 
+                    ->Join('tblyear', 'tblclass.year_id', '=', 'tblyear.id') 
+                    ->Join('tblstrand', 'tblclass.strand_id', '=', 'tblstrand.id') 
+                    ->Join('users', 'tblclass.user_id', '=', 'users.id') 
                     ->where('joinclass.user_id', $user->id)
                     ->where('joinclass.class_id', $class_id) // Ensure it matches the specific class ID
                     ->where('joinclass.status', 1) // Ensure the status is approved
                     ->select(
+                        
                         'tblclass.id as class_id',
                         'tblclass.class_desc as class_description',
+                        'users.lname as teacher_lname',
+                        'users.fname as teacher_fname',
+                        'users.mname as teacher_mname',
                         'tblclass.gen_code as class_gen_code',
                         'tblclass.semester as class_semester',
                         'tblyear.addyear as class_addyear',
-                        'tblsubject.subjectname as subject_name' // Assuming tblsubject has a 'subjectname' field
+                        'tblsubject.subjectname as subject_name', // Assuming tblsubject has a 'subjectname                   
+                        'tblsection.section as section_name', 
+                        'tblstrand.addstrand as strand_name', 
+                        'tblstrand.grade_level as grade_level',
+                        
                     )
                     ->first(); // Fetch only one record
 

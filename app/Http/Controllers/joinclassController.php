@@ -267,12 +267,12 @@ public function addwocode(Request $request)
     
 
 
-    public function listStudentsInClassGendertotal( $class_id)
+    public function listStudentsInClassGendertotal(Request $request, $class_id)
     {
         // Validate the class_id parameter
-       // $request->validate([
-       //     'class_id' => 'required|exists:tblclass,id'
-      //  ]);
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id'
+        ]);
     
         // Get the authenticated user
         $user = $request->user();
@@ -299,9 +299,7 @@ public function addwocode(Request $request)
             'female' => $students->where('sex', 'female')->count(),
         ];
     
-        return response()->json([
-            'gender_counts' => $genderCounts
-        ], 200);
+        return response()->json([ 'gender_counts' => $genderCounts], 200);
     }
 
 
@@ -458,7 +456,16 @@ public function addwocode(Request $request)
             ->select('tblstudent.*', 'users.id as user_id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email') // Include additional fields
             ->get();
 
-        return response()->json(['students' => $approvedStudents], 200);
+            $genderCounts = [
+                'total' => $approvedStudents->count(),
+                'male' => $approvedStudents->where('sex', 'male')->count(),
+                'female' => $approvedStudents->where('sex', 'female')->count(),
+            ];
+
+        return response()->json([
+            'students' => $approvedStudents,
+            'gender' => $genderCounts
+        ], 200);
     }
 
     public function getStudentClassroomDetails(Request $request, $class_id)

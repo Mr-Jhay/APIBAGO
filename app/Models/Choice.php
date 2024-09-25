@@ -30,5 +30,10 @@ public function correctAnswers()
     return $this->hasOne(CorrectAnswer::class, 'tblquestion_id', 'tblquestion_id')
         ->where('addchoices_id', $this->addchoices_id);
 }
+
+public static function shuffleChoices($choices)
+{
+    return $choices->shuffle(); // Shuffle the collection of choices
+}
 }
  
