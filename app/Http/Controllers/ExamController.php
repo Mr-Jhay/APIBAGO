@@ -2213,6 +2213,11 @@ public function itemAnalysis(Request $request)
     $examSchedule = Exam::where('id', $examId)->firstOrFail();
     $classId = $examSchedule->classtable_id; // Automatically get the classId from the exam
 
+    $instruction = instructions::where('schedule_id', $examId)->first();
+    $instructionText = $instruction ? $instruction->instruction : 'No instructions provided.';
+
+    $subjectTitle = $examSchedule->title ? $examSchedule->title : 'No subject title available';
+
     // Retrieve all students in the class
     $students = joinclass::where('class_id', $classId)
         ->where('status', 1) // Only get active students
@@ -2301,6 +2306,8 @@ public function itemAnalysis(Request $request)
     }
 
     return response()->json([
+        'exam_title' => $subjectTitle, 
+        'instruction' => $instructionText, 
         'item_analysis' => $itemAnalysis,
         'total_students' => $totalStudents,
         'students_completed_exam' => $studentsCompletedCount,
