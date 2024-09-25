@@ -1444,9 +1444,16 @@ public function viewExam2updated2($exam_id)
         // Shuffle the selected questions
         $shuffledQuestions = $selectedQuestions->shuffle();
 
-        // Shuffle the choices within each question
+        // Shuffle the choices directly from the Choices table for each question
         $shuffledQuestions->transform(function ($question) {
-            $question->choices = $question->choices->shuffle();
+            // Retrieve choices from the database
+            $choices = Choice::where('tblquestion_id', $question->id) // Assuming there's a question_id column
+                ->get()
+                ->shuffle(); // Shuffle the collection of choices
+
+            // Assign the shuffled choices back to the question
+            $question->choices = $choices;
+
             return $question;
         });
 
@@ -1460,7 +1467,7 @@ public function viewExam2updated2($exam_id)
         ], 200);
     } catch (\Exception $e) {
         Log::error('Failed to retrieve exam details: ' . $e->getMessage());
-        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.'], 500);
+        return response()->json(['error' => 'Failed to retrieve exam details. Please try again later.' .$e->getMessage()], 500);
     }
 }
 
