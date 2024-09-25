@@ -267,12 +267,12 @@ public function addwocode(Request $request)
     
 
 
-    public function listStudentsInClassGendertotal( $class_id)
+    public function listStudentsInClassGendertotal(Request $request, $class_id)
     {
         // Validate the class_id parameter
-       // $request->validate([
-       //     'class_id' => 'required|exists:tblclass,id'
-      //  ]);
+        $request->validate([
+            'class_id' => 'required|exists:tblclass,id'
+        ]);
     
         // Get the authenticated user
         $user = $request->user();
