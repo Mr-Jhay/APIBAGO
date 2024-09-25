@@ -278,7 +278,7 @@ class ExamController extends Controller
             // Return success response
             return response()->json(['message' => 'Exam published and emails sent successfully'], 200);
     
-        } catch (\Exception $e) {
+        } catch (\Exception $e) { 
             // Log the error for debugging
             \Log::error('Failed to publish exam: ' . $e->getMessage());
     

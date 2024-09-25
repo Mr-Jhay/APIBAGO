@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('tblyear', function (Blueprint $table) {
             // Add the 'is_active' column with a default value of false
-            $table->boolean('is_active')->default(false)->after('addyear'); // Add after 'addyear' for better ordering
+         //   $table->boolean('is_active')->default(false)->after('addyear'); // Add after 'addyear' for better ordering
         });
     }
 
@@ -24,7 +24,7 @@ return new class extends Migration
     {
         Schema::table('tblyear', function (Blueprint $table) {
             // Drop the 'is_active' column if the migration is rolled back
-            $table->dropColumn('is_active');
+        //    $table->dropColumn('is_active');
         });
     }
 };
