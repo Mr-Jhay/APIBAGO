@@ -17,36 +17,50 @@ use App\Models\tblsection;
 class manage_curiculumController extends Controller
 {
     public function addcuriculum(Request $request)
-    {
-        // Validate the incoming request data
-        $validator = Validator::make($request->all(), [
-            'strand_id' => 'required|exists:tblstrand,id',
-            'subject_ids' => 'required|array', 
-            'subject_ids.*' => 'exists:tblsubject,id', 
-           // 'strand_id' => 'required|exists:tblstrand,id',
-            'semester' => 'required|string|max:255',
-        ]);
+{
+    // Validate the incoming request data
+    $validator = Validator::make($request->all(), [
+        'strand_id' => 'required|exists:tblstrand,id',
+        'subject_ids' => 'required|array', 
+        'subject_ids.*' => 'exists:tblsubject,id',
+        'semester' => 'required|string|max:255',
+    ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
 
-        $createdEntries = [];
+    $createdEntries = [];
 
-        // Loop through each subject ID and create a new record for each
-        foreach ($request->subject_ids as $subject_id) {
+    // Loop through each subject ID and check if it already exists for the strand and semester
+    foreach ($request->subject_ids as $subject_id) {
+        // Check if the entry already exists
+        $existingEntry = manage_curiculum::where('strand_id', $request->strand_id)
+            ->where('subject_id', $subject_id)
+            ->where('semester', $request->semester)
+            ->doesntExist();
+
+        // Only create if the entry doesn't exist
+        if ($existingEntry) {
             $manageCuriculum = manage_curiculum::create([
                 'strand_id' => $request->strand_id,
                 'subject_id' => $subject_id,
-                //'strand_id' => $request->strand_id,
                 'semester' => $request->semester,
             ]);
 
             $createdEntries[] = $manageCuriculum;
         }
-
-        return response()->json(['message' => 'Curriculum entries created successfully', 'data' => $createdEntries], 201);
     }
+
+    // Prepare the response message
+    $message = count($createdEntries) > 0 ? 'Curriculum entries created successfully' : 'No new entries created';
+    
+    return response()->json([
+        'message' => $message,
+        'data' => $createdEntries,
+    ], 201);
+}
+
 
  //   public function viewcuriculum()
 //    {
