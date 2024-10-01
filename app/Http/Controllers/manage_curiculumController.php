@@ -149,10 +149,14 @@ class manage_curiculumController extends Controller
     foreach ($groupedData as $strand => $grades) {
         $strandData = [
             'strand' => $strand,
-            'grades' => []
-        ]; // Initialize strand data
+            'grades' => [] // Initialize grades as an array
+        ]; 
         foreach ($grades as $grade => $subjects) {
-            $strandData['grades'][$grade] = $subjects; // Assign subjects to the respective grade level
+            // Create a grade data entry with grade level and subjects
+            $strandData['grades'][] = [
+                'gradelevel' => $grade,
+                'subjects' => $subjects // Assign subjects to the respective grade level
+            ];
         }
         $formattedData[] = $strandData; // Add strand data to the formatted response
     }
