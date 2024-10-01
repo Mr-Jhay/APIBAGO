@@ -20,7 +20,6 @@ class manage_curiculumController extends Controller
     {
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
-            'scuriculum_id' => 'required|exists:strandcuriculum,id', 
             'strand_id' => 'required|exists:tblstrand,id',
             'subject_ids' => 'required|array', 
             'subject_ids.*' => 'exists:tblsubject,id', 
@@ -37,7 +36,6 @@ class manage_curiculumController extends Controller
         // Loop through each subject ID and create a new record for each
         foreach ($request->subject_ids as $subject_id) {
             $manageCuriculum = manage_curiculum::create([
-                'scuriculum_id' => $request->scuriculum_id,
                 'strand_id' => $request->strand_id,
                 'subject_id' => $subject_id,
                 //'strand_id' => $request->strand_id,
@@ -78,32 +76,80 @@ class manage_curiculumController extends Controller
     }
 
     public function viewcuriculum2()
-{
-    // Retrieve all records from the manage_curiculum table with related data
-    $curriculums = manage_curiculum::select(
-        'strandcuriculum.Namecuriculum',  // Curriculum name
-        'tblsubject.subjectname',  // Subject name
-        'tblstrand.addstrand',  // Strand name
-        'tblstrand.grade_level',  // Grade level
-        'manage_curiculum.semester'  // Semester
-    )
-    ->join('strandcuriculum', 'manage_curiculum.scuriculum_id', '=', 'strandcuriculum.id')
-    ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
-    ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
-    ->orderBy('strandcuriculum.Namecuriculum')
-    ->orderBy('tblsubject.subjectname')
-    ->orderBy('tblstrand.addstrand')
-    ->get();
+    {
+        // Retrieve all records from the manage_curiculum table with related data
+        $curriculums = manage_curiculum::select(
+            'tblsubject.id as subject_id',  // Subject ID
+            'tblsubject.subjectname',        // Subject name
+            'tblstrand.addstrand',           // Strand name
+            'tblstrand.grade_level',         // Grade level
+            'manage_curiculum.semester'      // Semester
+        )
+        ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        ->orderBy('tblstrand.addstrand')      // Order by strand name
+        ->orderBy('tblstrand.grade_level')     // Order by grade level
+        ->orderBy('tblsubject.subjectname')    // Order by subject name
+        ->get();
     
-    // Group the result by curriculum, then subject, and finally by strand
-    $groupedData = $curriculums->groupBy('Namecuriculum')->map(function ($curriculum) {
-        return $curriculum->groupBy('subjectname')->map(function ($subjects) {
-            return $subjects->groupBy('addstrand');
+        // Group the result by strand (addstrand) and then by grade level
+        $groupedData = $curriculums->groupBy('addstrand')->map(function ($strands) {
+            return $strands->groupBy('grade_level')->map(function ($levels) {
+                return $levels->groupBy('subjectname');
+            });
         });
+    
+        return response()->json(['data' => $groupedData], 200);
+    }
+    
+public function viewcuriculumforaddclass(Request $request)
+{
+    // Validate the request for tblstrand_id and semester (semester as string)
+    $validatedData = $request->validate([
+        'tblstrand_id' => 'required|integer|exists:tblstrand,id',
+        'semester' => 'required|string',  // Semester is a required string
+    ]);
+
+    // Retrieve the validated tblstrand_id and semester from the request
+    $tblstrand_id = $validatedData['tblstrand_id'] ?? null;
+    $semester = $validatedData['semester'] ?? null;
+
+    // Start building the query for managing the curriculum, without joining strandcuriculum
+    $curriculumsQuery = manage_curiculum::select(
+        'tblsubject.id as subject_id',  // Subject ID
+        'tblsubject.subjectname',       // Subject name
+        'tblstrand.addstrand',          // Strand name
+        'tblstrand.grade_level',        // Grade level
+        'manage_curiculum.semester'     // Semester
+    )
+    ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+    ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id');
+
+    // Add a condition if a valid tblstrand_id is provided
+    if ($tblstrand_id) {
+        $curriculumsQuery->where('tblstrand.id', $tblstrand_id);
+    }
+
+    // Add a condition if a valid semester is provided
+    if ($semester) {
+        $curriculumsQuery->where('manage_curiculum.semester', $semester);
+    }
+
+    // Order the results by subject and strand
+    $curriculums = $curriculumsQuery
+        ->orderBy('tblsubject.subjectname')
+        ->orderBy('tblstrand.addstrand')
+        ->get();
+
+    // Group the result by subject and strand
+    $groupedData = $curriculums->groupBy('subjectname')->map(function ($subjects) {
+        return $subjects->groupBy('addstrand');
     });
 
     return response()->json(['data' => $groupedData], 200);
 }
+
+
 
     public function updateStatus(Request $request, $id)
     {
