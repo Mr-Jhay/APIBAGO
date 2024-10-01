@@ -2307,12 +2307,22 @@ public function itemAnalysis(Request $request)
         // Calculate difficulty percentage
         $difficultyPercentage = $totalAnswered > 0 ? (1 - ($correctAnswersCount / $totalAnswered)) * 100 : 0;
 
+        $difficultyCategory = '';
+        if ($difficultyPercentage < 30) {
+            $difficultyCategory = 'Difficult';
+        } elseif ($difficultyPercentage >= 30 && $difficultyPercentage < 70) {
+            $difficultyCategory = 'Moderately Difficult';
+        } else {
+            $difficultyCategory = 'Easy';
+        }
+
         $itemAnalysis[] = [
             'question_id' => $questionId,
             'question' => $question->question,
             'choices' => $choicesWithPercentage,
             'correct_answer' => $correctAnswerText,
-            'difficulty_percentage' => round($difficultyPercentage, 2) . '%' // Add difficulty percentage to the response
+            'difficulty_percentage' => round($difficultyPercentage, 2) . '%' ,// Add difficulty percentage to the response
+            'difficulty_category' => $difficultyCategory // Add difficulty category
         ];
     }
 
