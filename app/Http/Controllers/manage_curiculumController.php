@@ -102,52 +102,65 @@ class manage_curiculumController extends Controller
         return response()->json(['data' => $groupedData], 200);
     }
     
-public function viewcuriculumforaddclass(Request $request)
-{
-    // Validate the request for tblstrand_id and semester (semester as string)
-    $validatedData = $request->validate([
-        'tblstrand_id' => 'required|integer|exists:tblstrand,id',
-        'semester' => 'required|string',  // Semester is a required string
-    ]);
-
-    // Retrieve the validated tblstrand_id and semester from the request
-    $tblstrand_id = $validatedData['tblstrand_id'] ?? null;
-    $semester = $validatedData['semester'] ?? null;
-
-    // Start building the query for managing the curriculum, without joining strandcuriculum
-    $curriculumsQuery = manage_curiculum::select(
-        'tblsubject.id as subject_id',  // Subject ID
-        'tblsubject.subjectname',       // Subject name
-        'tblstrand.addstrand',          // Strand name
-        'tblstrand.grade_level',        // Grade level
-        'manage_curiculum.semester'     // Semester
-    )
-    ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
-    ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id');
-
-    // Add a condition if a valid tblstrand_id is provided
-    if ($tblstrand_id) {
-        $curriculumsQuery->where('tblstrand.id', $tblstrand_id);
-    }
-
-    // Add a condition if a valid semester is provided
-    if ($semester) {
-        $curriculumsQuery->where('manage_curiculum.semester', $semester);
-    }
-
-    // Order the results by subject and strand
-    $curriculums = $curriculumsQuery
+    public function viewcuriculumforaddclass(Request $request)
+    {
+        // Validate the request for tblstrand_id and semester (semester as string)
+        $validatedData = $request->validate([
+            'tblstrand_id' => 'required|integer|exists:tblstrand,id',
+            'semester' => 'required|string',  // Semester is a required string
+        ]);
+    
+        // Retrieve the validated tblstrand_id and semester from the request
+        $tblstrand_id = $validatedData['tblstrand_id'];
+        $semester = $validatedData['semester'];
+    
+        // Start building the query for managing the curriculum
+        $curriculumsQuery = manage_curiculum::select(
+            'tblsubject.id as subject_id',  // Subject ID
+            'tblsubject.subjectname',        // Subject name
+            'tblstrand.addstrand',           // Strand name
+            'tblstrand.grade_level',         // Grade level
+            'manage_curiculum.semester'      // Semester
+        )
+        ->join('tblsubject', 'manage_curiculum.subject_id', '=', 'tblsubject.id')
+        ->join('tblstrand', 'manage_curiculum.strand_id', '=', 'tblstrand.id')
+        ->where('tblstrand.id', $tblstrand_id)  // Filter by tblstrand_id
+        ->where('manage_curiculum.semester', $semester) // Filter by semester
         ->orderBy('tblsubject.subjectname')
-        ->orderBy('tblstrand.addstrand')
-        ->get();
+        ->orderBy('tblstrand.addstrand');
+    
+    // Execute the query
+    $curriculums = $curriculumsQuery->get();
 
-    // Group the result by subject and strand
-    $groupedData = $curriculums->groupBy('subjectname')->map(function ($subjects) {
-        return $subjects->groupBy('addstrand');
+    // Group the result by strand, then by grade_level, then create a list of subjects
+    $groupedData = $curriculums->groupBy('addstrand')->map(function ($strands) {
+        return $strands->groupBy('grade_level')->map(function ($subjects) {
+            return $subjects->map(function ($subject) {
+                return [
+                    'subject_id' => $subject->subject_id,
+                    'subject_name' => $subject->subjectname
+                ];
+            })->values()->toArray(); // Convert to an array
+        });
     });
 
-    return response()->json(['data' => $groupedData], 200);
-}
+    // Format the response to match your desired structure
+    $formattedData = [];
+    foreach ($groupedData as $strand => $grades) {
+        $strandData = [
+            'strand' => $strand,
+            'grades' => []
+        ]; // Initialize strand data
+        foreach ($grades as $grade => $subjects) {
+            $strandData['grades'][$grade] = $subjects; // Assign subjects to the respective grade level
+        }
+        $formattedData[] = $strandData; // Add strand data to the formatted response
+    }
+
+    return response()->json(['data' => $formattedData], 200);
+    }
+    
+    
 
 
 
