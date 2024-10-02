@@ -15,7 +15,7 @@ class manage_curiculum extends Model
     protected $table = 'manage_curiculum';
 
     protected $fillable = [
-        'scuriculum_id',
+     
         'strand_id',
         'subject_id',
         'semester',
@@ -31,8 +31,5 @@ class manage_curiculum extends Model
         return $this->belongsTo(tblstrand::class, 'strand_id');
     }
 
-    public function curriculum()
-    {
-        return $this->belongsTo(strandcuriculum::class, 'scuriculum_id');
-    }
+
 }
