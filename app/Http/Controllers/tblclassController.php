@@ -101,41 +101,38 @@ public function updateaddclass(Request $request, $id)
             'gen_code' => 'nullable|string|max:255',
         ]);
 
-        $user = $request->user();
-
-        // Check if the user is a teacher
-        if ($user && $user->usertype === 'teacher') {
-            // If a new image is uploaded, process the file upload
-            if ($request->hasFile('profile_img')) {
-                // Delete the old image if it exists
-                if ($class->profile_img) {
-                    Storage::disk('public')->delete(str_replace('/storage/', '', $class->profile_img));
-                }
-
-                // Upload the new image
-                $file = $request->file('profile_img');
-                $imageName = time() . '.' . $file->getClientOriginalExtension();
-                $filePath = $file->storeAs('photos/projects', $imageName, 'public');
-                $validatedData['profile_img'] = '/storage/' . $filePath;
+        // Process image upload if any
+        if ($request->hasFile('profile_img')) {
+            if ($class->profile_img) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $class->profile_img));
             }
 
-            // Update the class with validated data
-            $class->update($validatedData);
-
-            // Respond with success
-            return response()->json(['message' => 'Class updated successfully.', 'data' => $class], 200);
-        } else {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            // Upload new image
+            $file = $request->file('profile_img');
+            $imageName = time() . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('photos/projects', $imageName, 'public');
+            $validatedData['profile_img'] = '/storage/' . $filePath;
         }
 
-    } catch (\Exception $e) {
-        // Log the error for debugging
-        \Log::error('Failed to update class: ' . $e->getMessage());
+        // Fill and save data to class model
+        $class->fill($validatedData);
+        $class->save(); // Force save
 
-        // Return a 500 error response
-        return response()->json(['message' => 'An error occurred while updating the class. Please try again later.' . $e->getMessage()], 500);
+        // Return updated class data with 200 status
+        return response()->json([
+            'message' => 'Class updated successfully.',
+            'data' => $class // Return updated class object
+        ], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to update class: ' . $e->getMessage());
+        return response()->json(['message' => 'Error: ' . $e->getMessage()], 500);
     }
 }
+
+
+
+
 public function updateClassStatus(Request $request, $classId)
 {
     // Validate the request to ensure status is either 1 or omitted (default to 0)

@@ -35,6 +35,8 @@ class tblclass extends Model
         'profile_img',
         'gen_code',
         'user_id',
+
+        
     ];
 
     public function user()
