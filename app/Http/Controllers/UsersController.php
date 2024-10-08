@@ -905,34 +905,43 @@ public function bulkRegisterstudent(Request $request)
         'file' => 'required|mimes:xlsx,xls'
     ]);
 
-    // Debugging: Log the uploaded file information
-    $file = $request->file('file');
+    // Get the uploaded file information
+    $uploadedFile = $request->file('file');
 
     try {
-        // Import the Excel file
-        Excel::import(new StudentsImport, $file);
-
-        // Optional: Log the file details
-        \Log::info('File uploaded: ', [
-            'original_name' => $file->getClientOriginalName(),
-            'size' => $file->getSize(),
-            'mime_type' => $file->getClientMimeType(),
+        // Log the uploaded file information
+        \Log::info('Uploaded file details:', [
+            'original_name' => $uploadedFile->getClientOriginalName(),
+            'mime_type' => $uploadedFile->getClientMimeType(),
+            'size' => $uploadedFile->getSize(),
         ]);
+
+        // Import the Excel file
+        Excel::import(new StudentsImport, $uploadedFile);
 
         return response()->json([
             'message' => 'Students registered successfully!',
-            'file' => [
-                'original_name' => $file->getClientOriginalName(),
-                'size' => $file->getSize(),
-                'mime_type' => $file->getClientMimeType(),
+            'file_info' => [
+                'original_name' => $uploadedFile->getClientOriginalName(),
+                'mime_type' => $uploadedFile->getClientMimeType(),
+                'size' => $uploadedFile->getSize(),
             ]
         ], 201);
 
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        // Handle validation errors from the import
+        return response()->json([
+            'message' => 'Bulk registration failed',
+            'errors' => $e->failures(),
+        ], 422);
     } catch (\Exception $e) {
+        // Log any other exception details
+        \Log::error('Bulk registration error: ' . $e->getMessage());
+
         return response()->json([
             'message' => 'Bulk registration failed',
             'error' => $e->getMessage(),
-        ].$e->getMessage(), 500);
+        ], 500);
     }
 }
 
