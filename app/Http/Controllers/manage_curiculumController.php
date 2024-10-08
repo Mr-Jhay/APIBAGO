@@ -31,6 +31,7 @@ class manage_curiculumController extends Controller
     }
 
     $createdEntries = [];
+    $duplicateSubjects = [];
 
     // Loop through each subject ID and check if it already exists for the strand and semester
     foreach ($request->subject_ids as $subject_id) {
@@ -38,21 +39,30 @@ class manage_curiculumController extends Controller
         $existingEntry = manage_curiculum::where('strand_id', $request->strand_id)
             ->where('subject_id', $subject_id)
             ->where('semester', $request->semester)
-            ->doesntExist();
+            ->exists();
 
-        // Only create if the entry doesn't exist
+        // If the entry exists, store the subject in the duplicate array, otherwise, create a new one
         if ($existingEntry) {
+            $duplicateSubjects[] = $subject_id;
+        } else {
             $manageCuriculum = manage_curiculum::create([
                 'strand_id' => $request->strand_id,
                 'subject_id' => $subject_id,
                 'semester' => $request->semester,
             ]);
-
             $createdEntries[] = $manageCuriculum;
         }
     }
 
-    // Prepare the response message
+    // If there are duplicate subjects, return an error response
+    if (count($duplicateSubjects) > 0) {
+        return response()->json([
+            'message' => 'Some subjects already exist for the selected strand and semester.',
+            'duplicate_subjects' => $duplicateSubjects,
+        ], 422);
+    }
+
+    // Prepare the response message for successful creation
     $message = count($createdEntries) > 0 ? 'Curriculum entries created successfully' : 'No new entries created';
     
     return response()->json([
@@ -60,6 +70,7 @@ class manage_curiculumController extends Controller
         'data' => $createdEntries,
     ], 201);
 }
+
 
 
  //   public function viewcuriculum()
