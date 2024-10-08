@@ -23,7 +23,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\Mail\PasswordVerificationCode;
 use Illuminate\Support\Str;
-
+use App\Imports\StudentsImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class UsersController extends Controller
 {
@@ -897,6 +898,43 @@ public function updatePassword(Request $request)
 
 
 
+public function bulkRegisterstudent(Request $request)
+{
+    // Validate the request to ensure file upload
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+    ]);
+
+    // Debugging: Log the uploaded file information
+    $file = $request->file('file');
+
+    try {
+        // Import the Excel file
+        Excel::import(new StudentsImport, $file);
+
+        // Optional: Log the file details
+        \Log::info('File uploaded: ', [
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'mime_type' => $file->getClientMimeType(),
+        ]);
+
+        return response()->json([
+            'message' => 'Students registered successfully!',
+            'file' => [
+                'original_name' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getClientMimeType(),
+            ]
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Bulk registration failed',
+            'error' => $e->getMessage(),
+        ].$e->getMessage(), 500);
+    }
+}
 
 
 }

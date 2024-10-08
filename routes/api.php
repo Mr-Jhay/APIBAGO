@@ -32,6 +32,7 @@ Route::get('/user', function (Request $request) {
 Route::post('register',[UsersController::class,'register']);//register user wala pa dito yung position for creating account
 Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
+Route::post('bulkRegisterstudent', [UsersController::class, 'bulkRegisterstudent']);//pag regiter gamit excel
 Route::post('registerstudent', [UsersController::class, 'registerstudent']);
 
 Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
