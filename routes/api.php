@@ -102,7 +102,10 @@ Route::group([
     Route::get('viewcuriculumforaddclass', [manage_curiculumController::class, 'viewcuriculumforaddclass']); //pag view ng available subject
  
     Route::get('viewcuriculum', [manage_curiculumController::class, 'viewcuriculum']); // View all curriculum entries
-    Route::put('updatecuriculum/{id}', [manage_curiculumController::class, 'updateCuriculum']); // Update curriculum
+
+
+    //updated for edit curiculum
+    Route::put('updateCurriculum/{id}', [manage_curiculumController::class, 'updateCurriculum']); // Update curriculum 
     Route::delete('deletecuriculum', [manage_curiculumController::class, 'deleteCuriculum']); // Delete curriculum
     Route::get('/counts', [UsersController::class, 'getCounts']); ///////dashboard statistics
    

@@ -95,6 +95,7 @@ class manage_curiculumController extends Controller
         $curriculums = manage_curiculum::select(
             'tblsubject.id as subject_id',  // Subject ID
             'tblsubject.subjectname',        // Subject name
+            'tblstrand.id as strand_id',           // Strand name
             'tblstrand.addstrand',           // Strand name
             'tblstrand.grade_level',         // Grade level
             'manage_curiculum.semester'      // Semester
@@ -334,6 +335,34 @@ public function viewCurriculum3(Request $request)
     return response()->json(['error' => 'Invalid parameters provided.'], 400);
 }
 
+public function updateCurriculum(Request $request, $id)
+{
+    // Validate the incoming request data, making fields optional for update
+    $validator = Validator::make($request->all(), [
+        'strand_id' => 'sometimes|exists:tblstrand,id',  // Optional
+        'subject_id' => 'sometimes|exists:tblsubject,id', // Optional
+        'semester' => 'sometimes|string|max:255',         // Optional
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json(['errors' => $validator->errors()], 422);
+    }
+
+    // Find the curriculum entry by its ID
+    $curriculum = manage_curiculum::find($id);
+
+    if (!$curriculum) {
+        return response()->json(['message' => 'Curriculum not found'], 404);
+    }
+
+    // Update the curriculum data only with the fields that are provided
+    $curriculum->update($request->only(['strand_id', 'subject_id', 'semester']));
+
+    return response()->json([
+        'message' => 'Curriculum updated successfully',
+        'data' => $curriculum,
+    ], 200);
+}
 
 
 }
