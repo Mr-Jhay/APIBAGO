@@ -21,37 +21,56 @@ class joinclassController extends Controller
 {
     // Method for students to join a class using class_id and gen_code
     public function jcstudent(Request $request)
-    {
-        $request->validate([
-            
-            'status' => 'nullable|integer',
-            'gen_code' => 'required|string'
-        ]);
+{
+    $request->validate([
+        'status' => 'nullable|integer',
+        'gen_code' => 'required|string'
+    ]);
 
-        $user = auth()->user();
+    $user = auth()->user();
 
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can join classes.'
-            ], 403);
-        }
-
-        $class = DB::table('tblclass')->where('id', $request->input('class_id'))->first();
-
-        if (!$class || $class->gen_code !== $request->input('gen_code')) {
-            return response()->json([
-                'error' => 'Invalid class or gen_code does not match.'
-            ], 400);
-        }
-
-        $joinClass = joinclass::create([
-            'user_id' => $user->id,
-            'class_id' => $request->input('class_id'),
-            'status' => $request->input('status', 0)
-        ]);
-
-        return response()->json($joinClass, 201);
+    // Check if the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can join classes.'
+        ], 403);
     }
+
+    // Retrieve the student's strand_id
+    $student = DB::table('tblstudent')->where('user_id', $user->id)->first();
+
+    if (!$student) {
+        return response()->json([
+            'error' => 'Student record not found.'
+        ], 404);
+    }
+
+    // Find the class by gen_code
+    $class = DB::table('tblclass')->where('gen_code', $request->input('gen_code'))->first();
+
+    if (!$class) {
+        return response()->json([
+            'error' => 'Class not found or gen_code does not match.'
+        ], 400);
+    }
+
+    // Check if the student's strand_id matches the class's strand_id
+    if ($class->strand_id !== $student->strand_id) {
+        return response()->json([
+            'error' => 'You cannot join this class. Your strand does not match the class strand.'
+        ], 403);
+    }
+
+    // Create the joinClass record
+    $joinClass = joinclass::create([
+        'user_id' => $user->id,
+        'class_id' => $class->id, // Use the class ID from the found class
+        'status' => $request->input('status', 0) // default status is 0 if not provided
+    ]);
+
+    return response()->json($joinClass, 201);
+}
+
 
 // Method for adding students to a class without gen_code
 public function addwocode(Request $request)
