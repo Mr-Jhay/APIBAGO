@@ -104,6 +104,7 @@ class manage_curiculumController extends Controller
     {
         // Retrieve all records from the manage_curiculum table with related data
         $curriculums = manage_curiculum::select(
+           'manage_curiculum.id as curi_id',
             'tblsubject.id as subject_id',  // Subject ID
             'tblsubject.subjectname',        // Subject name
             'tblstrand.id as strand_id',           // Strand name
