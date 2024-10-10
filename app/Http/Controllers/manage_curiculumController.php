@@ -377,4 +377,23 @@ public function updateCurriculum(Request $request, $id)
 }
 
 
+public function deleteCurriculum($id)
+{
+    // Find the curriculum entry by its ID
+    $curriculum = manage_curiculum::find($id);
+
+    if (!$curriculum) {
+        return response()->json(['message' => 'Curriculum not found'], 404);
+    }
+
+    // Delete the curriculum entry
+    $curriculum->delete();
+
+    return response()->json([
+        'message' => 'Curriculum deleted successfully',
+    ], 200);
+}
+
+
+
 }

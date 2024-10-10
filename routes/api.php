@@ -161,7 +161,9 @@ Route::group([
 //pag view nung nagawana bagong questions
    Route::get('getExamInstructionAndCorrectAnswers/{id}', [ExamController::class, 'getExamInstructionAndCorrectAnswers']);
 
+   
 
+   Route::delete('deleteCurriculum/{id}', [manage_curiculumController::class, 'deleteCurriculum']); 
 
   //pag store sa testbank
    Route::post('storetestbank', [ExamController::class, 'storetestbank']);
