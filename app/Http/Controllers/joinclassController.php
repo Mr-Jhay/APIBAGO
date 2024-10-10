@@ -20,7 +20,7 @@ use App\Mail\WelcomeMail;
 class joinclassController extends Controller
 {
     // Method for students to join a class using class_id and gen_code
-    public function jcstudent(Request $request)
+    public function jcstudent2(Request $request)
 {
     $request->validate([
         'status' => 'nullable|integer',
@@ -139,7 +139,7 @@ public function addwocode(Request $request)
     
 
     // Method for students to join a class using gen_code only
-    public function jcstudent2(Request $request)
+    public function jcstudent3(Request $request)
     {
         $request->validate([
             'gen_code' => 'required|string'
