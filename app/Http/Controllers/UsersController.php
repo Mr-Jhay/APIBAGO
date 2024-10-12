@@ -82,15 +82,58 @@ class UsersController extends Controller
             ], 500);
         }
     }
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => ['required', 'email'],
+    //         'password' => ['required', 'string', 'min:8'],
+    //     ]);
+    
+    //     $email = $request->email;
+    //     $key = 'login_attempts_' . $email;
+    
+    //     // Get the number of attempts and the timestamp of the last attempt
+    //     $attempts = Cache::get($key . '_count', 0);
+    //     $lastAttemptTime = Cache::get($key . '_time', now());
+    
+    //     if ($attempts >= 3 && now()->diffInMinutes($lastAttemptTime) < 1) {
+    //         // User has exceeded the maximum number of attempts and hasn't waited long enough
+    //         $waitTime = 1 - now()->diffInMinutes($lastAttemptTime);
+    //         return response()->json(['message' => "Too many login attempts. Please try again in $waitTime minutes."], 429);
+    //     }
+    
+    //     $user = User::where('email', $email)->first();
+    
+    //     if (!$user || !Hash::check($request->password, $user->password)) {
+    //         // Increment the attempt count and update the timestamp
+    //         Cache::put($key . '_count', $attempts + 1, now()->addMinutes(1));
+    //         Cache::put($key . '_time', now(), now()->addMinutes(1));
+    
+    //         return response()->json(['message' => 'Invalid credentials'], 401);
+    //     }
+    
+    //     // Reset the attempt count on successful login
+    //     Cache::forget($key . '_count');
+    //     Cache::forget($key . '_time');
+    
+    //     $token = $user->createToken('auth_token')->plainTextToken;
+    
+    //     return response()->json([
+    //         'user' => $user,
+    //         'token' => $token,
+    //         'usertype' => $user->usertype,
+    //     ]);
+    // }
+
     public function login(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'idnumber' => ['required', 'numeric'],
             'password' => ['required', 'string', 'min:8'],
         ]);
     
-        $email = $request->email;
-        $key = 'login_attempts_' . $email;
+        $idnumber = $request->idnumber;
+        $key = 'login_attempts_' . $idnumber;
     
         // Get the number of attempts and the timestamp of the last attempt
         $attempts = Cache::get($key . '_count', 0);
@@ -102,7 +145,7 @@ class UsersController extends Controller
             return response()->json(['message' => "Too many login attempts. Please try again in $waitTime minutes."], 429);
         }
     
-        $user = User::where('email', $email)->first();
+        $user = User::where('idnumber', $idnumber)->first();
     
         if (!$user || !Hash::check($request->password, $user->password)) {
             // Increment the attempt count and update the timestamp
@@ -124,14 +167,31 @@ class UsersController extends Controller
             'usertype' => $user->usertype,
         ]);
     }
+    public function checkId(Request $request)
+{
+    // Validate the input
+    $request->validate([
+        'idnumber' => 'required|string',
+    ]);
 
+    // Find the user by idnumber
+    $user = User::where('idnumber', $request->idnumber)->first(); // Adjust based on your actual database structure
+
+    // Check if the user exists and if they are of user type 'admin'
+    if ($user && $user->usertype === 'admin') {
+        return response()->json(['message' => 'ID number is valid.'], 200);
+    } else {
+        return response()->json(['message' => 'ID number is invalid or user is not an admin.'], 403);
+    }
+}
+    
     public function registerstudent(Request $request)
     {
         // Validate the incoming request data
         $validated = $request->validate([
             'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
             'fname' => ['required', 'string'],
-            'mname' => ['required', 'string'],
+            'mname' => ['nullable', 'string'], // Make mname optional
             'lname' => ['required', 'string'],
             'sex' => ['required', 'string'],
             'email' => ['required', 'email', 'unique:users,email'],
@@ -139,7 +199,7 @@ class UsersController extends Controller
                 'required',
                 'string',
                 'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
@@ -201,8 +261,6 @@ class UsersController extends Controller
         }
     }
     
-    
-
     public function registerTeacher(Request $request)
 {
     // Validate the incoming request data
@@ -214,11 +272,11 @@ class UsersController extends Controller
         'sex' => ['required', 'string'],
         'email' => ['required', 'email', 'unique:users,email'],
         'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
+            ],
         'position_id' => 'required|exists:tblposition,id',
         'strand_id' => 'nullable',
         'strand_id.*' => 'exists:tblstrand,id',  // Validate array elements if it's an array
@@ -735,10 +793,10 @@ public function updateUserPassword(Request $request, User $user)
             'string',
             'min:8',
             'confirmed',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
         ],
     ], [
-        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter & one digit',
     ]);
 
     if ($validator->fails()) {

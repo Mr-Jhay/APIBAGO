@@ -24,8 +24,9 @@ use App\Http\Controllers\smsController;
 use App\Http\Controllers\FeedbackController;
 
 
-
+Route::post('/check-id', [UsersController::class, 'checkId']); /// check if idnumber is = to admin
 Route::get('/user', function (Request $request) {
+  
     return $request->user();
 })->middleware('auth:sanctum');
 
@@ -121,6 +122,7 @@ Route::group([
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student
+    
     Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
     
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
