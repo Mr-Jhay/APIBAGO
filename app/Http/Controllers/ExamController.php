@@ -2153,12 +2153,25 @@ public function getAllStudentResults(Request $request)
             } else {
                 $resultsByExam[$examTitle]['finished_students']++;
             }
-
+            $resultsByExam[$examTitle]['points_exam'] = $result->points_exam;  ///////// inilabas ko lang
             // Collect scores for statistical analysis
             if ($result->total_score !== null) {
                 $resultsByExam[$examTitle]['scores'][] = $result->total_score;
             }
         }
+        $totalPointsExam = 0; /////////// total for overall computation
+        
+
+        foreach ($resultsByExam as $examTitle => &$examData) {
+            // Ensure points_exam exists before using
+            if (isset($examData['points_exam'])) {
+                // Add the points_exam to the total
+                $totalPointsExam += $examData['points_exam'];
+
+                // Include the total points_exam below the points_exam for this exam
+                $examData['total_points_exam'] = $totalPointsExam;
+            }
+}
 
         // Calculate statistics (mean, median, mode, range) for each exam
         foreach ($resultsByExam as $examTitle => &$examData) {
@@ -2198,7 +2211,8 @@ public function getAllStudentResults(Request $request)
         }
 
         return response()->json([
-            'results' => $resultsByExam
+            'results' => $resultsByExam,
+            'total_points_exam_across_all_exams' => $totalPointsExam 
         ], 200);
     } catch (\Exception $e) {
         return response()->json([
@@ -2207,8 +2221,6 @@ public function getAllStudentResults(Request $request)
         ], 500);
     }
 }
-
-
 
 
 public function itemAnalysis(Request $request)
