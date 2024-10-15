@@ -2157,6 +2157,19 @@ public function getAllStudentResults(Request $request)
             // Collect scores for statistical analysis
             if ($result->total_score !== null) {
                 $resultsByExam[$examTitle]['scores'][] = $result->total_score;
+
+                if (!isset($studentTotalScores[$result->student_id])) {
+                    $studentTotalScores[$result->student_id] = [
+                        'student_id' => $result->student_id,
+                        'Lrn_id' => $result->Lrn_id,
+                        'Last_name' => $result->Last_name,
+                        'First_name' => $result->First_name,
+                        'Middle_i' => $result->Middle_i,
+                        'total_score' => 0
+                    ];
+                }
+                $studentTotalScores[$result->student_id]['total_score'] += $result->total_score;
+                
             }
         }
         $totalPointsExam = 0; /////////// total for overall computation
@@ -2212,6 +2225,7 @@ public function getAllStudentResults(Request $request)
 
         return response()->json([
             'results' => $resultsByExam,
+            'student_total_scores' => array_values($studentTotalScores), 
             'total_points_exam_across_all_exams' => $totalPointsExam 
         ], 200);
     } catch (\Exception $e) {

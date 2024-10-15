@@ -203,7 +203,8 @@ class UsersController extends Controller
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
-            'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no'],
+            'Mobile_no' => ['nullable', 'string', 'digits:11'],
+            // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'exists:tblstudent,Mobile_no'],
         ]);
     
         try {
