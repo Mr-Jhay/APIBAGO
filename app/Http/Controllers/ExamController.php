@@ -2250,13 +2250,13 @@ public function itemAnalysis(Request $request)
     $examSchedule = Exam::where('id', $examId)->firstOrFail();
     $classId = $examSchedule->classtable_id; // Automatically get the classId from the exam
 
-    $instruction = instructions::where('schedule_id', $examId)->first();
+    $instruction = Instructions::where('schedule_id', $examId)->first();
     $instructionText = $instruction ? $instruction->instruction : 'No instructions provided.';
 
     $subjectTitle = $examSchedule->title ? $examSchedule->title : 'No subject title available';
 
     // Retrieve all students in the class
-    $students = joinclass::where('class_id', $classId)
+    $students = JoinClass::where('class_id', $classId)
         ->where('status', 1) // Only get active students
         ->with('user') // Load the related user model
         ->get();
@@ -2289,9 +2289,13 @@ public function itemAnalysis(Request $request)
         // Retrieve all choices for the question
         $choices = $question->addchoices;
 
-        // Initialize counts
+        // Initialize counts and arrays to hold student IDs and their idnumbers
         $choiceCounts = $choices->mapWithKeys(function ($choice) {
             return [$choice->id => 0];
+        })->toArray();
+
+        $choiceStudentData = $choices->mapWithKeys(function ($choice) {
+            return [$choice->id => []]; // Initialize empty arrays for student data
         })->toArray();
 
         // Count the number of students who chose each choice
@@ -2299,11 +2303,29 @@ public function itemAnalysis(Request $request)
             ->whereHas('tblquestion', function ($query) use ($examId) {
                 $query->where('tblschedule_id', $examId); // Ensure `tblschedule_id` is used from `tblquestion` model
             })
+           // ->with('user') // Load the related user model to access idnumber
             ->get();
 
         foreach ($studentsWhoAnswered as $answeredQuestion) {
             if (isset($choiceCounts[$answeredQuestion->addchoices_id])) {
                 $choiceCounts[$answeredQuestion->addchoices_id]++;
+
+
+                $user = DB::table('users')->where('id', $answeredQuestion->users_id)->first();
+                $idnumber = $user ? $user->idnumber : null;
+                $lname = $user ? $user->lname : null;
+                $fname = $user ? $user->fname : null;
+                $mname = $user ? $user->mname : null;
+                
+                // Store the student data (user ID and idnumber) who selected this choice
+                $choiceStudentData[$answeredQuestion->addchoices_id][] = [
+                    'user_id' => $answeredQuestion->users_id,
+                    'idnumber' => $idnumber,
+                    'lname' => $lname,
+                    'fname' => $fname,
+                    'mname' => $mname
+                   // 'idnumber' => $answeredQuestion->user->idnumber // Assuming 'user' relation has 'idnumber'
+                ];
             }
         }
 
@@ -2320,13 +2342,14 @@ public function itemAnalysis(Request $request)
 
         // Calculate percentages and format them with %
         $totalAnswered = count($studentsWhoAnswered);
-        $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered) {
+        $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered, $choiceStudentData) {
             $count = $choiceCounts[$choice->id] ?? 0;
             $percentage = $totalAnswered > 0 ? ($count / $totalAnswered) * 100 : 0;
             return [
                 'choice' => $choice->choices,
                 'count' => $count,
-                'percentage' => round($percentage, 2) . '%' // Append % sign and round to 2 decimal places
+                'percentage' => round($percentage, 2) . '%', // Append % sign and round to 2 decimal places
+                'students' => $choiceStudentData[$choice->id] // Include the student data (ID and idnumber) who chose this answer
             ];
         });
 
@@ -2347,20 +2370,21 @@ public function itemAnalysis(Request $request)
             'question' => $question->question,
             'choices' => $choicesWithPercentage,
             'correct_answer' => $correctAnswerText,
-            'difficulty_percentage' => round($difficultyPercentage, 2) . '%' ,// Add difficulty percentage to the response
+            'difficulty_percentage' => round($difficultyPercentage, 2) . '%', // Add difficulty percentage to the response
             'difficulty_category' => $difficultyCategory // Add difficulty category
         ];
     }
 
     return response()->json([
-        'exam_title' => $subjectTitle, 
-        'instruction' => $instructionText, 
+        'exam_title' => $subjectTitle,
+        'instruction' => $instructionText,
         'item_analysis' => $itemAnalysis,
         'total_students' => $totalStudents,
         'students_completed_exam' => $studentsCompletedCount,
         'completion_percentage' => round($completionPercentage, 2) . '%', // Percentage of students who completed the exam
     ], 200);
 }
+
 
 
 
