@@ -38,7 +38,7 @@ class UsersController extends Controller
             'lname' => ['required', 'string'],
             'sex' => ['required', 'string'],
             'usertype' => ['required', 'string'],
-            'email' => ['required', 'email', 'unique:users,email'],
+           // 'email' => ['required', 'email', 'unique:users,email'],
            // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:users,Mobile_no'],
             'password' => [
                 'required',
@@ -57,8 +57,8 @@ class UsersController extends Controller
                 'lname' => $data['lname'],
                 'sex' => $data['sex'],
                 'usertype' => $data['usertype'],
-                'email' => $data['email'],
-               'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
+               // 'email' => $data['email'],
+             //  'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
                 'password' => Hash::make($data['password']),
             ]);
     
@@ -194,7 +194,7 @@ class UsersController extends Controller
             'mname' => ['nullable', 'string'], // Make mname optional
             'lname' => ['required', 'string'],
             'sex' => ['required', 'string'],
-            'email' => ['required', 'email', 'unique:users,email'],
+           // 'email' => ['required', 'email', 'unique:users,email'],
             'password' => [
                 'required',
                 'string',
@@ -203,7 +203,7 @@ class UsersController extends Controller
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
-            'Mobile_no' => ['nullable', 'string', 'digits:11'],
+           // 'Mobile_no' => ['nullable', 'string', 'digits:11'],
             // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'exists:tblstudent,Mobile_no'],
         ]);
     
@@ -222,7 +222,7 @@ class UsersController extends Controller
                 'lname' => $validated['lname'],
                 'sex' => $validated['sex'],
                 'usertype' => $usertype, // Automatically set to 'student'
-                'email' => $validated['email'],
+              //  'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);
     
@@ -231,7 +231,7 @@ class UsersController extends Controller
                 'user_id' => $user->id,
                 'strand_id' => $validated['strand_id'],
                 'section_id' => $validated['section_id'],
-                'Mobile_no' => $validated['Mobile_no'] ?? null,
+              //  'Mobile_no' => $validated['Mobile_no'] ?? null,
             ]);
     
             // Commit the transaction
@@ -271,7 +271,7 @@ class UsersController extends Controller
         'mname' => ['required', 'string'],
         'lname' => ['required', 'string'],
         'sex' => ['required', 'string'],
-        'email' => ['required', 'email', 'unique:users,email'],
+      //  'email' => ['required', 'email', 'unique:users,email'],
         'password' => [
                 'required',
                 'string',
@@ -299,7 +299,7 @@ class UsersController extends Controller
             'lname' => $data['lname'],
             'sex' => $data['sex'],
             'usertype' => $usertype,
-            'email' => $data['email'],
+           // 'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
 
@@ -378,7 +378,7 @@ public function userprofile(Request $request)
         'lname' => $user->lname,
         'sex' => $user->sex,
         'usertype' => $user->usertype,
-        'email' => $user->email,
+       // 'email' => $user->email,
     ];
 
     if (!$includeUserOnly) {
@@ -474,7 +474,7 @@ public function getCounts()
             'users.mname', 
             'users.lname', 
             'users.sex', 
-            'tblstudent.Mobile_no', 
+           // 'tblstudent.Mobile_no', 
             'tblstrand.addstrand as strand_name', 
             'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
@@ -626,7 +626,7 @@ public function updateStudentDetails(Request $request, $user_id)
         'mname' => ['nullable', 'string'],
         'lname' => ['nullable', 'string'],
         'sex' => ['nullable', 'string'],
-        'email' => ['nullable', 'email', 'unique:users,email,' . $user_id],  // Nullable and unique, excluding the current user's email
+      //  'email' => ['nullable', 'email', 'unique:users,email,' . $user_id],  // Nullable and unique, excluding the current user's email
         'password' => [
             'nullable', // Password is optional for updating
             'string',
@@ -652,7 +652,7 @@ public function updateStudentDetails(Request $request, $user_id)
             'mname' => $validated['mname'] ?? $user->mname,
             'lname' => $validated['lname'] ?? $user->lname,
             'sex' => $validated['sex'] ?? $user->sex,
-            'email' => $validated['email'] ?? $user->email,
+          //  'email' => $validated['email'] ?? $user->email,
             'password' => isset($validated['password']) ? Hash::make($validated['password']) : $user->password,  // Update password only if provided
         ]));
 
@@ -663,7 +663,7 @@ public function updateStudentDetails(Request $request, $user_id)
         $student->update(array_filter([
             'strand_id' => $validated['strand_id'] ?? $student->strand_id,
             'section_id' => $validated['section_id'] ?? $student->section_id,
-            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+          //  'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
         ]));
 
         // Commit the transaction
@@ -703,7 +703,7 @@ public function updateTeacher(Request $request, $id)
         'mname' => ['sometimes', 'string'],
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
-        'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
+     //   'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
         // 'password' => [
         //     'sometimes',
         //     'string',
@@ -730,7 +730,7 @@ public function updateTeacher(Request $request, $id)
             'mname' => $data['mname'] ?? $user->mname,
             'lname' => $data['lname'] ?? $user->lname,
             'sex' => $data['sex'] ?? $user->sex,
-            'email' => $data['email'] ?? $user->email,
+           // 'email' => $data['email'] ?? $user->email,
             // 'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
         ]);
 
@@ -872,7 +872,7 @@ public function getAllStudentsWithStrands()
             'tblstudent.fname', 
             'tblstudent.mname', 
             'tblstudent.lname', 
-            'tblstudent.Mobile_no', 
+          //  'tblstudent.Mobile_no', 
             'tblstrand.addstrand as strand_name', 
             'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
