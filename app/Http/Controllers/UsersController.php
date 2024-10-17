@@ -203,7 +203,7 @@ class UsersController extends Controller
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
-           // 'Mobile_no' => ['nullable', 'string', 'digits:11'],
+            'fourp' => ['nullable', 'string'],
             // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'exists:tblstudent,Mobile_no'],
         ]);
     
@@ -231,7 +231,7 @@ class UsersController extends Controller
                 'user_id' => $user->id,
                 'strand_id' => $validated['strand_id'],
                 'section_id' => $validated['section_id'],
-              //  'Mobile_no' => $validated['Mobile_no'] ?? null,
+                'fourp' => $validated['fourp'] ?? null,
             ]);
     
             // Commit the transaction
@@ -401,7 +401,7 @@ public function userprofile(Request $request)
                   //  'grade_level' => $student->grade_level,
                   // 'gradelevel_id' => $student->gradelevel_id,
                   // 'gradelevel_name' => $student->gradelevel_name,
-                    'Mobile_no' => $student->Mobile_no,
+                    'fourp' => $student->fourp,
                 ];
             }
          } elseif ($user->usertype === 'teacher') {
@@ -635,7 +635,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-        // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+         'fourp' => ['nullable', 'string' . $user_id],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
@@ -663,7 +663,7 @@ public function updateStudentDetails(Request $request, $user_id)
         $student->update(array_filter([
             'strand_id' => $validated['strand_id'] ?? $student->strand_id,
             'section_id' => $validated['section_id'] ?? $student->section_id,
-          //  'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+            'fourp' => $validated['fourp'] ?? $student->fourp,
         ]));
 
         // Commit the transaction
@@ -872,7 +872,7 @@ public function getAllStudentsWithStrands()
             'tblstudent.fname', 
             'tblstudent.mname', 
             'tblstudent.lname', 
-          //  'tblstudent.Mobile_no', 
+            'tblstudent.fourp', 
             'tblstrand.addstrand as strand_name', 
             'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
