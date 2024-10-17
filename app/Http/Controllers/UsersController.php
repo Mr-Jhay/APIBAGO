@@ -198,8 +198,7 @@ class UsersController extends Controller
             'password' => [
                 'required',
                 'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
+                'min:8'
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',

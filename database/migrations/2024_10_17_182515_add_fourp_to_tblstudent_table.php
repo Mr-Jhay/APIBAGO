@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tblstudent', function (Blueprint $table) {
-            $table->boolean('fourp')->default(false)->after('section_id'); // Adds a boolean column fourp with a default value of false
+            $table->boolean('fourp')->default(false)->nullable()->after('section_id'); // Adds a boolean column fourp with a default value of false
         });
     }
 
