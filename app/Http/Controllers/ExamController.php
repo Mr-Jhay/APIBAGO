@@ -2358,11 +2358,11 @@ public function itemAnalysis(Request $request)
 
         $difficultyCategory = '';
         if ($difficultyPercentage < 30) {
-            $difficultyCategory = 'Difficult';
+            $difficultyCategory = 'Easy';
         } elseif ($difficultyPercentage >= 30 && $difficultyPercentage < 70) {
             $difficultyCategory = 'Moderately Difficult';
         } else {
-            $difficultyCategory = 'Easy';
+            $difficultyCategory = 'Difficult';
         }
 
         $itemAnalysis[] = [
