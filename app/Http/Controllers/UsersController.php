@@ -25,6 +25,9 @@ use App\Mail\PasswordVerificationCode;
 use Illuminate\Support\Str;
 use App\Imports\StudentsImport;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\UserImport;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+//use Excel;
 
 class UsersController extends Controller
 {
@@ -1004,4 +1007,373 @@ public function bulkRegisterstudent(Request $request)
 }
 
 
+public function import_excel() {
+    return view('import_excel');
+}
+
+public function import_excel_post(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Process each row
+        foreach ($worksheet->getRowIterator() as $row) {
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow to loop through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Assuming the columns in the Excel file are in the order of idnumber, fname, mname, lname, sex, usertype, password
+            User::create([
+                'idnumber' => $data[0], // Use the data array
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => $data[5],
+                'password' => bcrypt($data[6]), // Make sure to hash passwords
+                // Add other fields as needed
+            ]);
+            
+        }
+
+        return redirect()->back()->with('success', 'Excel file imported successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
+}
+
+//upload data in student
+public function import_excel_post4(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    // Start a database transaction
+    DB::beginTransaction();
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Initialize counters for success and failure
+        $successfulImports = 0;
+        $failedImports = [];
+
+        // Process each row starting from the second row if the first row is headers
+        foreach ($worksheet->getRowIterator(2) as $row) { // Change 2 if your data starts from a different row
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow looping through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Validate the required fields
+            if (count($data) < 10) {
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'Insufficient data in row'
+                ];
+                continue; // Skip this row if insufficient data
+            }
+
+            // Check if user already exists
+            $user = User::where('idnumber', $data[0])->first();
+
+            if ($user) {
+                // If the user exists, you can decide to skip or update
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'User already exists with idnumber: ' . $data[0]
+                ];
+                continue; // Skip this row if user already exists
+            }
+
+            // Create the user
+            $user = User::create([
+                'idnumber' => $data[0],
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => $data[5], // Ensure this field is valid
+                'password' => bcrypt($data[6]) // Hash the password
+            ]);
+
+            // Create the student record
+            tblstudent::create([
+                'user_id' => $user->id, // Link to the newly created user
+                'strand_id' => $data[7],
+                'section_id' => $data[8],
+                'fourp' => $data[9],
+            ]);
+
+            // Increment the successful import counter
+            $successfulImports++;
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        // Log results
+        \Log::info("Successfully imported {$successfulImports} records.");
+        if (!empty($failedImports)) {
+            \Log::warning('Failed imports: ' . json_encode($failedImports));
+        }
+
+        // Return a JSON response for success
+        return response()->json([
+            'success' => true,
+            'message' => "Excel file imported successfully.",
+            'records_processed' => $successfulImports,
+            'failed_imports' => $failedImports
+        ], 200); // HTTP status code 200 for success
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if there's an error
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Error importing file: ' . $e->getMessage());
+
+        // Return a JSON response for error
+        return response()->json([
+            'success' => false,
+            'message' => 'Error importing file.',
+            'error' => $e->getMessage()
+        ], 500); // HTTP status code 500 for server error
+    }
+}
+
+
+
+public function import_excel_post2(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    // Start a database transaction
+    DB::beginTransaction();
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Initialize a counter for successful imports
+        $successfulImports = 0;
+        // Initialize an array to capture failed imports
+        $failedImports = [];
+
+        // Process each row, starting from the second row if the first is headers
+        foreach ($worksheet->getRowIterator(2) as $row) { // Change 2 to 1 if your data starts from the first row
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // Allow looping through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Create an array for validation
+            $validated = [
+                'idnumber' => $data[0],
+                'fname' => $data[1],
+                'mname' => $data[2] ?? null, // Default to null if not provided
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'password' => $data[6], // Password will be hashed later
+                'strand_id' => $data[7],
+                'section_id' => $data[8],
+                'fourp' => $data[9] ?? null, // Default to null if not provided
+            ];
+
+            // Validate each record
+            $validator = Validator::make($validated, [
+                'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
+                'fname' => ['required', 'string'],
+                'mname' => ['nullable', 'string'], // Make mname optional
+                'lname' => ['required', 'string'],
+                'sex' => ['required', 'string'],
+                'password' => ['required', 'string', 'min:8'],
+                'strand_id' => 'required|exists:tblstrand,id',
+                'section_id' => 'required|exists:tblsection,id',
+                'fourp' => ['nullable', 'string'],
+            ]);
+
+            if ($validator->fails()) {
+                // Log validation errors
+                \Log::error('Validation failed for row: ' . json_encode($validated) . ' Errors: ' . json_encode($validator->errors()));
+                $failedImports[] = [
+                    'row' => $data, // Capture the row data for debugging
+                    'errors' => $validator->errors()
+                ];
+                continue; // Skip this row and continue with the next one
+            }
+
+            // Create the user
+            $user = User::create([
+                'idnumber' => $validated['idnumber'],
+                'fname' => $validated['fname'],
+                'mname' => $validated['mname'],
+                'lname' => $validated['lname'],
+                'sex' => $validated['sex'],
+                'usertype' => 'student', // Automatically set to 'student'
+                'password' => bcrypt($validated['password']), // Hash the password
+            ]);
+
+            // Create the student record
+            tblstudent::create([
+                'user_id' => $user->id,
+                'strand_id' => $validated['strand_id'],
+                'section_id' => $validated['section_id'],
+                'fourp' => $validated['fourp'], // This can be null if not provided
+            ]);
+
+            // Increment the successful import counter
+            $successfulImports++;
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        // Log results
+        \Log::info("Successfully imported {$successfulImports} records.");
+        if (!empty($failedImports)) {
+            \Log::warning('Failed imports: ' . json_encode($failedImports));
+        }
+
+        return redirect()->back()->with('success', "Excel file imported successfully. {$successfulImports} records processed.");
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if there's an error
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Error importing file: ' . $e->getMessage());
+
+        // Return a response with error details
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
+}
+
+
+
+public function import_excel_post3(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Start a database transaction
+        DB::beginTransaction();
+
+        // Process each row
+        foreach ($worksheet->getRowIterator() as $row) {
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow to loop through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Assuming the columns in the Excel file are in the order of idnumber, fname, mname, lname, sex, usertype, password, position_id, strand_id
+            // Adjust indices as necessary based on your Excel file's structure
+            $userData = [
+                'idnumber' => $data[0],
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => 'teacher', // Automatically set usertype to 'teacher'
+                'password' => Hash::make($data[6]), // Hash the password
+                'position_id' => $data[7],
+                'strand_id' => $data[8] ?? null, // Assuming this could be null
+            ];
+
+            // Validate the user data
+            $validator = \Validator::make($userData, [
+                'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
+                'fname' => ['required', 'string'],
+                'mname' => ['required', 'string'],
+                'lname' => ['required', 'string'],
+                'sex' => ['required', 'string'],
+                'password' => [
+                    'required',
+                    'string',
+                    'min:8',
+                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
+                ],
+                'position_id' => 'required|exists:tblposition,id',
+                'strand_id' => 'nullable|exists:tblstrand,id',  // Validate strand_id if it's provided
+            ]);
+
+            if ($validator->fails()) {
+                // Handle validation failure, log the error or continue
+                \Log::error('Validation failed: ' . implode(', ', $validator->errors()->all()));
+                continue; // Skip to the next row
+            }
+
+            // Create the user
+            $user = User::create([
+                'idnumber' => $userData['idnumber'],
+                'fname' => $userData['fname'],
+                'mname' => $userData['mname'],
+                'lname' => $userData['lname'],
+                'sex' => $userData['sex'],
+                'usertype' => $userData['usertype'],
+                'password' => $userData['password'],
+            ]);
+
+            // Create the teacher record
+            $teacher = tblteacher::create([
+                'user_id' => $user->id,
+                'position_id' => $userData['position_id'],
+            ]);
+
+            // Process strand_id if provided
+            if (!empty($userData['strand_id'])) {
+                teacher_strand::create([
+                    'teacher_id' => $teacher->id,
+                    'strand_id' => $userData['strand_id'],
+                ]);
+            }
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        return redirect()->back()->with('success', 'Excel file imported successfully.');
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if any error occurs
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Error importing file: ' . $e->getMessage());
+
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
+}
 }

@@ -12,8 +12,10 @@
         "laravel/tinker": "^2.9",
         "maatwebsite/excel": "^1.1",
         "nyholm/psr7": "^1.8",
+        "phpoffice/phpspreadsheet": "^3.3",
         "railsware/mailtrap-php": "^2.0",
         "setasign/fpdf": "^1.8",
+        "shuchkin/simplexlsx": "^1.1",
         "symfony/http-client": "^7.1",
         "twilio/sdk": "^8.2",
         "vonage/client": "^4.0"
