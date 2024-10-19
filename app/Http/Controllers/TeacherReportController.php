@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\tblteacher;
+use App\Models\tblposition;
 use Illuminate\Http\Request;
 use Fpdf\Fpdf;
 
@@ -36,7 +37,7 @@ class TeacherReportController extends Controller
         $pdf->Cell($widths[1], 15, 'LRN', 1, 0, 'C', true);
         $pdf->Cell($widths[2], 15, 'Name', 1, 0, 'C', true);
         $pdf->Cell($widths[3], 15, 'Sex', 1, 0, 'C', true);
-        $pdf->Cell($widths[4], 15, 'Email', 1, 0, 'C', true);
+        // $pdf->Cell($widths[4], 15, 'Email', 1, 0, 'C', true);
         $pdf->Cell($widths[5], 15, 'Position', 1, 0, 'C', true);
         $pdf->Ln();
 
@@ -48,8 +49,8 @@ class TeacherReportController extends Controller
             $pdf->Cell($widths[1], 15, $teacher->user->idnumber, 1);
             $pdf->Cell($widths[2], 15, $teacher->user->lname . ', ' . $teacher->user->fname . ' ' . $teacher->user->mname, 1);
             $pdf->Cell($widths[3], 15, ucfirst($teacher->user->sex), 1);
-            $pdf->Cell($widths[4], 15, $teacher->user->email, 1);
-            $pdf->Cell($widths[5], 15, $teacher->position->position_name, 1);
+            // $pdf->Cell($widths[4], 15, $teacher->user->email, 1);
+            $pdf->Cell($widths[5], 15, $teacher->position->teacher_postion, 1);
             $pdf->Ln();
         }
 

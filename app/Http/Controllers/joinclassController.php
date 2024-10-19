@@ -438,7 +438,7 @@ public function addwocode(Request $request)
                     ->where('joinclass.class_id', $class_id)
                     ->where('joinclass.status', 0)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname', 'joinclass.status')
+                    ->select('users.id', 'users.idnumber', 'users.fname','users.mname','users.lname', 'joinclass.status')
                     ->get();
 
         return response()->json($students, 200);
