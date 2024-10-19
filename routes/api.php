@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadReportController;
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\joinclassController;
 use App\Http\Controllers\manage_curiculumController;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\smsController;
 //use App\Http\Controllers\MailController;
 use App\Http\Controllers\FeedbackController;
+//use App\Http\Controllers\ExamReportController;
 
 
 
@@ -143,6 +145,10 @@ Route::group([
 
     //TEACHER
 
+    // report ng exam 
+
+    Route::post('downloadReport', [DownloadReportController::class, 'downloadReport']); 
+    
     //yung may time ganun
     Route::post('createExam', [ExamController::class, 'createExam']);
 
@@ -160,6 +166,7 @@ Route::group([
 //pag view nung nagawana bagong questions
    Route::get('getExamInstructionAndCorrectAnswers/{id}', [ExamController::class, 'getExamInstructionAndCorrectAnswers']);
 
+   Route::post('generateReport', [ExamReportController::class, 'downloadExamReport']);
 
 
   //pag store sa testbank
