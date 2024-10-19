@@ -53,7 +53,7 @@ Route::post('updatePassword', [UsersController::class, 'updatePassword']);
 
 
 Route::post('/import_excel_post4', [UsersController::class, 'import_excel_post4']); //upload of student data using excell register
-Route::post('/import_excel_post2', [UsersController::class, 'import_excel_post2']); //upload of student data using excell register
+Route::post('/import_excel_post2', [UsersController::class, 'import_excel_post2']); //upload of teacher data using excell register
 
 
 
