@@ -637,7 +637,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-         'fourp' => ['nullable', 'string' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+         'fourp' => ['nullable', 'boolean'],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
