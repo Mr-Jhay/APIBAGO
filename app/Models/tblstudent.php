@@ -17,7 +17,7 @@ class tblstudent extends Model
            'user_id',
            'strand_id',
            'section_id',  
-           'Mobile_no',    
+           'fourp',    
        ];
 
        public function user()

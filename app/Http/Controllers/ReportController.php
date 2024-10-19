@@ -49,7 +49,7 @@ class ReportController extends Controller
             $pdf->Cell($widths[1], 10, $student->user->idnumber, 1);
             $pdf->Cell($widths[2], 10, $student->user->lname . ', ' . $student->user->fname . ' ' . $student->user->mname, 1);
             $pdf->Cell($widths[3], 10, ucfirst($student->user->sex), 1);
-            $pdf->Cell($widths[4], 10, $student->user->email, 1);
+            $pdf->Cell($widths[4], 10, $student->fourp ? 'Yes' : 'No', 1);
             $pdf->Cell($widths[5], 10, $student->strands->addstrand ?? 'N/A', 1);
             $pdf->Cell($widths[6], 10, $student->section->section ?? 'N/A', 1);
             $pdf->Ln();
@@ -111,7 +111,7 @@ class ReportController extends Controller
             1 => 'LRN',
             2 => 'Name',
             3 => 'Sex',
-            4 => 'Email',
+            4 => '4Ps member',
             5 => 'Strand',
             6 => 'Section'
         ];

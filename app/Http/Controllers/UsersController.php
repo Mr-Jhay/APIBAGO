@@ -23,7 +23,11 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use App\Mail\PasswordVerificationCode;
 use Illuminate\Support\Str;
-
+use App\Imports\StudentsImport;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\UserImport;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+//use Excel;
 
 class UsersController extends Controller
 {
@@ -37,7 +41,7 @@ class UsersController extends Controller
             'lname' => ['required', 'string'],
             'sex' => ['required', 'string'],
             'usertype' => ['required', 'string'],
-            'email' => ['required', 'email', 'unique:users,email'],
+           // 'email' => ['required', 'email', 'unique:users,email'],
            // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:users,Mobile_no'],
             'password' => [
                 'required',
@@ -56,8 +60,8 @@ class UsersController extends Controller
                 'lname' => $data['lname'],
                 'sex' => $data['sex'],
                 'usertype' => $data['usertype'],
-                'email' => $data['email'],
-               'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
+               // 'email' => $data['email'],
+             //  'Mobile_no' => $data['Mobile_no'] ?? null, // Handle nullable Mobile_no
                 'password' => Hash::make($data['password']),
             ]);
     
@@ -81,15 +85,58 @@ class UsersController extends Controller
             ], 500);
         }
     }
+    // public function login(Request $request)
+    // {
+    //     $request->validate([
+    //         'email' => ['required', 'email'],
+    //         'password' => ['required', 'string', 'min:8'],
+    //     ]);
+    
+    //     $email = $request->email;
+    //     $key = 'login_attempts_' . $email;
+    
+    //     // Get the number of attempts and the timestamp of the last attempt
+    //     $attempts = Cache::get($key . '_count', 0);
+    //     $lastAttemptTime = Cache::get($key . '_time', now());
+    
+    //     if ($attempts >= 3 && now()->diffInMinutes($lastAttemptTime) < 1) {
+    //         // User has exceeded the maximum number of attempts and hasn't waited long enough
+    //         $waitTime = 1 - now()->diffInMinutes($lastAttemptTime);
+    //         return response()->json(['message' => "Too many login attempts. Please try again in $waitTime minutes."], 429);
+    //     }
+    
+    //     $user = User::where('email', $email)->first();
+    
+    //     if (!$user || !Hash::check($request->password, $user->password)) {
+    //         // Increment the attempt count and update the timestamp
+    //         Cache::put($key . '_count', $attempts + 1, now()->addMinutes(1));
+    //         Cache::put($key . '_time', now(), now()->addMinutes(1));
+    
+    //         return response()->json(['message' => 'Invalid credentials'], 401);
+    //     }
+    
+    //     // Reset the attempt count on successful login
+    //     Cache::forget($key . '_count');
+    //     Cache::forget($key . '_time');
+    
+    //     $token = $user->createToken('auth_token')->plainTextToken;
+    
+    //     return response()->json([
+    //         'user' => $user,
+    //         'token' => $token,
+    //         'usertype' => $user->usertype,
+    //     ]);
+    // }
+
     public function login(Request $request)
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'idnumber' => ['required', 'numeric'],
             'password' => ['required', 'string', 'min:8'],
         ]);
     
-        $email = $request->email;
-        $key = 'login_attempts_' . $email;
+        $idnumber = $request->idnumber;
+        $key = 'login_attempts_' . $idnumber;
     
         // Get the number of attempts and the timestamp of the last attempt
         $attempts = Cache::get($key . '_count', 0);
@@ -101,7 +148,7 @@ class UsersController extends Controller
             return response()->json(['message' => "Too many login attempts. Please try again in $waitTime minutes."], 429);
         }
     
-        $user = User::where('email', $email)->first();
+        $user = User::where('idnumber', $idnumber)->first();
     
         if (!$user || !Hash::check($request->password, $user->password)) {
             // Increment the attempt count and update the timestamp
@@ -123,26 +170,43 @@ class UsersController extends Controller
             'usertype' => $user->usertype,
         ]);
     }
+    public function checkId(Request $request)
+{
+    // Validate the input
+    $request->validate([
+        'idnumber' => 'required|string',
+    ]);
 
+    // Find the user by idnumber
+    $user = User::where('idnumber', $request->idnumber)->first(); // Adjust based on your actual database structure
+
+    // Check if the user exists and if they are of user type 'admin'
+    if ($user && $user->usertype === 'admin') {
+        return response()->json(['message' => 'ID number is valid.'], 200);
+    } else {
+        return response()->json(['message' => 'ID number is invalid or user is not an admin.'], 403);
+    }
+}
+    
     public function registerstudent(Request $request)
     {
         // Validate the incoming request data
         $validated = $request->validate([
             'idnumber' => ['required', 'string', 'min:8', 'max:12', 'unique:users,idnumber'],
             'fname' => ['required', 'string'],
-            'mname' => ['required', 'string'],
+            'mname' => ['nullable', 'string'], // Make mname optional
             'lname' => ['required', 'string'],
             'sex' => ['required', 'string'],
-            'email' => ['required', 'email', 'unique:users,email'],
+           // 'email' => ['required', 'email', 'unique:users,email'],
             'password' => [
                 'required',
                 'string',
-                'min:8',
-                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+                'min:8'
             ],
             'strand_id' => 'required|exists:tblstrand,id',
             'section_id' => 'required|exists:tblsection,id',
-            'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no'],
+            'fourp' => ['nullable', 'string'],
+            // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'exists:tblstudent,Mobile_no'],
         ]);
     
         try {
@@ -160,7 +224,7 @@ class UsersController extends Controller
                 'lname' => $validated['lname'],
                 'sex' => $validated['sex'],
                 'usertype' => $usertype, // Automatically set to 'student'
-                'email' => $validated['email'],
+              //  'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
             ]);
     
@@ -169,7 +233,7 @@ class UsersController extends Controller
                 'user_id' => $user->id,
                 'strand_id' => $validated['strand_id'],
                 'section_id' => $validated['section_id'],
-                'Mobile_no' => $validated['Mobile_no'] ?? null,
+                'fourp' => $validated['fourp'] ?? null,
             ]);
     
             // Commit the transaction
@@ -200,8 +264,6 @@ class UsersController extends Controller
         }
     }
     
-    
-
     public function registerTeacher(Request $request)
 {
     // Validate the incoming request data
@@ -211,13 +273,13 @@ class UsersController extends Controller
         'mname' => ['required', 'string'],
         'lname' => ['required', 'string'],
         'sex' => ['required', 'string'],
-        'email' => ['required', 'email', 'unique:users,email'],
+      //  'email' => ['required', 'email', 'unique:users,email'],
         'password' => [
-            'required',
-            'string',
-            'min:8',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
-        ],
+                'required',
+                'string',
+                'min:8',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
+            ],
         'position_id' => 'required|exists:tblposition,id',
         'strand_id' => 'nullable',
         'strand_id.*' => 'exists:tblstrand,id',  // Validate array elements if it's an array
@@ -239,7 +301,7 @@ class UsersController extends Controller
             'lname' => $data['lname'],
             'sex' => $data['sex'],
             'usertype' => $usertype,
-            'email' => $data['email'],
+           // 'email' => $data['email'],
             'password' => Hash::make($data['password']),
         ]);
 
@@ -318,7 +380,7 @@ public function userprofile(Request $request)
         'lname' => $user->lname,
         'sex' => $user->sex,
         'usertype' => $user->usertype,
-        'email' => $user->email,
+       // 'email' => $user->email,
     ];
 
     if (!$includeUserOnly) {
@@ -341,7 +403,7 @@ public function userprofile(Request $request)
                   //  'grade_level' => $student->grade_level,
                   // 'gradelevel_id' => $student->gradelevel_id,
                   // 'gradelevel_name' => $student->gradelevel_name,
-                    'Mobile_no' => $student->Mobile_no,
+                    'fourp' => $student->fourp,
                 ];
             }
          } elseif ($user->usertype === 'teacher') {
@@ -414,7 +476,7 @@ public function getCounts()
             'users.mname', 
             'users.lname', 
             'users.sex', 
-            'tblstudent.Mobile_no', 
+           // 'tblstudent.Mobile_no', 
             'tblstrand.addstrand as strand_name', 
             'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
@@ -566,7 +628,7 @@ public function updateStudentDetails(Request $request, $user_id)
         'mname' => ['nullable', 'string'],
         'lname' => ['nullable', 'string'],
         'sex' => ['nullable', 'string'],
-        'email' => ['nullable', 'email', 'unique:users,email,' . $user_id],  // Nullable and unique, excluding the current user's email
+      //  'email' => ['nullable', 'email', 'unique:users,email,' . $user_id],  // Nullable and unique, excluding the current user's email
         'password' => [
             'nullable', // Password is optional for updating
             'string',
@@ -575,7 +637,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-        // 'Mobile_no' => ['nullable', 'string', 'digits:11', 'unique:tblstudent,Mobile_no,' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+         'fourp' => ['nullable', 'string' . $user_id],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
@@ -592,7 +654,7 @@ public function updateStudentDetails(Request $request, $user_id)
             'mname' => $validated['mname'] ?? $user->mname,
             'lname' => $validated['lname'] ?? $user->lname,
             'sex' => $validated['sex'] ?? $user->sex,
-            'email' => $validated['email'] ?? $user->email,
+          //  'email' => $validated['email'] ?? $user->email,
             'password' => isset($validated['password']) ? Hash::make($validated['password']) : $user->password,  // Update password only if provided
         ]));
 
@@ -603,7 +665,7 @@ public function updateStudentDetails(Request $request, $user_id)
         $student->update(array_filter([
             'strand_id' => $validated['strand_id'] ?? $student->strand_id,
             'section_id' => $validated['section_id'] ?? $student->section_id,
-            'Mobile_no' => $validated['Mobile_no'] ?? $student->Mobile_no,
+            'fourp' => $validated['fourp'] ?? $student->fourp,
         ]));
 
         // Commit the transaction
@@ -643,7 +705,7 @@ public function updateTeacher(Request $request, $id)
         'mname' => ['sometimes', 'string'],
         'lname' => ['sometimes', 'string'],
         'sex' => ['sometimes', 'string'],
-        'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
+     //   'email' => ['sometimes', 'email', 'unique:users,email,' . $id],
         // 'password' => [
         //     'sometimes',
         //     'string',
@@ -670,7 +732,7 @@ public function updateTeacher(Request $request, $id)
             'mname' => $data['mname'] ?? $user->mname,
             'lname' => $data['lname'] ?? $user->lname,
             'sex' => $data['sex'] ?? $user->sex,
-            'email' => $data['email'] ?? $user->email,
+           // 'email' => $data['email'] ?? $user->email,
             // 'password' => isset($data['password']) ? Hash::make($data['password']) : $user->password,
         ]);
 
@@ -734,10 +796,10 @@ public function updateUserPassword(Request $request, User $user)
             'string',
             'min:8',
             'confirmed',
-            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/'
+            'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/'
         ],
     ], [
-        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character.',
+        'new_password.regex' => 'The password must contain at least one uppercase letter, one lowercase letter & one digit',
     ]);
 
     if ($validator->fails()) {
@@ -812,7 +874,7 @@ public function getAllStudentsWithStrands()
             'tblstudent.fname', 
             'tblstudent.mname', 
             'tblstudent.lname', 
-            'tblstudent.Mobile_no', 
+            'tblstudent.fourp', 
             'tblstrand.addstrand as strand_name', 
             'tblstrand.grade_level as grade_level', 
             'tblsection.section as section_name'
@@ -896,6 +958,311 @@ public function updatePassword(Request $request)
 
 
 
+
+public function bulkRegisterstudent(Request $request)
+{
+    // Validate the request to ensure file upload
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls'
+    ]);
+
+    // Get the uploaded file information
+    $uploadedFile = $request->file('file');
+
+    try {
+        // Log the uploaded file information
+        \Log::info('Uploaded file details:', [
+            'original_name' => $uploadedFile->getClientOriginalName(),
+            'mime_type' => $uploadedFile->getClientMimeType(),
+            'size' => $uploadedFile->getSize(),
+        ]);
+
+        // Import the Excel file
+        Excel::import(new StudentsImport, $uploadedFile);
+
+        return response()->json([
+            'message' => 'Students registered successfully!',
+            'file_info' => [
+                'original_name' => $uploadedFile->getClientOriginalName(),
+                'mime_type' => $uploadedFile->getClientMimeType(),
+                'size' => $uploadedFile->getSize(),
+            ]
+        ], 201);
+
+    } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+        // Handle validation errors from the import
+        return response()->json([
+            'message' => 'Bulk registration failed',
+            'errors' => $e->failures(),
+        ], 422);
+    } catch (\Exception $e) {
+        // Log any other exception details
+        \Log::error('Bulk registration error: ' . $e->getMessage());
+
+        return response()->json([
+            'message' => 'Bulk registration failed',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+public function import_excel() {
+    return view('import_excel');
+}
+
+public function import_excel_post(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Process each row
+        foreach ($worksheet->getRowIterator() as $row) {
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow to loop through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Assuming the columns in the Excel file are in the order of idnumber, fname, mname, lname, sex, usertype, password
+            User::create([
+                'idnumber' => $data[0], // Use the data array
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => $data[5],
+                'password' => bcrypt($data[6]), // Make sure to hash passwords
+                // Add other fields as needed
+            ]);
+            
+        }
+
+        return redirect()->back()->with('success', 'Excel file imported successfully.');
+
+    } catch (\Exception $e) {
+        return redirect()->back()->with('error', 'Error importing file: ' . $e->getMessage());
+    }
+}
+
+//upload data in student
+public function import_excel_post4(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    // Start a database transaction
+    DB::beginTransaction();
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Initialize counters for success and failure
+        $successfulImports = 0;
+        $failedImports = [];
+
+        // Process each row starting from the second row if the first row is headers
+        foreach ($worksheet->getRowIterator(2) as $row) { // Change 2 if your data starts from a different row
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow looping through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Validate the required fields
+            if (count($data) < 10) {
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'Insufficient data in row'
+                ];
+                continue; // Skip this row if insufficient data
+            }
+
+            // Check if user already exists
+            $user = User::where('idnumber', $data[0])->first();
+
+            if ($user) {
+                // If the user exists, you can decide to skip or update
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'User already exists with idnumber: ' . $data[0]
+                ];
+                continue; // Skip this row if user already exists
+            }
+
+            // Create the user
+            $user = User::create([
+                'idnumber' => $data[0],
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => $data[5], // Ensure this field is valid
+                'password' => bcrypt($data[6]) // Hash the password
+            ]);
+
+            // Create the student record
+            tblstudent::create([
+                'user_id' => $user->id, // Link to the newly created user
+                'strand_id' => $data[7],
+                'section_id' => $data[8],
+                'fourp' => $data[9],
+            ]);
+
+            // Increment the successful import counter
+            $successfulImports++;
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        // Log results
+        \Log::info("Successfully imported {$successfulImports} records.");
+        if (!empty($failedImports)) {
+            \Log::warning('Failed imports: ' . json_encode($failedImports));
+        }
+
+        // Return a JSON response for success
+        return response()->json([
+            'success' => true,
+            'message' => "Excel file imported successfully.",
+            'records_processed' => $successfulImports,
+            'failed_imports' => $failedImports
+        ], 200); // HTTP status code 200 for success
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if there's an error
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Error importing file: ' . $e->getMessage());
+
+        // Return a JSON response for error
+        return response()->json([
+            'success' => false,
+            'message' => 'Error importing file.',
+            'error' => $e->getMessage()
+        ], 500); // HTTP status code 500 for server error
+    }
+}
+
+
+
+public function import_excel_post2(Request $request) {
+    // Validate the uploaded file
+    $request->validate([
+        'file' => 'required|mimes:xlsx,xls,csv|max:2048', // Limit file types and size
+    ]);
+
+    // Start a database transaction
+    DB::beginTransaction();
+
+    try {
+        // Load the Excel file
+        $spreadsheet = IOFactory::load($request->file('file')->getRealPath());
+        $worksheet = $spreadsheet->getActiveSheet();
+
+        // Initialize counters for success and failure
+        $successfulImports = 0;
+        $failedImports = [];
+
+        // Process each row starting from the second row if the first row is headers
+        foreach ($worksheet->getRowIterator(2) as $row) { // Change 2 if your data starts from a different row
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false); // This will allow looping through all cells
+
+            $data = [];
+            foreach ($cellIterator as $cell) {
+                $data[] = $cell->getValue(); // Get the value of each cell
+            }
+
+            // Validate the required fields
+            if (count($data) < 8) {
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'Insufficient data in row'
+                ];
+                continue; // Skip this row if insufficient data
+            }
+
+            // Check if user already exists
+            $user = User::where('idnumber', $data[0])->first();
+
+            if ($user) {
+                // If the user exists, you can decide to skip or update
+                $failedImports[] = [
+                    'row' => $data,
+                    'error' => 'User already exists with idnumber: ' . $data[0]
+                ];
+                continue; // Skip this row if user already exists
+            }
+
+            // Create the user
+            $user = User::create([
+                'idnumber' => $data[0],
+                'fname' => $data[1],
+                'mname' => $data[2],
+                'lname' => $data[3],
+                'sex' => $data[4],
+                'usertype' => $data[5], // Ensure this field is valid
+                'password' => bcrypt($data[6]) // Hash the password
+            ]);
+
+            // Create the student record
+            tblsteacher::create([
+                'user_id' => $user->id, // Link to the newly created user
+                'position_id' => $data[7],
+            ]);
+
+            // Increment the successful import counter
+            $successfulImports++;
+        }
+
+        // Commit the transaction
+        DB::commit();
+
+        // Log results
+        \Log::info("Successfully imported {$successfulImports} records.");
+        if (!empty($failedImports)) {
+            \Log::warning('Failed imports: ' . json_encode($failedImports));
+        }
+
+        // Return a JSON response for success
+        return response()->json([
+            'success' => true,
+            'message' => "Excel file imported successfully.",
+            'records_processed' => $successfulImports,
+            'failed_imports' => $failedImports
+        ], 200); // HTTP status code 200 for success
+
+    } catch (\Exception $e) {
+        // Rollback the transaction if there's an error
+        DB::rollBack();
+
+        // Log the error for debugging
+        \Log::error('Error importing file: ' . $e->getMessage());
+
+        // Return a JSON response for error
+        return response()->json([
+            'success' => false,
+            'message' => 'Error importing file.',
+            'error' => $e->getMessage()
+        ], 500); // HTTP status code 500 for server error
+    }
+}
 
 
 

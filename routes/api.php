@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\DownloadReportController;
 use App\Http\Controllers\gradelevelController;
 use App\Http\Controllers\joinclassController;
 use App\Http\Controllers\manage_curiculumController;
@@ -23,17 +22,18 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\smsController;
 //use App\Http\Controllers\MailController;
 use App\Http\Controllers\FeedbackController;
-//use App\Http\Controllers\ExamReportController;
 
 
-
+Route::post('/check-id', [UsersController::class, 'checkId']); /// check if idnumber is = to admin
 Route::get('/user', function (Request $request) {
+  
     return $request->user();
 })->middleware('auth:sanctum');
 
 Route::post('register',[UsersController::class,'register']);//register user wala pa dito yung position for creating account
 Route::post('login', [UsersController::class, 'login']);//login gooods na ito
 Route::post('registerTeacher', [UsersController::class, 'registerTeacher']);
+Route::post('bulkRegisterstudent', [UsersController::class, 'bulkRegisterstudent']);//pag regiter gamit excel
 Route::post('registerstudent', [UsersController::class, 'registerstudent']);
 
 Route::post('sendTestEmail', [MailController::class, 'sendTestEmail']);
@@ -51,6 +51,9 @@ Route::post('/inviteStudentByEmail', [MailController::class, 'inviteStudentByEma
 Route::post('sendVerificationCode', [UsersController::class, 'sendVerificationCode']);
 Route::post('updatePassword', [UsersController::class, 'updatePassword']);
 
+
+Route::post('/import_excel_post4', [UsersController::class, 'import_excel_post4']); //upload of student data using excell register
+Route::post('/import_excel_post2', [UsersController::class, 'import_excel_post2']); //upload of teacher data using excell register
 
 
 
@@ -122,6 +125,7 @@ Route::group([
 
     
     Route::put('/user/{user}/update-password', [UsersController::class, 'updateUserPassword']);//both teacher and student
+    
     Route::put('updateOwnPassword', [UsersController::class, 'updateOwnPassword']);
     
     Route::get('viewallusers', [UsersController::class, 'viewallusers']);
@@ -145,10 +149,6 @@ Route::group([
 
     //TEACHER
 
-    // report ng exam 
-
-    Route::post('downloadReport', [DownloadReportController::class, 'downloadReport']); 
-    
     //yung may time ganun
     Route::post('createExam', [ExamController::class, 'createExam']);
 
@@ -166,8 +166,9 @@ Route::group([
 //pag view nung nagawana bagong questions
    Route::get('getExamInstructionAndCorrectAnswers/{id}', [ExamController::class, 'getExamInstructionAndCorrectAnswers']);
 
-   Route::post('generateReport', [ExamReportController::class, 'downloadExamReport']);
+   
 
+   Route::delete('deleteCurriculum/{id}', [manage_curiculumController::class, 'deleteCurriculum']); 
 
   //pag store sa testbank
    Route::post('storetestbank', [ExamController::class, 'storetestbank']);

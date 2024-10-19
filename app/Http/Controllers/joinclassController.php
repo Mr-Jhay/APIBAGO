@@ -20,38 +20,57 @@ use App\Mail\WelcomeMail;
 class joinclassController extends Controller
 {
     // Method for students to join a class using class_id and gen_code
-    public function jcstudent(Request $request)
-    {
-        $request->validate([
-            
-            'status' => 'nullable|integer',
-            'gen_code' => 'required|string'
-        ]);
+    public function jcstudent2(Request $request)
+{
+    $request->validate([
+        'status' => 'nullable|integer',
+        'gen_code' => 'required|string'
+    ]);
 
-        $user = auth()->user();
+    $user = auth()->user();
 
-        if ($user->usertype !== 'student') {
-            return response()->json([
-                'error' => 'Unauthorized: Only students can join classes.'
-            ], 403);
-        }
-
-        $class = DB::table('tblclass')->where('id', $request->input('class_id'))->first();
-
-        if (!$class || $class->gen_code !== $request->input('gen_code')) {
-            return response()->json([
-                'error' => 'Invalid class or gen_code does not match.'
-            ], 400);
-        }
-
-        $joinClass = joinclass::create([
-            'user_id' => $user->id,
-            'class_id' => $request->input('class_id'),
-            'status' => $request->input('status', 0)
-        ]);
-
-        return response()->json($joinClass, 201);
+    // Check if the user is a student
+    if ($user->usertype !== 'student') {
+        return response()->json([
+            'error' => 'Unauthorized: Only students can join classes.'
+        ], 403);
     }
+
+    // Retrieve the student's strand_id
+    $student = DB::table('tblstudent')->where('user_id', $user->id)->first();
+
+    if (!$student) {
+        return response()->json([
+            'error' => 'Student record not found.'
+        ], 404);
+    }
+
+    // Find the class by gen_code
+    $class = DB::table('tblclass')->where('gen_code', $request->input('gen_code'))->first();
+
+    if (!$class) {
+        return response()->json([
+            'error' => 'Class not found or gen_code does not match.'
+        ], 400);
+    }
+
+    // Check if the student's strand_id matches the class's strand_id
+    if ($class->strand_id !== $student->strand_id) {
+        return response()->json([
+            'error' => 'You cannot join this class. Your strand does not match the class strand.'
+        ], 403);
+    }
+
+    // Create the joinClass record
+    $joinClass = joinclass::create([
+        'user_id' => $user->id,
+        'class_id' => $class->id, // Use the class ID from the found class
+        'status' => $request->input('status', 0) // default status is 0 if not provided
+    ]);
+
+    return response()->json($joinClass, 201);
+}
+
 
 // Method for adding students to a class without gen_code
 public function addwocode(Request $request)
@@ -104,7 +123,7 @@ public function addwocode(Request $request)
     if (!empty($alreadyJoinedUsers)) {
         return response()->json([
             'message' => 'Some users were not added because they have already joined the class.',
-            'already_joined_users' => array_map(fn($userId) => User::find($userId)->email, $alreadyJoinedUsers),
+            'already_joined_users' => array_map(fn($userId) => User::find($userId)->lname, $alreadyJoinedUsers),
         ], 409); // 409 Conflict
     }
 
@@ -112,7 +131,7 @@ public function addwocode(Request $request)
     return response()->json([
         'message' => 'Users added successfully.',
         'join_classes' => $joinClasses,
-        'added_user_emails' => array_map(fn($userId) => User::find($userId)->email, $request->input('user_ids')),
+        'added_user_lastname' => array_map(fn($userId) => User::find($userId)->lname, $request->input('user_ids')),
     ], 201);
 }
 
@@ -120,7 +139,7 @@ public function addwocode(Request $request)
     
 
     // Method for students to join a class using gen_code only
-    public function jcstudent2(Request $request)
+    public function jcstudent3(Request $request)
     {
         $request->validate([
             'gen_code' => 'required|string'
@@ -224,7 +243,7 @@ public function addwocode(Request $request)
                     ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                     ->where('joinclass.class_id', $class_id)
                     ->where('users.usertype', 'student')
-                    ->select('users.id','users.idnumber', 'users.fname', 'user.sex','users.email')
+                    ->select('users.id','users.idnumber', 'users.fname', 'user.sex')
                     ->get();
 
         return response()->json($students, 200);
@@ -289,7 +308,7 @@ public function addwocode(Request $request)
                     ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                     ->where('joinclass.class_id', $class_id)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.sex')
                     ->get();
     
         // Count total students, male and female
@@ -366,7 +385,7 @@ public function addwocode(Request $request)
                     ->where('joinclass.class_id', $class_id)
                     ->where('joinclass.status', 1)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.email', 'joinclass.status')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'joinclass.status')
                     ->get();
     
         // Count total students
@@ -419,7 +438,7 @@ public function addwocode(Request $request)
                     ->where('joinclass.class_id', $class_id)
                     ->where('joinclass.status', 0)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.email', 'joinclass.status')
+                    ->select('users.id', 'users.idnumber', 'users.fname','users.mname','users.lname', 'joinclass.status')
                     ->get();
 
         return response()->json($students, 200);
@@ -453,7 +472,7 @@ public function addwocode(Request $request)
             ->where('joinclass.status', 1) // Status 1 means approved
             ->where('users.usertype', 'student')
             ->orderBy('users.lname', 'asc')
-            ->select('tblstudent.*', 'users.id as user_id', 'users.idnumber', 'users.fname', 'users.sex', 'users.email') // Include additional fields
+            ->select('tblstudent.*', 'users.id as user_id', 'users.idnumber', 'users.fname', 'users.sex') // Include additional fields
             ->get();
 
             $genderCounts = [
