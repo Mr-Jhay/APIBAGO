@@ -1222,7 +1222,7 @@ public function import_excel_post2(Request $request) {
             ]);
 
             // Create the student record
-            tblsteacher::create([
+            tblteacher::create([
                 'user_id' => $user->id, // Link to the newly created user
                 'position_id' => $data[7],
             ]);
