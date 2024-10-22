@@ -2952,10 +2952,10 @@ public function itemAnalysis2(Request $request)
         $phTotal = $top3Highest->sum('correct_answers');
         $plTotal = $top3Lowest->sum('correct_answers');
 
-        $divideph = $formTotal/$phTotal;
-        $dividepl = $formTotal/$plTotal;
+        $divideph = ($formTotal/$phTotal)*100;
+        $dividepl = ($formTotal/$plTotal)*100;
 
-        $itemdifficulty =  (($divideph+ $dividepl)/2)*100;
+        $itemdifficulty =  (($divideph+ $dividepl)/2);
         $difficultyCategory = '';
 
 
@@ -2969,7 +2969,7 @@ public function itemAnalysis2(Request $request)
 
 
 
-        $itemdiscrimination = ( $divideph- $dividepl)*100;
+        $itemdiscrimination = ( $divideph- $dividepl);
         $discriminationCategory = '';
         if ($itemdiscrimination < 10) {
             $discriminationCategory = 'Poor Item';
@@ -2984,6 +2984,79 @@ public function itemAnalysis2(Request $request)
         else {
             $discriminationCategory = 'Poor Item';
         }
+
+        $difficultyCategory2='';
+        $discriminationCategory2='';
+        $decision='';
+        if ($itemdifficulty < 24) {
+            $difficultyCategory2 = 'Difficult';
+            
+                if ($itemdiscrimination < 10) {
+                    $discriminationCategory2 = 'Poor Item';
+                    $decision='Reject';
+                } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
+                    $discriminationCategory = 'Good Item';
+                    $decision='Reject';
+                } 
+                elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
+                    $discriminationCategory2 = 'Reasonable Good Item';
+                    $decision='Revise';
+                } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
+                    $discriminationCategory2 = 'Marginal Item';
+                    $decision='Revise';
+                } 
+                else {
+                    $discriminationCategory2 = 'Poor Item';
+                    $decision='Revise';
+                }
+        } elseif ($itemdifficulty >= 25 && $itemdifficulty < 75) {
+            $difficultyCategory2 = 'Average item';
+           
+            if ($itemdiscrimination < 10) {
+                $discriminationCategory2 = 'Poor Item';
+                $decision='Revise';
+            } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
+                $discriminationCategory2 = 'Good Item';
+                $decision='Revise';
+            } 
+            elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
+                $discriminationCategory2 = 'Reasonable Good Item';
+                $decision='Retain';
+            } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
+                $discriminationCategory2 = 'Marginal Item';
+                $decision='Retain';
+            } 
+            else {
+                $discriminationCategory2 = 'Poor Item';
+                $decision='Retain';
+            }
+            
+        } else {
+            $difficultyCategory2 = 'Easy';
+           
+            if ($itemdiscrimination < 10) {
+                $discriminationCategory2 = 'Poor Item';
+                $decision='Reject';
+            } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
+                $discriminationCategory2 = 'Good Item';
+                $decision='Reject';
+            } 
+            elseif ($itemdiscrimination2 >= 20 && $itemdiscrimination < 29) {
+                $discriminationCategory2 = 'Reasonable Good Item';
+                $decision='Revise';
+            } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
+                $discriminationCategory2 = 'Marginal Item';
+                $decision='Revise';
+            } 
+            else {
+                $discriminationCategory2 = 'Poor Item';
+                $decision='Revise';
+            }
+        }
+
+
+
+        
 
 
         $itemAnalysis[] = [
@@ -3009,6 +3082,11 @@ public function itemAnalysis2(Request $request)
              'Difficulty Category'=>$difficultyCategory,
              'itemdiscrimination'=> $itemdiscrimination,
              'Discrimination Category'=>$discriminationCategory,
+             'level of Difficulty'=>$difficultyCategory2,
+             'Discrimination Level'=>$discriminationCategory2,
+             'Decision'=>$decision,
+
+
         ];
     }
 
