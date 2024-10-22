@@ -2767,4 +2767,263 @@ public function updateCorrectAnswer(Request $request, $id)
     }
 }
 
+
+public function itemAnalysis2(Request $request)
+{
+    // Validate the request
+    $request->validate([
+        'examId' => 'required|integer',
+    ]);
+
+    $examId = $request->input('examId');
+
+    // Fetch the exam details and automatically get the class ID
+    $examSchedule = Exam::where('id', $examId)->firstOrFail();
+    $classId = $examSchedule->classtable_id;
+
+    $instruction = Instructions::where('schedule_id', $examId)->first();
+    $instructionText = $instruction ? $instruction->instruction : 'No instructions provided.';
+
+    $subjectTitle = $examSchedule->title ? $examSchedule->title : 'No subject title available';
+
+    // Retrieve all students in the class
+    $students = JoinClass::where('class_id', $classId)
+        ->where('status', 1) // Only get active students
+        ->with('user') // Load the related user model
+        ->get();
+
+    $totalStudents = $students->count(); // Total number of students in the class
+
+    // Retrieve all students who answered at least one question in the exam
+    $studentsWhoCompleted = AnsweredQuestion::whereHas('tblquestion', function ($query) use ($examId) {
+        $query->where('tblschedule_id', $examId);
+    })
+    ->groupBy('users_id')
+    ->pluck('users_id');
+
+    $studentsCompletedCount = $studentsWhoCompleted->count(); // Number of students who took the exam
+
+    // Calculate the percentage of students who completed the exam
+    $completionPercentage = $totalStudents > 0 ? ($studentsCompletedCount / $totalStudents) * 100 : 0;
+
+    // Retrieve all questions for the exam
+    $questions = Question::where('tblschedule_id', $examId)
+        ->with('addchoices') // Load choices for each question
+        ->get();
+
+    // Initialize an array to hold item analysis data
+    $itemAnalysis = [];
+
+    foreach ($questions as $question) {
+        $questionId = $question->id;
+
+        // Retrieve all choices for the question
+        $choices = $question->addchoices;
+
+        // Initialize counts and arrays to hold student IDs and their idnumbers
+        $choiceCounts = $choices->mapWithKeys(function ($choice) {
+            return [$choice->id => 0];
+        })->toArray();
+
+        $choiceStudentData = $choices->mapWithKeys(function ($choice) {
+            return [$choice->id => []]; // Initialize empty arrays for student data
+        })->toArray();
+
+        // Count the number of students who chose each choice
+        $studentsWhoAnswered = AnsweredQuestion::where('tblquestion_id', $questionId)
+            ->whereHas('tblquestion', function ($query) use ($examId) {
+                $query->where('tblschedule_id', $examId);
+            })
+            ->get();
+
+        foreach ($studentsWhoAnswered as $answeredQuestion) {
+            if (isset($choiceCounts[$answeredQuestion->addchoices_id])) {
+                $choiceCounts[$answeredQuestion->addchoices_id]++;
+
+                $user = DB::table('users')->where('id', $answeredQuestion->users_id)->first();
+                $idnumber = $user ? $user->idnumber : null;
+                $lname = $user ? $user->lname : null;
+                $fname = $user ? $user->fname : null;
+                $mname = $user ? $user->mname : null;
+
+                // Store the student data (user ID and idnumber) who selected this choice
+                $choiceStudentData[$answeredQuestion->addchoices_id][] = [
+                    'user_id' => $answeredQuestion->users_id,
+                    'idnumber' => $idnumber,
+                    'lname' => $lname,
+                    'fname' => $fname,
+                    'mname' => $mname
+                ];
+            }
+        }
+
+        // Get the correct answer for the question
+        $correctAnswer = CorrectAnswer::where('tblquestion_id', $questionId)->first();
+        $correctAnswerId = $correctAnswer ? $correctAnswer->addchoices_id : null;
+
+        // Count the number of correct answers
+        $correctAnswersCount = AnsweredQuestion::where('tblquestion_id', $questionId)
+            ->where('addchoices_id', $correctAnswerId)
+            ->count();
+
+        // Calculate percentages and format them with %
+        $totalAnswered = count($studentsWhoAnswered);
+        $choicesWithPercentage = $choices->map(function ($choice) use ($choiceCounts, $totalAnswered, $choiceStudentData) {
+            $count = $choiceCounts[$choice->id] ?? 0;
+            $percentage = $totalAnswered > 0 ? ($count / $totalAnswered) * 100 : 0;
+            return [
+                'choice' => $choice->choices,
+                'count' => $count,
+                'percentage' => round($percentage, 2) . '%',
+                'students' => $choiceStudentData[$choice->id]
+            ];
+        });
+
+        $studentIds = $studentsWhoAnswered->pluck('users_id');
+        $formTotal = (count($studentsWhoAnswered)/10)/0.27;
+        $results = DB::table('tblresult')
+            ->whereIn('users_id', $studentIds)
+            ->where('exam_id', $examId)
+            ->select('users_id', 'total_score')
+            ->orderBy('total_score', 'desc')
+            ->get();
+
+        // Get top 3 highest scores
+        $top3Highest = DB::table('tblresult')
+            ->whereIn('users_id', $studentIds)
+            ->where('exam_id', $examId)
+            ->orderBy('total_score', 'desc')
+            ->take(3)
+            ->get();
+
+        // Get top 3 lowest scores
+        $top3Lowest = DB::table('tblresult')
+            ->whereIn('users_id', $studentIds)
+            ->where('exam_id', $examId)
+            ->orderBy('total_score', 'asc')
+            ->take(3)
+            ->get();
+
+        // Count correct answers for top 3 highest scorers
+        $top3Highest = $top3Highest->map(function ($result) use ($examId, $questionId) {
+            // Count the correct answers given by the user for the specific question
+            $correctAnswersCount = DB::table('answered_question')
+                ->where('users_id', $result->users_id) // Ensure you use tblstudent_id for the user
+                ->where('tblquestion_id', $questionId) // Filter by the specific question ID
+                ->where('addchoices_id', function ($query) use ($questionId) {
+                    // Get the correct answer ID for the specified question
+                    $query->select('addchoices_id')
+                        ->from('correctanswer')
+                        ->where('tblquestion_id', $questionId);
+                })
+                ->count();
+
+        
+            return [
+                'user_id' => $result->users_id,
+                'total_score' => $result->total_score,
+                'correct_answers' => $correctAnswersCount // Add correct answers count
+            ];
+        });
+        
+        // Count correct answers for top 3 lowest scorers
+        $top3Lowest = $top3Lowest->map(function ($result) use ($examId, $questionId) {
+            // Count the correct answers given by the user for the specific question
+            $correctAnswersCount = DB::table('answered_question')
+                ->where('users_id', $result->users_id) // Ensure you use tblstudent_id for the user
+                ->where('tblquestion_id', $questionId) // Filter by the specific question ID
+                ->where('addchoices_id', function ($query) use ($questionId) {
+                    // Get the correct answer ID for the specified question
+                    $query->select('addchoices_id')
+                        ->from('correctanswer')
+                        ->where('tblquestion_id', $questionId);
+                })
+                ->count();
+        
+            return [
+                'user_id' => $result->users_id,
+                'total_score' => $result->total_score,
+                'correct_answers' => $correctAnswersCount // Add correct answers count
+            ];
+
+            
+           
+        });
+        $phTotal = $top3Highest->sum('correct_answers');
+        $plTotal = $top3Lowest->sum('correct_answers');
+
+        $divideph = $formTotal/$phTotal;
+        $dividepl = $formTotal/$plTotal;
+
+        $itemdifficulty =  (($divideph+ $dividepl)/2)*100;
+        $difficultyCategory = '';
+
+
+        if ($itemdifficulty < 24) {
+            $difficultyCategory = 'Difficult';
+        } elseif ($itemdifficulty >= 25 && $itemdifficulty < 75) {
+            $difficultyCategory = 'Average item';
+        } else {
+            $difficultyCategory = 'Easy';
+        }
+
+
+
+        $itemdiscrimination = ( $divideph- $dividepl)*100;
+        $discriminationCategory = '';
+        if ($itemdiscrimination < 10) {
+            $discriminationCategory = 'Poor Item';
+        } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
+            $discriminationCategory = 'Good Item';
+        } 
+        elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
+            $discriminationCategory = 'Reasonable Good Item';
+        } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
+            $discriminationCategory = 'Marginal Item';
+        } 
+        else {
+            $discriminationCategory = 'Poor Item';
+        }
+
+
+        $itemAnalysis[] = [
+            'question_id' => $questionId,
+            'question' => $question->question,
+            'choices' => $choicesWithPercentage,
+            'correct_answer' => $correctAnswer ? $correctAnswer->addchoices->choices : null,
+            'totalstudent' => count($studentsWhoAnswered),
+            'totalFormula' =>$formTotal,
+            'studentWscore' => $results->map(function ($result) {
+                return [
+                    'user_id' => $result->users_id,
+                    'total_score' => $result->total_score,
+                ];
+            }),
+            'top3High' => $top3Highest,
+            'top3Low' => $top3Lowest,
+            'top3Hightotal' => $phTotal,
+            'top3Lowtotal' => $plTotal,
+             'totalcomputeWpercentph' =>$divideph,
+             'totalcomputeWpercentpl' =>$dividepl,
+             'itemdifficulty'=> $itemdifficulty,
+             'Difficulty Category'=>$difficultyCategory,
+             'itemdiscrimination'=> $itemdiscrimination,
+             'Discrimination Category'=>$discriminationCategory,
+        ];
+    }
+
+    return response()->json([
+        'exam_title' => $subjectTitle,
+        'instruction' => $instructionText,
+        'item_analysis' => $itemAnalysis,
+        'total_students' => $totalStudents,
+        'students_completed_exam' => $studentsCompletedCount,
+        'completion_percentage' => round($completionPercentage, 2) . '%',
+    ], 200);
+}
+
+
+
+
+
 }
