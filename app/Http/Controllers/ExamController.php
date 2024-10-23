@@ -2880,7 +2880,7 @@ public function itemAnalysis2(Request $request)
         });
 
         $studentIds = $studentsWhoAnswered->pluck('users_id');
-        $formTotal = (count($studentsWhoAnswered))/0.27;
+        $formTotal = $totalAnswered > 0 ? $totalAnswered / 0.27 : 0;
         $results = DB::table('tblresult')
             ->whereIn('users_id', $studentIds)
             ->where('exam_id', $examId)
@@ -2952,8 +2952,8 @@ public function itemAnalysis2(Request $request)
         $phTotal = $top3Highest->sum('correct_answers');
         $plTotal = $top3Lowest->sum('correct_answers');
 
-        $divideph = ($phTotal/$formTotal)*100;
-        $dividepl = ($plTotal/$formTotal)*100;
+        $divideph = $formTotal > 0 ? ($phTotal / $formTotal) * 100 : 0;
+        $dividepl = $formTotal > 0 ? ($plTotal / $formTotal) * 100 : 0;
 
         $itemdifficulty =  (($divideph+ $dividepl)/2);
         $difficultyCategory = '';
