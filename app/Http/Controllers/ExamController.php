@@ -2995,7 +2995,7 @@ public function itemAnalysis2(Request $request)
                     $discriminationCategory2 = 'Poor Item';
                     $decision='Reject';
                 } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                    $discriminationCategory = 'Marginal Item';
+                    $discriminationCategory2 = 'Marginal Item';
                     $decision='Reject';
                 } 
                 elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
@@ -3016,7 +3016,7 @@ public function itemAnalysis2(Request $request)
                 $discriminationCategory2 = 'Poor Item';
                 $decision='Revise';
             } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                $discriminationCategory = 'Marginal Item';
+                $discriminationCategory2 = 'Marginal Item';
                 $decision='Revise';
             } 
             elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
@@ -3038,7 +3038,7 @@ public function itemAnalysis2(Request $request)
                 $discriminationCategory2 = 'Poor Item';
                 $decision='Reject';
             } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                $discriminationCategory = 'Marginal Item';
+                $discriminationCategory2 = 'Marginal Item';
                 $decision='Reject';
             } 
             elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
