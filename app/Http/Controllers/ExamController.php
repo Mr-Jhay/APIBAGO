@@ -2955,7 +2955,7 @@ public function itemAnalysis2(Request $request)
         $divideph = $formTotal > 0 ? ($phTotal / $formTotal) * 100 : 0;
         $dividepl = $formTotal > 0 ? ($plTotal / $formTotal) * 100 : 0;
 
-        $itemdifficulty =  (($divideph+ $dividepl)/2);
+        $itemdifficulty =  round(($divideph+ $dividepl)/2 , 3) . '%';
         $difficultyCategory = '';
 
 
@@ -2969,20 +2969,20 @@ public function itemAnalysis2(Request $request)
 
 
 
-        $itemdiscrimination = ( $divideph- $dividepl);
+        $itemdiscrimination = round(($divideph - $dividepl) , 3) . '%';
         $discriminationCategory = '';
         if ($itemdiscrimination < 10) {
             $discriminationCategory = 'Poor Item';
         } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-            $discriminationCategory = 'Good Item';
+            $discriminationCategory = 'Marginal Item';
         } 
         elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
             $discriminationCategory = 'Reasonable Good Item';
         } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
-            $discriminationCategory = 'Marginal Item';
+            $discriminationCategory = 'Good Item';
         } 
         else {
-            $discriminationCategory = 'Poor Item';
+            $discriminationCategory = 'Very Good Item';
         }
 
         $difficultyCategory2='';
@@ -2995,18 +2995,18 @@ public function itemAnalysis2(Request $request)
                     $discriminationCategory2 = 'Poor Item';
                     $decision='Reject';
                 } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                    $discriminationCategory = 'Good Item';
+                    $discriminationCategory = 'Marginal Item';
                     $decision='Reject';
                 } 
                 elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
                     $discriminationCategory2 = 'Reasonable Good Item';
                     $decision='Revise';
                 } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
-                    $discriminationCategory2 = 'Marginal Item';
+                    $discriminationCategory2 = 'Good Item';
                     $decision='Revise';
                 } 
                 else {
-                    $discriminationCategory2 = 'Poor Item';
+                    $discriminationCategory2 = 'Very Good Item';
                     $decision='Revise';
                 }
         } elseif ($itemdifficulty >= 25 && $itemdifficulty < 75) {
@@ -3016,18 +3016,18 @@ public function itemAnalysis2(Request $request)
                 $discriminationCategory2 = 'Poor Item';
                 $decision='Revise';
             } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                $discriminationCategory2 = 'Good Item';
+                $discriminationCategory = 'Marginal Item';
                 $decision='Revise';
             } 
             elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
                 $discriminationCategory2 = 'Reasonable Good Item';
                 $decision='Retain';
             } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
-                $discriminationCategory2 = 'Marginal Item';
+                $discriminationCategory2 = 'Good Item';
                 $decision='Retain';
             } 
             else {
-                $discriminationCategory2 = 'Poor Item';
+                $discriminationCategory2 = 'Very Good Item';
                 $decision='Retain';
             }
             
@@ -3038,18 +3038,18 @@ public function itemAnalysis2(Request $request)
                 $discriminationCategory2 = 'Poor Item';
                 $decision='Reject';
             } elseif ($itemdiscrimination >= 11 && $itemdiscrimination < 19) {
-                $discriminationCategory2 = 'Good Item';
+                $discriminationCategory = 'Marginal Item';
                 $decision='Reject';
             } 
-            elseif ($itemdiscrimination2 >= 20 && $itemdiscrimination < 29) {
+            elseif ($itemdiscrimination >= 20 && $itemdiscrimination < 29) {
                 $discriminationCategory2 = 'Reasonable Good Item';
                 $decision='Revise';
             } elseif ($itemdiscrimination >= 30 && $itemdiscrimination < 39) {
-                $discriminationCategory2 = 'Marginal Item';
+                $discriminationCategory2 = 'Good Item';
                 $decision='Revise';
             } 
             else {
-                $discriminationCategory2 = 'Poor Item';
+                $discriminationCategory2 = 'Very Good Item';
                 $decision='Revise';
             }
         }
