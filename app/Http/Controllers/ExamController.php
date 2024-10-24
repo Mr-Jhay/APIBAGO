@@ -2880,7 +2880,7 @@ public function itemAnalysis2(Request $request)
         });
 
         $studentIds = $studentsWhoAnswered->pluck('users_id');
-        $formTotal = $totalAnswered > 0 ? $totalAnswered / 0.27 : 0;
+        $formTotal = $totalAnswered > 0 ? round($totalAnswered * 0.27) : 0;
         $results = DB::table('tblresult')
             ->whereIn('users_id', $studentIds)
             ->where('exam_id', $examId)
@@ -2893,7 +2893,7 @@ public function itemAnalysis2(Request $request)
             ->whereIn('users_id', $studentIds)
             ->where('exam_id', $examId)
             ->orderBy('total_score', 'desc')
-            ->take(3)
+            ->take($formTotal)
             ->get();
 
         // Get top 3 lowest scores
@@ -2901,7 +2901,7 @@ public function itemAnalysis2(Request $request)
             ->whereIn('users_id', $studentIds)
             ->where('exam_id', $examId)
             ->orderBy('total_score', 'asc')
-            ->take(3)
+            ->take($formTotal)
             ->get();
 
         // Count correct answers for top 3 highest scorers
