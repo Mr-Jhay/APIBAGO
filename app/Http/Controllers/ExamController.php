@@ -3079,11 +3079,11 @@ public function itemAnalysis2(Request $request)
              'totalcomputeWpercentph' =>$divideph,
              'totalcomputeWpercentpl' =>$dividepl,
              'itemdifficulty'=> $itemdifficulty,
-             'Difficulty Category'=>$difficultyCategory,
+             'DifficultyCategory'=>$difficultyCategory,
              'itemdiscrimination'=> $itemdiscrimination,
-             'Discrimination Category'=>$discriminationCategory,
-             'level of Difficulty'=>$difficultyCategory2,
-             'Discrimination Level'=>$discriminationCategory2,
+             'DiscriminationCategory'=>$discriminationCategory,
+             'levelofDifficulty'=>$difficultyCategory2,
+             'DiscriminationLevel'=>$discriminationCategory2,
              'Decision'=>$decision,
 
 
