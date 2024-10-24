@@ -2955,7 +2955,7 @@ public function itemAnalysis2(Request $request)
         $divideph = $formTotal > 0 ? ($phTotal / $formTotal) * 100 : 0;
         $dividepl = $formTotal > 0 ? ($plTotal / $formTotal) * 100 : 0;
 
-        $itemdifficulty =  round(($divideph+ $dividepl)/2 , 3) . '%';
+        $itemdifficulty =  (($divideph+ $dividepl)/2 );
         $difficultyCategory = '';
 
 
@@ -2969,7 +2969,7 @@ public function itemAnalysis2(Request $request)
 
 
 
-        $itemdiscrimination = round(($divideph - $dividepl) , 3) . '%';
+        $itemdiscrimination = ($divideph - $dividepl);
         $discriminationCategory = '';
         if ($itemdiscrimination < 10) {
             $discriminationCategory = 'Poor Item';
@@ -3078,9 +3078,9 @@ public function itemAnalysis2(Request $request)
             'top3Lowtotal' => $plTotal,
              'totalcomputeWpercentph' =>$divideph,
              'totalcomputeWpercentpl' =>$dividepl,
-             'itemdifficulty'=> $itemdifficulty,
+             'itemdifficulty'=> round($itemdifficulty, 2) . '%',
              'DifficultyCategory'=>$difficultyCategory,
-             'itemdiscrimination'=> $itemdiscrimination,
+             'itemdiscrimination'=> round($itemdiscrimination, 2). '%',
              'DiscriminationCategory'=>$discriminationCategory,
              'levelofDifficulty'=>$difficultyCategory2,
              'DiscriminationLevel'=>$discriminationCategory2,
