@@ -2128,7 +2128,8 @@ public function getAllStudentResults(Request $request)
 
             // Status transformation
             $status = ($result->status === null) ? 'N/A' : (($result->status == 1) ? 'Passed' : 'Failed');
-
+            $ps = ($result->points_exam > 0) ? number_format(($result->total_score / $result->points_exam) * 100, 2) : null;
+ $ws = (    $ps !== null) ? number_format($ps * 0.20, 2) : null;
             // Add each result to the exam_results array
             $resultsByExam[$examTitle]['exam_results'][] = [
                 'student_id' => $result->student_id,
@@ -2140,6 +2141,8 @@ public function getAllStudentResults(Request $request)
                 'strand_name' => $result->strand_name,
                 'gradelevel_name' => $result->gradelevel_name,
                 'points_exam' => $result->points_exam,
+                'ps' => $ps, // Add percentage score
+                'ws' => $ws,
                 'total_score' => $result->total_score,
                 'total_exam' => $result->total_exam,
                 'exam_start' => $result->start,

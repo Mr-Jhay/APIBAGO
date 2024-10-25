@@ -507,11 +507,17 @@ public function getCounts()
             return $strand->count();
         });
 
+         // Count the number of students per strand
+         $sectionCount = $students->groupBy('section_name')->map(function ($section) {
+            return $section->count();
+        });
+
         // Count the number of teachers, students, strands, and subjects
         $teacherCount = tblteacher::count();
         $studentCount = tblstudent::count();
         $strandCount = tblstrand::count();
         $subjectCount = tblsubject::count();
+        $sectionCount = tblsection::count();
         $maleTeacherCount = tblteacher::join('users', 'tblteacher.user_id', '=', 'users.id')
             ->where('users.sex', 'Male')
             ->count();
@@ -539,6 +545,7 @@ public function getCounts()
                     'strand_count' => $strandCount,
                     'subject_count' => $subjectCount,
                     'teacher_count' => $teacherCount,
+                    'section_count' => $sectionCount,
                     'male_teacher_count' => $maleTeacherCount,
                     'female_teacher_count' => $femaleTeacherCount,
                     'student_count' => $studentCount,
@@ -637,7 +644,7 @@ public function updateStudentDetails(Request $request, $user_id)
         ],
         'strand_id' => 'nullable|exists:tblstrand,id',
         'section_id' => 'nullable|exists:tblsection,id',
-         'fourp' => ['nullable', 'string' . $user_id],  // Nullable and unique, excluding the current student's mobile number
+         'fourp' => ['boolean'],  // Nullable and unique, excluding the current student's mobile number
     ]);
 
     try {
