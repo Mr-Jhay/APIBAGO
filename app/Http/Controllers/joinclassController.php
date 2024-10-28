@@ -440,10 +440,13 @@ public function addwocode(Request $request)
         // Fetch unique students with pending status based on idnumber
         $students = DB::table('users')
                     ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
+                    ->join('tblstudent', 'users.id', '=', 'tblstudent.user_id')
+                    ->join('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+                    ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
                     ->where('joinclass.class_id', $class_id)
                     ->where('joinclass.status', 0)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.mname', 'users.lname', 'joinclass.status')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.mname', 'users.lname', 'joinclass.status','tblstrand.addstrand','tblstrand.grade_level','tblsection.section')
                     ->distinct('users.idnumber') // Ensure distinct idnumber
                     ->get();
     

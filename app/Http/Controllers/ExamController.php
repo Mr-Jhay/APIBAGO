@@ -2073,7 +2073,7 @@ public function getAllStudentResults(Request $request)
        // ->Join('tblstudent', 'users.strand_id', '=', 'tblstudent.id')
        ->leftJoin('tblstudent', 'users.id', '=', 'tblstudent.user_id') // Join users with tblstudent
        ->leftJoin('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
-
+       ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
             ->select(
                 'users.id AS student_id',
                 'users.idnumber AS Lrn_id',
@@ -2083,6 +2083,7 @@ public function getAllStudentResults(Request $request)
                 'users.sex AS sex',
                 'tblstrand.addstrand AS strand_name',
                 'tblstrand.grade_level AS gradelevel_name',
+                'tblsection.section',
                 'tblschedule.title AS exam_title',
                 'tblschedule.start',
                 'tblschedule.end',
@@ -2140,6 +2141,7 @@ public function getAllStudentResults(Request $request)
                 'sex' => $result->sex,
                 'strand_name' => $result->strand_name,
                 'gradelevel_name' => $result->gradelevel_name,
+                'section' => $result->section,
                 'points_exam' => $result->points_exam,
                 'ps' => $ps, // Add percentage score
                 'ws' => $ws . '%',
