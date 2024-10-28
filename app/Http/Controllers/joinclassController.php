@@ -50,7 +50,7 @@ class joinclassController extends Controller
 
     if (!$class) {
         return response()->json([
-            'error' => 'Class not found or gen_code does not match.'
+            'error' => 'Class not found or code does not match.'
         ], 400);
     }
 
@@ -61,6 +61,11 @@ class joinclassController extends Controller
         ], 403);
     }
 
+    if ($class->section_id !== $student->section_id) {
+        return response()->json([
+            'error' => 'You cannot join this class. Your section does not match the class section.'
+        ], 403);
+    }
     // Create the joinClass record
     $joinClass = joinclass::create([
         'user_id' => $user->id,
@@ -421,29 +426,30 @@ public function addwocode(Request $request)
     }
     
 
-    // Method to list all students with pending join requests in a class
     public function listStudentsInClass3(Request $request, $class_id)
     {
         $user = $request->user();
     
-        if ($user->usertype !== 'teacher' && $user.usertype !== 'admin') {
+        // Check user authorization
+        if ($user->usertype !== 'teacher' && $user->usertype !== 'admin') {
             return response()->json([
                 'error' => 'Unauthorized: Only teachers and admins can view students in a class.'
             ], 403);
         }
     
-        // Fetch students with pending status
+        // Fetch unique students with pending status based on idnumber
         $students = DB::table('users')
                     ->join('joinclass', 'users.id', '=', 'joinclass.user_id')
                     ->where('joinclass.class_id', $class_id)
                     ->where('joinclass.status', 0)
                     ->where('users.usertype', 'student')
-                    ->select('users.id', 'users.idnumber', 'users.fname','users.mname','users.lname', 'joinclass.status')
+                    ->select('users.id', 'users.idnumber', 'users.fname', 'users.mname', 'users.lname', 'joinclass.status')
+                    ->distinct('users.idnumber') // Ensure distinct idnumber
                     ->get();
-
+    
         return response()->json($students, 200);
     }
-
+    
     public function viewAllApprovedStudents(Request $request)
     {
         // Get the authenticated user
