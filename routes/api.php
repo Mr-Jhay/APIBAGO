@@ -56,6 +56,9 @@ Route::post('/import_excel_post4', [UsersController::class, 'import_excel_post4'
 Route::post('/import_excel_post2', [UsersController::class, 'import_excel_post2']); //upload of teacher data using excell register
 
 
+Route::get('/export_result', [ExamController::class, 'export_result']); //download results
+
+
 
 //EmailController
 Route::group([

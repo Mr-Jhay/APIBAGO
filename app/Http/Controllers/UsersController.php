@@ -27,6 +27,7 @@ use App\Imports\StudentsImport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Imports\UserImport;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 //use Excel;
 
 class UsersController extends Controller
@@ -1271,6 +1272,56 @@ public function import_excel_post2(Request $request) {
     }
 }
 
+public function export_excel(Request $request)
+{
+    // Retrieve users and associated student records from the database
+    $users = User::with('tblstudent')->get();
 
+    // Create a new Spreadsheet instance
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+
+    // Set headers for the Excel file
+    $sheet->setCellValue('A1', 'ID Number');
+    $sheet->setCellValue('B1', 'First Name');
+    $sheet->setCellValue('C1', 'Middle Name');
+    $sheet->setCellValue('D1', 'Last Name');
+    $sheet->setCellValue('E1', 'Sex');
+    $sheet->setCellValue('F1', 'User Type');
+    $sheet->setCellValue('G1', 'Strand ID');
+    $sheet->setCellValue('H1', 'Section ID');
+    $sheet->setCellValue('I1', 'Fourp');
+
+    // Populate rows with data
+    $row = 2;
+    foreach ($users as $user) {
+        $sheet->setCellValue('A' . $row, $user->idnumber);
+        $sheet->setCellValue('B' . $row, $user->fname);
+        $sheet->setCellValue('C' . $row, $user->mname);
+        $sheet->setCellValue('D' . $row, $user->lname);
+        $sheet->setCellValue('E' . $row, $user->sex);
+        $sheet->setCellValue('F' . $row, $user->usertype);
+
+        // Access associated `tblstudent` data
+        $student = $user->tblstudent;
+        $sheet->setCellValue('G' . $row, $student ? $student->strand_id : null);
+        $sheet->setCellValue('H' . $row, $student ? $student->section_id : null);
+        $sheet->setCellValue('I' . $row, $student ? $student->fourp : null);
+
+        $row++;
+    }
+
+    // Set the writer to Xlsx using IOFactory
+    $fileName = 'users_export.xlsx';
+    $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+
+    // Create a response to download the file
+    return response()->streamDownload(function() use ($writer) {
+        $writer->save('php://output');
+    }, $fileName, [
+        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition' => "attachment; filename=\"$fileName\"",
+    ]);
+}
 
 }

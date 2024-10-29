@@ -23,6 +23,9 @@ use App\Mail\WelcomeMail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ExamController extends Controller
 {
@@ -3106,6 +3109,148 @@ public function itemAnalysis2(Request $request)
 }
 
 
+public function export_result(Request $request)
+{
+    try {
+        $teacher = Auth::user();
+
+        // Validate that classtable_id is provided in the request
+        $request->validate([
+            'classtable_id' => 'required|integer'
+        ]);
+
+        // Retrieve all student results for the specified class (your current query logic)
+        $results = DB::table('users')
+            ->leftJoin('joinclass', 'users.id', '=', 'joinclass.user_id')
+            ->leftJoin('tblschedule', function ($join) use ($request) {
+                $join->on('tblschedule.classtable_id', '=', 'joinclass.class_id')
+                     ->where('tblschedule.classtable_id', $request->classtable_id);
+            })
+            ->leftJoin('tblresult', function ($join) {
+                $join->on('tblresult.users_id', '=', 'users.id')
+                     ->on('tblresult.exam_id', '=', 'tblschedule.id');
+            })
+            ->leftJoin('tblstudent', 'users.id', '=', 'tblstudent.user_id')
+            ->leftJoin('tblstrand', 'tblstudent.strand_id', '=', 'tblstrand.id')
+            ->join('tblsection', 'tblstudent.section_id', '=', 'tblsection.id')
+            ->select(
+                'users.id AS student_id',
+                'users.idnumber AS Lrn_id',
+                'users.lname AS Last_name',
+                'users.fname AS First_name',
+                'users.mname AS Middle_i',
+                'users.sex AS sex',
+                'tblstrand.addstrand AS strand_name',
+                'tblstrand.grade_level AS gradelevel_name',
+                'tblsection.section',
+                'tblschedule.title AS exam_title',
+                'tblschedule.start',
+                'tblschedule.end',
+                'tblschedule.points_exam',
+                'tblresult.total_score',
+                'tblresult.average',
+                'tblresult.total_exam',
+                'tblresult.status',
+                'tblresult.created_at',
+                'tblresult.updated_at'
+            )
+            ->where('joinclass.class_id', $request->classtable_id)
+            ->where('tblschedule.classtable_id', $request->classtable_id)
+            ->where('joinclass.status', 1)
+            ->where('tblschedule.id', '!=', null)
+            ->orderBy('tblschedule.title') // Order by exam title first
+            ->orderBy('users.lname')
+            ->orderBy('users.fname')
+            ->get();
+
+        // If no results, return 404
+        if ($results->isEmpty()) {
+            return response()->json([
+                'message' => 'No exam results found for this class.'
+            ], 404);
+        }
+
+        // Create new Spreadsheet object
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Initialize row counter
+        $row = 1;
+
+        // Group results by exam title
+        $groupedResults = $results->groupBy('exam_title');
+
+        foreach ($groupedResults as $examTitle => $students) {
+            // Set exam title header
+            $sheet->setCellValue("A{$row}", "Exam Title: $examTitle");
+            $sheet->mergeCells("A{$row}:Q{$row}"); // Adjust the range based on your columns
+            $sheet->getStyle("A{$row}")->getFont()->setBold(true);
+            $row++;
+
+            // Set headers for student results
+            $headers = [
+                'Student ID', 'LRN ID', 'Last Name', 'First Name', 'Middle Initial', 'Sex', 
+                'Strand', 'Grade Level', 'Section', 'Start', 'End', 
+                'Points Exam', 'Total Score', 'Average', 'Total Exam', 'Status'
+            ];
+            $sheet->fromArray($headers, NULL, "A{$row}");
+            $row++;
+
+            // Insert data into spreadsheet
+            foreach ($students as $student) {
+                $sheet->fromArray([
+                    $student->student_id, 
+                    $student->Lrn_id, 
+                    $student->Last_name, 
+                    $student->First_name,
+                    $student->Middle_i, 
+                    $student->sex, 
+                    $student->strand_name, 
+                    $student->gradelevel_name,
+                    $student->section, 
+                    $student->start, 
+                    $student->end,
+                    $student->points_exam, 
+                    $student->total_score, 
+                    $student->average, 
+                    $student->total_exam, 
+                    ($student->status === null) ? 'N/A' : (($student->status == 1) ? 'Passed' : 'Failed')
+                ], NULL, "A{$row}");
+                $row++;
+            }
+
+            // Add a blank row for spacing between exams
+            $row++;
+        }
+
+        // Format LRN ID column (B) as a number with 0 decimals
+        $sheet->getStyle("B2:B{$row}")
+              ->getNumberFormat()
+              ->setFormatCode('0');
+
+        // Set filename
+        $filename = "Student_Results_Class_{$request->classtable_id}.xlsx";
+
+        // Generate file and download response
+        $writer = new Xlsx($spreadsheet);
+        $response = response()->streamDownload(function() use ($writer) {
+            $writer->save('php://output');
+        }, $filename);
+
+        // Set headers for download
+        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $response->headers->set('Content-Disposition', "attachment;filename=\"$filename\"");
+        $response->headers->set('Cache-Control', 'max-age=0');
+
+        return $response;
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Failed to retrieve exam results.',
+            'exception' => $e->getMessage()
+        ], 500);
+    }
+}
 
 
 
