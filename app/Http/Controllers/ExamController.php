@@ -2016,6 +2016,7 @@ public function getResultsallexam(Request $request)
                 'tblresult.id',
                 'users.lname AS student_name',
                 'tblschedule.title AS exam_title',
+                'tblschedule.quarter',
                 'tblschedule.start',
                 'tblschedule.end',
                 'tblschedule.classtable_id',  // Add classtable_id
@@ -3191,7 +3192,7 @@ public function export_result(Request $request)
             $headers = [
                 'Student ID', 'LRN ID', 'Last Name', 'First Name', 'Middle Initial', 'Sex', 
                 'Strand', 'Grade Level', 'Section', 'Start', 'End', 
-                'Points Exam', 'Total Score', 'Average', 'Total Exam', 'Status'
+                 'Total Score', 'Average', 'Total Points Exam', 'Status'
             ];
             $sheet->fromArray($headers, NULL, "A{$row}");
             $row++;
@@ -3210,10 +3211,11 @@ public function export_result(Request $request)
                     $student->section, 
                     $student->start, 
                     $student->end,
-                    $student->points_exam, 
+                   // $student->points_exam, 
                     $student->total_score, 
                     $student->average, 
-                    $student->total_exam, 
+                    //$student->total_exam, 
+                    $student->points_exam, 
                     ($student->status === null) ? 'N/A' : (($student->status == 1) ? 'Passed' : 'Failed')
                 ], NULL, "A{$row}");
                 $row++;
