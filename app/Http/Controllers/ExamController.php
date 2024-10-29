@@ -2957,8 +2957,8 @@ public function itemAnalysis2(Request $request)
         $phTotal = $top3Highest->sum('correct_answers');
         $plTotal = $top3Lowest->sum('correct_answers');
 
-        $divideph = $formTotal > 0 ? ($phTotal / $formTotal) * 100 : 0;
-        $dividepl = $formTotal > 0 ? ($plTotal / $formTotal) * 100 : 0;
+        $divideph = $formTotal > 0 ? round(($phTotal / $formTotal) * 100) : 0;
+        $dividepl = $formTotal > 0 ? round(($plTotal / $formTotal) * 100) : 0;
 
         $itemdifficulty =  (($divideph+ $dividepl)/2 );
         $difficultyCategory = '';
@@ -3083,9 +3083,9 @@ public function itemAnalysis2(Request $request)
             'top3Lowtotal' => $plTotal,
              'totalcomputeWpercentph' =>$divideph,
              'totalcomputeWpercentpl' =>$dividepl,
-             'itemdifficulty'=> number_format($itemdifficulty, 2) . '%',
+             'itemdifficulty'=> round($itemdifficulty, 0) . '%',
              'DifficultyCategory'=>$difficultyCategory,
-             'itemdiscrimination'=> number_format($itemdiscrimination, 2). '%',
+             'itemdiscrimination'=> round($itemdiscrimination, 0). '%',
              'DiscriminationCategory'=>$discriminationCategory,
              'levelofDifficulty'=>$difficultyCategory2,
              'DiscriminationLevel'=>$discriminationCategory2,
