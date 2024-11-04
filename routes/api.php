@@ -151,7 +151,7 @@ Route::group([
 
 
     //TEACHER
-
+    Route::get('/downloadExamInstructionsPDF/{examId}', [ExamController::class, 'downloadExamInstructionsPDF']);
     //yung may time ganun
     Route::post('createExam', [ExamController::class, 'createExam']);
 

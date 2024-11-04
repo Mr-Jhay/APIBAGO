@@ -26,6 +26,7 @@ use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use Fpdf\Fpdf;
 
 class ExamController extends Controller
 {
@@ -3108,7 +3109,107 @@ public function itemAnalysis2(Request $request)
         'completion_percentage' => round($completionPercentage, 2) . '%',
     ], 200);
 }
+public function downloadExamInstructionsPDF($examId)
+{
+    try {
+        \Log::info("Starting PDF generation for Exam ID: $examId");
 
+        if (empty($examId)) {
+            \Log::error("Exam ID is empty.");
+            return response()->json(['error' => 'Exam ID is required.'], 400);
+        }
+
+        // Fetch the exam and related details
+        $exam = Exam::findOrFail($examId);
+        \Log::info("Exam found: " . $exam->id);
+
+        // Gather additional exam details
+        $title = $exam->title;
+        $pointsExam = $exam->points_exam;
+        $quarter = $exam->quarter;
+        $start = $exam->start;
+        $status = $exam->status;
+
+        $instructions = Instructions::where('schedule_id', $examId)
+                                    ->with(['questions.correctAnswers', 'questions.choices'])
+                                    ->get();
+        \Log::info("Fetched instructions for Exam ID: $examId, Total: " . count($instructions));
+
+        // Start PDF creation
+        $pdf = new FPDF();
+        $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->Cell(0, 10, 'Exam Instructions for ID: ' . $examId, 0, 1);
+
+        // Add upper portion with exam details
+        $pdf->SetFont('Arial', '', 12);
+        $pdf->Ln(5);
+        $pdf->Cell(0, 10, "Title: $title", 0, 1);
+        $pdf->Cell(0, 10, "Points: $pointsExam", 0, 1);
+        $pdf->Cell(0, 10, "Quarter: $quarter", 0, 1);
+        $pdf->Cell(0, 10, "Start Date: $start", 0, 1);
+        $pdf->Cell(0, 10, "Status: " . ($status == '1' ? 'Active' : 'Inactive'), 0, 1);
+
+        // Add instructions section with unique filtering
+        $processedInstructions = [];
+        foreach ($instructions as $instruction) {
+            if (in_array($instruction->description, $processedInstructions)) {
+                continue;
+            }
+            $processedInstructions[] = $instruction->description;
+            $pdf->Ln();
+            $pdf->MultiCell(0, 10, $instruction->description);
+        }
+
+        // Add questions section with unique filtering
+        $questions = $instructions->flatMap(function($instruction) {
+            return $instruction->questions;
+        });
+
+        if ($questions->isNotEmpty()) {
+            $pdf->Ln(10);
+            $pdf->SetFont('Arial', 'B', 14);
+            $pdf->Cell(0, 10, 'Questions:', 0, 1);
+
+            $processedQuestions = [];
+            foreach ($questions as $question) {
+                if (in_array($question->question, $processedQuestions)) {
+                    continue;
+                }
+                $processedQuestions[] = $question->question;
+                $pdf->SetFont('Arial', '', 12);
+                $pdf->Ln();
+                $pdf->MultiCell(0, 10, 'Q: ' . $question->question);
+                
+                if ($question->choices) {
+                    foreach ($question->choices as $choice) {
+                        $pdf->MultiCell(0, 10, ' - ' . $choice->choices);
+                    }
+                }
+
+                if ($question->correctAnswers && $question->correctAnswers->isNotEmpty()) {
+                    $correctAnswer = $question->correctAnswers->pluck('correct_answer')->join(', ');
+                    $pdf->SetFont('Arial', 'I', 12);
+                    $pdf->Ln();
+                    $pdf->MultiCell(0, 10, 'Correct Answer: ' . $correctAnswer);
+                }
+            }
+        } else {
+            $pdf->Ln();
+            $pdf->Cell(0, 10, 'No questions found for this exam.');
+        }
+
+        // Save PDF to storage and return download response
+        $filePath = storage_path('app/public/exam_instructions_' . $examId . '.pdf');
+        $pdf->Output('F', $filePath);
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
+
+    } catch (\Exception $e) {
+        \Log::error("Error in PDF generation: " . $e->getMessage());
+        return response()->json(['error' => 'Failed to generate PDF: ' . $e->getMessage()], 500);
+    }
+}
 
 public function export_result(Request $request)
 {
